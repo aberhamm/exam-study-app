@@ -1,0 +1,22 @@
+{
+  "chunks": [
+    {
+      "id": "xmc-arch-1",
+      "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
+      "title": "XM Cloud architecture",
+      "heading": "Architecture overview",
+      "anchor": "architecture",
+      "breadcrumbs": ["XM Cloud", "Architecture"],
+      "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge..."
+    },
+    {
+      "id": "xmc-arch-2",
+      "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#components",
+      "title": "XM Cloud architecture",
+      "heading": "Core components",
+      "anchor": "components",
+      "breadcrumbs": ["XM Cloud", "Architecture"],
+      "excerpt": "Core services include CM, Edge, Webhooks..."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "version": "1",
+  "shards": [
+    { "file": "/chunks/000.json", "count": 250 },
+    { "file": "/chunks/001.json", "count": 240 }
+  ]
+}
