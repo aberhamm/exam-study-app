@@ -405,9 +405,21 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
 
   const selectedAnswerIndex = quizState.selectedAnswers[quizState.currentQuestionIndex];
 
-  let isCorrect = false;
-  if (currentQuestion) {
-    isCorrect = selectedAnswerIndex === currentQuestion.answerIndex;
+  // Determine if current answer is correct for border styling
+  let isCurrentAnswerCorrect = false;
+  if (currentQuestion && quizState.showFeedback) {
+    if (currentQuestion.questionType === 'single') {
+      isCurrentAnswerCorrect = selectedAnswerIndex === currentQuestion.answerIndex;
+    } else {
+      // For multiple choice, check if all selected answers are correct and no correct answers are missed
+      const selectedArray = Array.isArray(selectedAnswerIndex) ? selectedAnswerIndex : [];
+      const correctArray = Array.isArray(currentQuestion.answerIndex) ? currentQuestion.answerIndex : [];
+
+      const allSelectedAreCorrect = selectedArray.every(idx => correctArray.includes(idx as 0 | 1 | 2 | 3));
+      const allCorrectAreSelected = correctArray.every(idx => selectedArray.includes(idx));
+
+      isCurrentAnswerCorrect = allSelectedAreCorrect && allCorrectAreSelected && selectedArray.length > 0;
+    }
   }
 
   return (
@@ -461,9 +473,30 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
         {/* Question */}
         <Card className="p-6">
           <div className="mb-4">
-            <h2 className="text-xl font-semibold mb-4" role="heading" aria-level={2}>
-              {currentQuestion?.prompt}
-            </h2>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <h2 className="text-xl font-semibold flex-1" role="heading" aria-level={2}>
+                {currentQuestion?.prompt}
+              </h2>
+              {quizState.showFeedback && (
+                <div className="flex-shrink-0 mt-1">
+                  {isCurrentAnswerCorrect ? (
+                    <div className="flex items-center text-green-600 dark:text-green-400">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="sr-only">Correct answer</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-red-600 dark:text-red-400">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      <span className="sr-only">Incorrect answer</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="text-base font-medium text-foreground">
               {currentQuestion?.questionType === 'multiple'
                 ? 'Select all that apply.'
@@ -585,24 +618,6 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
 
           {quizState.showFeedback && (
             <div className="mt-6 space-y-4">
-              <div
-                className={`p-4 rounded-lg ${
-                  isCorrect
-                    ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800'
-                    : 'bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800'
-                }`}
-              >
-                <div
-                  className={`font-semibold ${
-                    isCorrect
-                      ? 'text-green-800 dark:text-green-200'
-                      : 'text-red-800 dark:text-red-200'
-                  }`}
-                >
-                  {isCorrect ? 'Correct!' : 'Incorrect'}
-                </div>
-              </div>
-
               {currentQuestion?.explanation && (
                 <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
                   <div className="font-medium text-blue-800 dark:text-blue-200 mb-2">
