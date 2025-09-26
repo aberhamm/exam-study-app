@@ -9,55 +9,108 @@ The SCXMCL Study Utility follows a component-based architecture with clear separ
 ```
 App Layout (layout.tsx)
 ├── ThemeProvider
-    └── QuizApp
+    ├── TestConfigPage (splash screen)
+    │   ├── ThemeToggle
+    │   ├── Question Type Selection
+    │   ├── Question Count Configuration
+    │   └── Configuration Summary
+    └── QuizApp (main quiz)
         ├── ThemeToggle
+        ├── Settings Display
         ├── Progress Indicator
         ├── Question Card
-        │   ├── Answer Buttons
+        │   ├── Answer Buttons (single/multiple)
         │   └── Feedback Panel
         │       ├── Explanation
         │       └── StudyPanel
         └── Results Screen
+            ├── Score Display
+            ├── Action Buttons
             └── Review Section
                 └── StudyPanel
 ```
 
 ## Core Components
 
-### QuizApp (`components/QuizApp.tsx`)
+### TestConfigPage (`components/TestConfigPage.tsx`)
 
-**Purpose**: Main application component that orchestrates the entire quiz experience.
+**Purpose**: Test configuration splash screen that allows users to customize their quiz experience.
+
+**Props**:
+```typescript
+type Props = {
+  questions: NormalizedQuestion[] | null;
+  onStartTest: (settings: TestSettings) => void;
+  loading: boolean;
+  error: string | null;
+};
+```
 
 **Responsibilities**:
-- Manages quiz state (current question, selected answers, progress)
-- Handles question randomization using Fisher-Yates shuffle
-- Coordinates data loading via `useQuestions` hook
-- Provides keyboard navigation (keys 1-4, Enter, Space)
-- Renders different UI states (loading, error, quiz, results)
+- Displays question type selection (all, single, multiple)
+- Provides question count configuration (presets + custom)
+- Shows real-time question availability counts
+- Validates configuration before allowing test start
+- Manages session storage for test settings
+
+**Key Features**:
+- Question type filtering with live counts
+- Configurable question count (5-100, defaults to 50)
+- Smart validation preventing invalid configurations
+- Responsive design with mobile-specific layouts
+- Session persistence for user preferences
+
+**Test Configuration Flow**:
+1. Load saved settings from session storage
+2. Display available question counts per type
+3. Allow user to select question type and count
+4. Validate configuration against available questions
+5. Save settings and proceed to quiz
+
+---
+
+### QuizApp (`components/QuizApp.tsx`)
+
+**Purpose**: Main quiz application component that runs the configured test.
+
+**Props**:
+```typescript
+type Props = {
+  questions: NormalizedQuestion[];
+  testSettings: TestSettings;
+  onBackToSettings: () => void;
+};
+```
+
+**Responsibilities**:
+- Manages quiz state for prepared questions
+- Handles both single and multiple select questions
+- Provides keyboard navigation with dynamic instructions
+- Displays test settings throughout quiz experience
+- Coordinates scoring for mixed question types
 
 **Key State**:
 ```typescript
 type QuizState = {
   currentQuestionIndex: number;
-  selectedAnswers: (number | null)[];
+  selectedAnswers: (number | number[] | null)[];
   showResult: boolean;
   showFeedback: boolean;
   score: number;
   incorrectAnswers: Array<{
     question: NormalizedQuestion;
-    selectedIndex: number;
-    correctIndex: number;
+    selectedIndex: number | number[];
+    correctIndex: number | number[];
   }>;
 };
 ```
 
 **Key Methods**:
-- `selectAnswer(answerIndex: number)`: Records user answer and shows feedback
+- `selectAnswer(answerIndex: number)`: Handles both single/multiple selection
+- `submitMultipleAnswer()`: Submits multiple select answers
 - `nextQuestion()`: Advances to next question or finishes quiz
-- `finishQuiz()`: Calculates final score and shows results
-- `resetQuiz()`: Starts new quiz with re-shuffled questions
-
-**Props**: None (root component)
+- `finishQuiz()`: Calculates final score with mixed question support
+- `resetQuiz()`: Starts new quiz with same settings
 
 **Features**:
 - Question randomization on load and reset

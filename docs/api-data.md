@@ -2,10 +2,18 @@
 
 ## Data Flow Overview
 
-The application follows a simple data flow pattern for loading and processing quiz questions:
+The application follows an enhanced data flow pattern for loading, configuring, and processing quiz questions:
 
 ```
-JSON File → Fetch → Validation → Normalization → Component State
+JSON File → Fetch → Validation → Normalization → Test Configuration → Question Preparation → Component State
+```
+
+### Test Configuration Layer
+
+Between data loading and quiz execution, the application includes a configuration layer:
+
+```
+User Settings → Question Filtering → Question Limiting → Shuffling → Quiz State
 ```
 
 ## External Data Format
@@ -81,7 +89,8 @@ export type NormalizedQuestion = {
   id: string;                    // Generated stable ID
   prompt: string;                // Question text
   choices: [string, string, string, string]; // Answer choices as array
-  answerIndex: 0 | 1 | 2 | 3;   // Correct answer index
+  answerIndex: 0 | 1 | 2 | 3 | (0 | 1 | 2 | 3)[]; // Single or multiple correct answers
+  questionType: 'single' | 'multiple'; // Question type
   explanation?: string;          // Optional explanation
   study?: {                      // Optional study materials
     chunkId: string;
@@ -90,6 +99,27 @@ export type NormalizedQuestion = {
     excerpt?: string;
   }[];
 };
+```
+
+### Test Settings Types (`lib/test-settings.ts`)
+
+Configuration types for test customization:
+
+```typescript
+export type QuestionTypeFilter = 'all' | 'single' | 'multiple';
+
+export type TestSettings = {
+  questionCount: number;         // Number of questions (5-100)
+  questionType: QuestionTypeFilter; // Filter by question type
+};
+
+export const TEST_SETTINGS = {
+  DEFAULT_QUESTION_COUNT: 50,
+  MAX_QUESTION_COUNT: 100,
+  MIN_QUESTION_COUNT: 5,
+  QUESTION_COUNT_PRESETS: [10, 25, 50, 75, 100],
+  SESSION_STORAGE_KEY: 'scxmcl-test-settings'
+} as const;
 ```
 
 ## Data Validation

@@ -4,13 +4,31 @@ An interactive quiz application built with Next.js for studying Sitecore XM Clou
 
 ## Features
 
-- 🎯 **Interactive Quiz**: Multiple-choice questions with immediate feedback
-- 🔀 **Randomized Questions**: Questions are shuffled for each quiz session
-- 📚 **Study Materials**: Linked documentation and excerpts for deeper learning
-- 🌙 **Dark/Light Mode**: System-aware theme with manual toggle
-- ⌨️ **Keyboard Navigation**: Use keys 1-4 for answers, Enter/Space to continue
-- 📊 **Progress Tracking**: Visual progress indicator and final score
-- 🔄 **Review Incorrect**: Review wrong answers with explanations after completion
+### 🎛️ **Test Configuration**
+- **Question Type Filtering**: Choose between all questions, single select only, or multiple select only
+- **Configurable Question Count**: Select from presets (10, 25, 50, 75, 100) or enter custom amount
+- **Smart Validation**: Real-time validation ensures valid configuration based on available questions
+- **Session Persistence**: Test settings automatically saved and restored
+
+### 🎯 **Interactive Quiz Experience**
+- **Mixed Question Types**: Support for both single select and multiple select questions
+- **Immediate Feedback**: Instant response validation with explanations
+- **Visual Question Indicators**: Clear display of question type (radio vs checkbox)
+- **Randomized Questions**: Questions shuffled for each quiz session
+- **Progress Tracking**: Visual progress indicator and final score
+
+### 🎨 **User Interface**
+- **Test Settings Display**: Current configuration shown throughout quiz
+- **Easy Navigation**: Back to settings available at any time
+- **Dark/Light Mode**: System-aware theme with manual toggle
+- **Responsive Design**: Optimized for desktop and mobile devices
+- **Keyboard Navigation**: Full keyboard support with dynamic instructions
+
+### 📚 **Learning Features**
+- **Study Materials**: Linked documentation and excerpts for deeper learning
+- **Detailed Explanations**: Comprehensive answer explanations
+- **Review Incorrect**: Review wrong answers with visual feedback after completion
+- **Question Type Training**: Focus practice on specific question formats
 
 ## Tech Stack
 
@@ -59,7 +77,7 @@ npm run lint      # Run ESLint
 scxmcl-study-util/
 ├── app/                    # Next.js App Router
 │   ├── layout.tsx         # Root layout with theme provider
-│   ├── page.tsx           # Main page (renders QuizApp)
+│   ├── page.tsx           # Main app with view state management
 │   ├── useQuestions.ts    # Questions data fetching hook
 │   └── globals.css        # Global styles
 ├── components/             # React components
@@ -67,12 +85,15 @@ scxmcl-study-util/
 │   │   ├── button.tsx     # Button component
 │   │   └── card.tsx       # Card component
 │   ├── QuizApp.tsx        # Main quiz application
+│   ├── TestConfigPage.tsx # Test configuration splash page
 │   ├── StudyPanel.tsx     # Study materials display
 │   ├── ThemeProvider.tsx  # Theme context provider
 │   └── ThemeToggle.tsx    # Theme toggle button
 ├── lib/                   # Utility libraries
+│   ├── test-settings.ts   # Test configuration constants and utilities
+│   ├── question-utils.ts  # Question filtering and preparation utilities
 │   ├── normalize.ts       # Question data normalization
-│   ├── utils.ts          # Utility functions
+│   ├── utils.ts          # General utility functions
 │   └── validation.ts     # Zod schemas
 ├── types/                 # TypeScript type definitions
 │   ├── normalized.ts      # Internal question types
@@ -85,32 +106,58 @@ scxmcl-study-util/
 
 ## Question Format
 
-Questions are stored in JSON format and validated using Zod schemas:
+Questions are stored in JSON format and validated using Zod schemas. The application supports both single select and multiple select question types:
 
+### Single Select Question
 ```json
 {
-  "questions": [
+  "question": "What architecture does Sitecore XM Cloud utilize?",
+  "question_type": "single",
+  "options": {
+    "A": "Monolithic",
+    "B": "Hybrid SaaS CMS with Headless Architecture",
+    "C": "Traditional CMS",
+    "D": "WYSIWYG"
+  },
+  "answer": "B",
+  "explanation": "XM Cloud uses a hybrid SaaS CMS architecture...",
+  "study": [
     {
-      "question": "What architecture does Sitecore XM Cloud utilize?",
-      "options": {
-        "A": "Monolithic",
-        "B": "Hybrid SaaS CMS with Headless Architecture",
-        "C": "Traditional CMS",
-        "D": "WYSIWYG"
-      },
-      "answer": "B",
-      "explanation": "XM Cloud uses a hybrid SaaS CMS architecture...",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/...",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS..."
-        }
-      ]
+      "chunkId": "xmc-arch-1",
+      "url": "https://doc.sitecore.com/...",
+      "excerpt": "XM Cloud is a hybrid SaaS CMS..."
     }
   ]
 }
 ```
+
+### Multiple Select Question
+```json
+{
+  "question": "Which of the following are benefits of using Sitecore XM Cloud? (Select all that apply)",
+  "question_type": "multiple",
+  "options": {
+    "A": "Automatic scaling and performance optimization",
+    "B": "Reduced infrastructure management overhead",
+    "C": "Built-in security updates and patches",
+    "D": "Limited customization options"
+  },
+  "answer": ["A", "B", "C"],
+  "explanation": "XM Cloud provides automatic scaling, reduces infrastructure management overhead, and includes built-in security updates. However, it actually offers extensive customization options, making option D incorrect.",
+  "study": [
+    {
+      "chunkId": "xmc-benefits-1",
+      "url": "https://doc.sitecore.com/...",
+      "excerpt": "XM Cloud delivers automatic scaling, managed infrastructure..."
+    }
+  ]
+}
+```
+
+### Question Format Notes
+- `question_type`: Optional field, defaults to "single" for backward compatibility
+- `answer`: Single letter (A-D) for single select, array of letters for multiple select
+- All other fields remain the same for both question types
 
 ## Documentation
 

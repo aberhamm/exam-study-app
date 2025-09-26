@@ -10,22 +10,27 @@ The SCXMCL Study Utility is built using a modern React-based architecture with N
 ┌─────────────────────────────────────────────────────────────┐
 │                    Browser (Client)                         │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────── │
-│  │   QuizApp       │  │  ThemeProvider  │  │  UI Components │
-│  │   Component     │  │    (Context)    │  │   (Radix UI)   │
-│  └─────────────────┘  └─────────────────┘  └─────────────── │
+│ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ │
+│ │ TestConfigPage  │ │    QuizApp      │ │  ThemeProvider  │ │
+│ │   (Settings)    │ │   Component     │ │    (Context)    │ │
+│ └─────────────────┘ └─────────────────┘ └─────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────── │
-│  │  Data Fetching  │  │  Normalization  │  │   Validation   │
-│  │  (useQuestions) │  │   (normalize)   │  │     (Zod)      │
-│  └─────────────────┘  └─────────────────┘  └─────────────── │
+│ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ │
+│ │ Test Settings   │ │ Question Utils  │ │   Validation    │ │
+│ │ (Configuration) │ │ (Filter/Limit)  │ │     (Zod)       │ │
+│ └─────────────────┘ └─────────────────┘ └─────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ │
+│ │  Data Fetching  │ │  Normalization  │ │ Session Storage │ │
+│ │  (useQuestions) │ │   (normalize)   │ │   (Settings)    │ │
+│ └─────────────────┘ └─────────────────┘ └─────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
 │                   Next.js App Router                        │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────── │
-│  │  Static Assets  │  │   Public API    │  │   Build Time   │
-│  │ (questions.json)│  │   (/questions)  │  │  Optimization  │
-│  └─────────────────┘  └─────────────────┘  └─────────────── │
+│ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ │
+│ │  Static Assets  │ │   Public API    │ │   Build Time    │ │
+│ │ (questions.json)│ │   (/questions)  │ │  Optimization   │ │
+│ └─────────────────┘ └─────────────────┘ └─────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -55,9 +60,22 @@ The SCXMCL Study Utility is built using a modern React-based architecture with N
 
 ## Data Flow
 
+### Application Flow
+```
+App Start → Test Configuration → Question Preparation → Quiz Execution
+    ↓
+TestConfigPage (splash screen)
+    ↓
+User selects question type + count
+    ↓
+prepareQuestionsForTest() - filter, shuffle, limit
+    ↓
+QuizApp with prepared questions
+```
+
 ### Question Loading Flow
 ```
-JSON File → Fetch → Zod Validation → Normalization → Component State
+JSON File → Fetch → Zod Validation → Normalization → Configuration → Component State
     ↓
 /public/questions.json
     ↓
@@ -66,6 +84,8 @@ useQuestions Hook
 ExternalQuestionsFileZ.parse()
     ↓
 normalizeQuestions()
+    ↓
+Test Settings Applied (filter + limit)
     ↓
 QuizApp useState
 ```
@@ -89,8 +109,17 @@ Conditional rendering based on new state
 The application uses React's `useState` for all quiz-related state management:
 
 - **QuizState**: Contains current question index, selected answers, scores, and feedback state
-- **Questions**: Normalized question data with randomized order
+- **Questions**: Normalized question data with randomized order based on test settings
+- **TestSettings**: Question type filter and count configuration
+- **AppView**: Current view state (config vs quiz)
 - **Loading/Error**: Async state for data fetching
+
+### Session Storage State
+Test configuration persistence:
+
+- **TestSettings**: User preferences for question type and count
+- **Session-based**: Settings persist within browser session
+- **Automatic loading**: Settings restored on app restart
 
 ### Context-Based State
 Theme management uses React Context:

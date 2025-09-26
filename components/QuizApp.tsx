@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuestions } from "@/app/useQuestions";
 import { StudyPanel } from "@/components/StudyPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import type { NormalizedQuestion } from "@/types/normalized";
+import type { TestSettings } from "@/lib/test-settings";
+import { shuffleArray } from "@/lib/question-utils";
 
 type QuizState = {
   currentQuestionIndex: number;
@@ -21,19 +22,14 @@ type QuizState = {
   }>;
 };
 
-// Fisher-Yates shuffle algorithm
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
+type Props = {
+  questions: NormalizedQuestion[];
+  testSettings: TestSettings;
+  onBackToSettings: () => void;
+};
 
-export function QuizApp() {
-  const { data: originalQuestions, error, loading } = useQuestions();
-  const [questions, setQuestions] = useState<NormalizedQuestion[] | null>(null);
+export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSettings }: Props) {
+  const [questions, setQuestions] = useState<NormalizedQuestion[]>(preparedQuestions);
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
     selectedAnswers: [],
@@ -43,12 +39,10 @@ export function QuizApp() {
     incorrectAnswers: [],
   });
 
-  // Randomize questions when original questions load
+  // Ensure questions are set when component mounts or props change
   useEffect(() => {
-    if (originalQuestions) {
-      setQuestions(shuffleArray(originalQuestions));
-    }
-  }, [originalQuestions]);
+    setQuestions(preparedQuestions);
+  }, [preparedQuestions]);
 
   const currentQuestion = questions?.[quizState.currentQuestionIndex];
   const totalQuestions = questions?.length || 0;
@@ -161,9 +155,7 @@ export function QuizApp() {
 
   const resetQuiz = () => {
     // Randomize questions again on reset
-    if (originalQuestions) {
-      setQuestions(shuffleArray(originalQuestions));
-    }
+    setQuestions(shuffleArray(preparedQuestions));
     
     const resetState = {
       currentQuestionIndex: 0,
@@ -202,43 +194,7 @@ export function QuizApp() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-4xl mx-auto px-6 space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">SCXMCL Study Utility</h1>
-            <ThemeToggle />
-          </div>
-          <div className="flex items-center justify-center py-20">
-            <div className="text-lg">Loading questions...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-4xl mx-auto px-6 space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">SCXMCL Study Utility</h1>
-            <ThemeToggle />
-          </div>
-          <div className="flex items-center justify-center py-20">
-            <Card className="p-6">
-              <div className="text-red-600 dark:text-red-400 text-center">
-                <h2 className="text-xl font-semibold mb-2">Error Loading Questions</h2>
-                <p>{error}</p>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Early return if no questions available (should not happen with proper setup)
   if (!questions || questions.length === 0) {
     return (
       <div className="min-h-screen bg-background py-8">
@@ -252,6 +208,9 @@ export function QuizApp() {
               <div className="text-center">
                 <h2 className="text-xl font-semibold mb-2">No Questions Available</h2>
                 <p>No questions found to display.</p>
+                <Button onClick={onBackToSettings} className="mt-4">
+                  Back to Settings
+                </Button>
               </div>
             </Card>
           </div>
@@ -278,9 +237,14 @@ export function QuizApp() {
               <div className="text-4xl font-bold text-primary">
                 {quizState.score}/{totalQuestions} ({percentage}%)
               </div>
-              <Button onClick={resetQuiz} size="lg">
-                Start New Quiz
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button onClick={resetQuiz} size="lg">
+                  Start New Quiz
+                </Button>
+                <Button onClick={onBackToSettings} variant="outline" size="lg">
+                  Change Settings
+                </Button>
+              </div>
             </div>
           </Card>
 
@@ -368,10 +332,49 @@ export function QuizApp() {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-4xl mx-auto px-6 space-y-6">
-        {/* Header with Theme Toggle */}
+        {/* Header with Theme Toggle and Settings */}
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold">SCXMCL Study Utility</h1>
-          <ThemeToggle />
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-semibold">SCXMCL Study Utility</h1>
+            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="bg-muted px-2 py-1 rounded">
+                {testSettings.questionType === 'all' ? 'All Types' :
+                 testSettings.questionType === 'single' ? 'Single Select' : 'Multiple Select'}
+              </span>
+              <span>•</span>
+              <span>{testSettings.questionCount} questions</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onBackToSettings}
+              className="hidden md:flex"
+            >
+              ← Settings
+            </Button>
+            <ThemeToggle />
+          </div>
+        </div>
+
+        {/* Mobile Settings Display */}
+        <div className="md:hidden flex justify-between items-center text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <span className="bg-muted px-2 py-1 rounded">
+              {testSettings.questionType === 'all' ? 'All Types' :
+               testSettings.questionType === 'single' ? 'Single Select' : 'Multiple Select'}
+            </span>
+            <span>•</span>
+            <span>{testSettings.questionCount} questions</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBackToSettings}
+          >
+            Settings
+          </Button>
         </div>
 
         {/* Progress Indicator */}
@@ -391,12 +394,21 @@ export function QuizApp() {
 
       {/* Question */}
       <Card className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-xl font-semibold" role="heading" aria-level={2}>
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-3" role="heading" aria-level={2}>
             {currentQuestion?.prompt}
           </h2>
-          <div className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
-            {currentQuestion?.questionType === 'multiple' ? 'Select all that apply' : 'Select one'}
+          <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+            currentQuestion?.questionType === 'multiple'
+              ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700'
+              : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-700'
+          }`}>
+            <span className="text-base">
+              {currentQuestion?.questionType === 'multiple' ? '☑️' : '🔘'}
+            </span>
+            <span>
+              {currentQuestion?.questionType === 'multiple' ? 'Select all that apply' : 'Select one answer'}
+            </span>
           </div>
         </div>
 
@@ -446,10 +458,25 @@ export function QuizApp() {
                 aria-describedby={quizState.showFeedback ? `answer-${index}-feedback` : undefined}
                 tabIndex={0}
               >
-                <span className="font-medium">
-                  {String.fromCharCode(65 + index)}.
-                </span>{" "}
-                {choice}
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">
+                      {String.fromCharCode(65 + index)}.
+                    </span>
+                    <span>{choice}</span>
+                  </div>
+                  {currentQuestion.questionType === 'multiple' && (
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      isSelected
+                        ? 'bg-primary border-primary'
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}>
+                      {isSelected && (
+                        <div className="w-2 h-2 rounded-full bg-primary-foreground"></div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {showCorrect && (
                   <span id={`answer-${index}-feedback`} className="ml-2 text-green-600 dark:text-green-400 font-semibold">
                     ✓ Correct
