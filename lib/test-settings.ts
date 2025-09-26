@@ -3,6 +3,10 @@ export const TEST_SETTINGS = {
   DEFAULT_QUESTION_COUNT: 50,
   MAX_QUESTION_COUNT: 100,
   MIN_QUESTION_COUNT: 5,
+  DEFAULT_TIMER_DURATION: 90, // minutes
+  TIMER_DURATION_PRESETS: [30, 60, 90, 120, 180], // minutes
+  MAX_TIMER_DURATION: 300, // 5 hours
+  MIN_TIMER_DURATION: 5, // 5 minutes
   QUESTION_TYPE_OPTIONS: [
     { value: 'all', label: 'All Question Types' },
     { value: 'single', label: 'Single Select Only' },
@@ -17,11 +21,13 @@ export type QuestionTypeFilter = 'all' | 'single' | 'multiple';
 export type TestSettings = {
   questionCount: number;
   questionType: QuestionTypeFilter;
+  timerDuration: number; // in minutes
 };
 
 export const DEFAULT_TEST_SETTINGS: TestSettings = {
   questionCount: TEST_SETTINGS.DEFAULT_QUESTION_COUNT,
-  questionType: 'all'
+  questionType: 'all',
+  timerDuration: TEST_SETTINGS.DEFAULT_TIMER_DURATION
 };
 
 // Utility functions for test settings
@@ -34,7 +40,14 @@ export function validateTestSettings(settings: Partial<TestSettings>): TestSetti
         settings.questionCount || TEST_SETTINGS.DEFAULT_QUESTION_COUNT
       )
     ),
-    questionType: settings.questionType || 'all'
+    questionType: settings.questionType || 'all',
+    timerDuration: Math.max(
+      TEST_SETTINGS.MIN_TIMER_DURATION,
+      Math.min(
+        TEST_SETTINGS.MAX_TIMER_DURATION,
+        settings.timerDuration || TEST_SETTINGS.DEFAULT_TIMER_DURATION
+      )
+    )
   };
 }
 

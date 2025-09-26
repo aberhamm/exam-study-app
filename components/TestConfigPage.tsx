@@ -26,6 +26,8 @@ export function TestConfigPage({ questions, onStartTest, loading, error }: Props
   const [settings, setSettings] = useState<TestSettings>(DEFAULT_TEST_SETTINGS);
   const [customQuestionCount, setCustomQuestionCount] = useState<string>('');
   const [useCustomCount, setUseCustomCount] = useState(false);
+  const [customTimerDuration, setCustomTimerDuration] = useState<string>('');
+  const [useCustomTimer, setUseCustomTimer] = useState(false);
 
   // Load saved settings on mount
   useEffect(() => {
@@ -37,6 +39,13 @@ export function TestConfigPage({ questions, onStartTest, loading, error }: Props
     if (!isPreset) {
       setUseCustomCount(true);
       setCustomQuestionCount(savedSettings.questionCount.toString());
+    }
+
+    // Check if saved timer is a preset or custom
+    const isTimerPreset = (TEST_SETTINGS.TIMER_DURATION_PRESETS as readonly number[]).includes(savedSettings.timerDuration);
+    if (!isTimerPreset) {
+      setUseCustomTimer(true);
+      setCustomTimerDuration(savedSettings.timerDuration.toString());
     }
   }, []);
 
@@ -95,7 +104,7 @@ export function TestConfigPage({ questions, onStartTest, loading, error }: Props
       newQuestionCount = Math.min(newQuestionCount, availableForType);
     }
 
-    setSettings({ questionType, questionCount: newQuestionCount });
+    setSettings({ ...settings, questionType, questionCount: newQuestionCount });
   };
 
   const handleQuestionCountChange = (count: number) => {
@@ -118,6 +127,28 @@ export function TestConfigPage({ questions, onStartTest, loading, error }: Props
     const numValue = parseInt(value);
     if (!isNaN(numValue) && numValue > 0) {
       handleQuestionCountChange(numValue);
+    }
+  };
+
+  const handleTimerDurationChange = (duration: number) => {
+    const validatedDuration = Math.max(
+      TEST_SETTINGS.MIN_TIMER_DURATION,
+      Math.min(TEST_SETTINGS.MAX_TIMER_DURATION, duration)
+    );
+    setSettings({ ...settings, timerDuration: validatedDuration });
+  };
+
+  const handleTimerPresetSelect = (duration: number) => {
+    setUseCustomTimer(false);
+    setCustomTimerDuration('');
+    handleTimerDurationChange(duration);
+  };
+
+  const handleCustomTimerChange = (value: string) => {
+    setCustomTimerDuration(value);
+    const numValue = parseInt(value);
+    if (!isNaN(numValue) && numValue > 0) {
+      handleTimerDurationChange(numValue);
     }
   };
 
@@ -297,6 +328,59 @@ export function TestConfigPage({ questions, onStartTest, loading, error }: Props
               </div>
             </div>
 
+            {/* Timer Duration Selection */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">
+                Timer Duration
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  (5 - 300 minutes)
+                </span>
+              </h3>
+
+              {/* Timer Preset Options */}
+              <div className="mb-4">
+                <div className="text-sm font-medium mb-2">Quick Select:</div>
+                <div className="flex flex-wrap gap-2">
+                  {TEST_SETTINGS.TIMER_DURATION_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => handleTimerPresetSelect(preset)}
+                      className={`px-4 py-2 rounded-lg border transition-all ${
+                        !useCustomTimer && settings.timerDuration === preset
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      }`}
+                    >
+                      {preset} min
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Timer Input */}
+              <div>
+                <div className="text-sm font-medium mb-2">Custom Duration:</div>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="number"
+                    min={TEST_SETTINGS.MIN_TIMER_DURATION}
+                    max={TEST_SETTINGS.MAX_TIMER_DURATION}
+                    value={useCustomTimer ? customTimerDuration : ''}
+                    onChange={(e) => {
+                      setUseCustomTimer(true);
+                      handleCustomTimerChange(e.target.value);
+                    }}
+                    onFocus={() => setUseCustomTimer(true)}
+                    placeholder={`${TEST_SETTINGS.MIN_TIMER_DURATION} - ${TEST_SETTINGS.MAX_TIMER_DURATION}`}
+                    className="w-32 px-3 py-2 border rounded-lg bg-background"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Current: {settings.timerDuration} minutes ({Math.floor(settings.timerDuration / 60)}h {settings.timerDuration % 60}m)
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* Configuration Summary */}
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-medium mb-2">Test Summary</h4>
@@ -305,6 +389,7 @@ export function TestConfigPage({ questions, onStartTest, loading, error }: Props
                   {TEST_SETTINGS.QUESTION_TYPE_OPTIONS.find(opt => opt.value === settings.questionType)?.label}
                 </span></div>
                 <div>Question Count: <span className="font-medium">{settings.questionCount}</span></div>
+                <div>Timer Duration: <span className="font-medium">{settings.timerDuration} minutes</span></div>
                 <div>Available Questions: <span className="font-medium">{availableQuestions}</span></div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StudyPanel } from "@/components/StudyPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Timer } from "@/components/Timer";
 import type { NormalizedQuestion } from "@/types/normalized";
 import type { TestSettings } from "@/lib/test-settings";
 import { shuffleArray } from "@/lib/question-utils";
@@ -20,6 +21,8 @@ type QuizState = {
     selectedIndex: number | number[];
     correctIndex: number | number[];
   }>;
+  timerRunning: boolean;
+  timeElapsed: number; // in seconds
 };
 
 type Props = {
@@ -37,6 +40,8 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
     showFeedback: false,
     score: 0,
     incorrectAnswers: [],
+    timerRunning: true,
+    timeElapsed: 0,
   });
 
   // Ensure questions are set when component mounts or props change
@@ -150,7 +155,7 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
   const resetQuiz = () => {
     // Randomize questions again on reset
     setQuestions(shuffleArray(preparedQuestions));
-    
+
     const resetState = {
       currentQuestionIndex: 0,
       selectedAnswers: [],
@@ -158,10 +163,22 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
       showFeedback: false,
       score: 0,
       incorrectAnswers: [],
+      timerRunning: true,
+      timeElapsed: 0,
     };
-    
+
     setQuizState(resetState);
   };
+
+  const handleTimeUp = useCallback(() => {
+    finishQuiz();
+  }, [finishQuiz]);
+
+  const handleTimeUpdate = useCallback((remainingSeconds: number) => {
+    const totalTime = testSettings.timerDuration * 60;
+    const elapsed = totalTime - remainingSeconds;
+    setQuizState(prev => ({ ...prev, timeElapsed: elapsed }));
+  }, [testSettings.timerDuration]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!currentQuestion || quizState.showResult) return;
@@ -187,6 +204,21 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Handle page visibility changes to pause/resume timer
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!quizState.showResult) {
+        setQuizState(prev => ({
+          ...prev,
+          timerRunning: !document.hidden
+        }));
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [quizState.showResult]);
 
   // Early return if no questions available (should not happen with proper setup)
   if (!questions || questions.length === 0) {
@@ -215,7 +247,10 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
 
   if (quizState.showResult) {
     const percentage = Math.round((quizState.score / totalQuestions) * 100);
-    
+    const timeElapsedMinutes = Math.floor(quizState.timeElapsed / 60);
+    const timeElapsedSeconds = quizState.timeElapsed % 60;
+    const formattedElapsedTime = `${timeElapsedMinutes}:${timeElapsedSeconds.toString().padStart(2, '0')}`;
+
     return (
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-6 space-y-6">
@@ -230,6 +265,9 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
               <h2 className="text-2xl font-bold">Quiz Complete!</h2>
               <div className="text-4xl font-bold text-primary">
                 {quizState.score}/{totalQuestions} ({percentage}%)
+              </div>
+              <div className="text-lg text-muted-foreground">
+                Time taken: {formattedElapsedTime}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button onClick={resetQuiz} size="lg">
@@ -357,18 +395,31 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
           </Button>
         </div>
 
-        {/* Progress Indicator */}
-        <div className="text-center">
-          <div className="text-lg font-medium">
-            Question {quizState.currentQuestionIndex + 1} of {totalQuestions}
-          </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{
-                width: `${((quizState.currentQuestionIndex + 1) / totalQuestions) * 100}%`,
-              }}
+        {/* Timer and Progress Indicator */}
+        <div className="flex items-center justify-between gap-6">
+          {/* Timer (1/4 width) */}
+          <div className="flex-shrink-0 w-1/4">
+            <Timer
+              initialMinutes={testSettings.timerDuration}
+              isRunning={quizState.timerRunning && !quizState.showResult}
+              onTimeUp={handleTimeUp}
+              onTimeUpdate={handleTimeUpdate}
             />
+          </div>
+
+          {/* Progress Indicator (3/4 width) */}
+          <div className="flex-grow text-center">
+            <div className="text-lg font-medium">
+              Question {quizState.currentQuestionIndex + 1} of {totalQuestions}
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+              <div
+                className="bg-primary h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${((quizState.currentQuestionIndex + 1) / totalQuestions) * 100}%`,
+                }}
+              />
+            </div>
           </div>
         </div>
 
