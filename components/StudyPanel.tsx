@@ -15,7 +15,7 @@ export function StudyPanel({ study }: Props) {
       <ul className="space-y-3">
         {study.map((s) => (
           <li key={s.chunkId}>
-            {s.excerpt && <p className="text-sm opacity-90">{s.excerpt}</p>}
+            {s.excerpt && <p className="text-sm opacity-90 text-muted-foreground">{s.excerpt}</p>}
             {s.url && (
               <Button asChild variant="link" className="px-0">
                 <a href={s.url} target="_blank" rel="noreferrer">
