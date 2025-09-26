@@ -7,15 +7,21 @@ type TimerProps = {
   isRunning: boolean;
   onTimeUp: () => void;
   onTimeUpdate?: (remainingSeconds: number) => void;
+  timeElapsed?: number; // in seconds - time already elapsed
 };
 
-export function Timer({ initialMinutes, isRunning, onTimeUp, onTimeUpdate }: TimerProps) {
-  const [remainingSeconds, setRemainingSeconds] = useState(initialMinutes * 60);
+export function Timer({ initialMinutes, isRunning, onTimeUp, onTimeUpdate, timeElapsed = 0 }: TimerProps) {
+  const [remainingSeconds, setRemainingSeconds] = useState(() => {
+    const totalSeconds = initialMinutes * 60;
+    return Math.max(0, totalSeconds - timeElapsed);
+  });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    setRemainingSeconds(initialMinutes * 60);
-  }, [initialMinutes]);
+    const totalSeconds = initialMinutes * 60;
+    const remaining = Math.max(0, totalSeconds - timeElapsed);
+    setRemainingSeconds(remaining);
+  }, [initialMinutes, timeElapsed]);
 
   useEffect(() => {
     if (onTimeUpdate) {

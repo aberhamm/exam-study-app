@@ -508,6 +508,7 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
               isRunning={quizState.timerRunning && !quizState.showResult}
               onTimeUp={handleTimeUp}
               onTimeUpdate={handleTimeUpdate}
+              timeElapsed={quizState.timeElapsed}
             />
           </div>
 
