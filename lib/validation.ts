@@ -17,8 +17,8 @@ export const ExternalQuestionZ = z.object({
     D: z.string().min(1),
   }),
   answer: z.union([
-    z.enum(['A', 'B', 'C', 'D']),
-    z.array(z.enum(['A', 'B', 'C', 'D'])).min(1)
+    z.enum(['A', 'B', 'C', 'D', 'E']),
+    z.array(z.enum(['A', 'B', 'C', 'D', 'E'])).min(1),
   ]),
   question_type: z.enum(['single', 'multiple']).optional().default('single'),
   explanation: z.string().optional(),

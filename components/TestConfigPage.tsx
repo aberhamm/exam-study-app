@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useHeader } from "@/contexts/HeaderContext";
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownContent } from '@/components/ui/markdown';
 import {
   TEST_SETTINGS,
   TestSettings,
@@ -309,22 +308,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
           )}
           {examMetadata?.welcomeConfig?.description ? (
             <div className="text-lg text-muted-foreground mb-6 text-left space-y-4">
-              <Markdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  ul: ({ children }) => <ul className="list-disc pl-6 space-y-2 my-4">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal pl-6 space-y-2 my-4">{children}</ol>,
-                  li: ({ children }) => <li className="ml-0">{children}</li>,
-                  h3: ({ children }) => <h3 className="text-xl font-semibold mt-6 mb-3">{children}</h3>,
-                  h2: ({ children }) => <h2 className="text-2xl font-semibold mt-6 mb-3">{children}</h2>,
-                  p: ({ children }) => <p className="mb-4 leading-relaxed">{children}</p>,
-                  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
-                  a: ({ children, href }) => <a href={href} className="text-primary hover:underline font-medium" target="_blank" rel="noopener noreferrer">{children}</a>,
-                  hr: () => <hr className="my-6 border-border" />
-                }}
-              >
+              <MarkdownContent variant="welcome">
                 {examMetadata.welcomeConfig.description}
-              </Markdown>
+              </MarkdownContent>
             </div>
           ) : (
             <p className="text-lg text-muted-foreground mb-6">
