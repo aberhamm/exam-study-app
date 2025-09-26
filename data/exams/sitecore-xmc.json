@@ -3015,6 +3015,748 @@
       "answer": "B",
       "explanation": "",
       "study": []
+    },
+    {
+      "question": "A developer tried to exclude fields in a Sitecore Content Serialization package. Which file should they use to specify the excluded fields?",
+      "options": {
+        "A": "user.json",
+        "B": "sitecore.config",
+        "C": "sitecore.json",
+        "D": "xmcloud.build.json"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "The excluded fields feature is available from CLI 4.0 or later. This way, you can reduce the size of your Sitecore Content Serialization package and avoid unnecessary serialization of fields that are not relevant for your deployment scenario.\n\n_References:_\n\n- Sitecore Content Serialization structural overview\n- Configure excluded fields"
+    },
+    {
+      "question": "What Sitecore Content Serialization command can a developer use to ensure that they don't forget to pull changes made within a developer-managed location?",
+      "options": {
+        "A": "The watch command",
+        "B": "The sync command",
+        "C": "The connect command",
+        "D": "The package create command"
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "The Sitecore serialization plugin provides the serialization command with the short form ser. This command handles the serialization of items in and out of a Sitecore instance. You can use the watch subcommand to monitor changes to content items in a Sitecore instance and automatically serialize the changes to your file system. This way, you can ensure that you don't forget to pull changes made within a developer-managed location.\n\n_References:_\n\n- The CLI serialization command\n- Sitecore Content Serialization structural overview"
+    },
+    {
+      "question": "When deploying to XM Cloud, how are Sitecore Content Serialization (SCS) serialized items created in the Content Management (CM) instance?",
+      "options": {
+        "A": "The XM Cloud deploy process uses the SCS CLI to do a push once the CM instance is active.",
+        "B": "The XM Cloud deploy process creates an Items as Resources (IAR) file and layers this into the CM instance.",
+        "C": "A build pipeline must be created to use the SCS CLI push commands to push content after the XM Cloud Deploy app finishes.",
+        "D": "The XM Cloud deploy process uses serialized item batches through REST APIs at the XM Cloud CM to speed up serialization."
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "The Sitecore Content Serialization (SCS) system serializes content items in and out of a Sitecore instance using YAML files. When deploying to XM Cloud, the XM Cloud deploy process uses serialized item batches through REST APIs at the XM Cloud CM to speed up serialization. This way, you can serialize large amounts of content items without affecting the performance of the Content Management (CM) instance.\n\n_References:_\n\n- Sitecore Content Serialization structural overview\n- Sitecore Content Serialization in XM Cloud"
+    },
+    {
+      "question": "What does the default scope for a serialization include if the scope parameter is not defined?",
+      "options": {
+        "A": "DescendantsOnly",
+        "B": "Singleitem",
+        "C": "ItemAndDescendants",
+        "D": "ItemAndChildren"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "The default scope for a serialization in Sitecore Content Serialization (SCS) includes all the content items under the specified path and all their descendants. You can configure what and how content items are included and excluded from serialization in a module file such as Project.module.json. You can also use rules to configure the serialization of content item trees with different scopes.\n\n_References:_\n\n- Sitecore Content Serialization structural overview\n- The default serialization format"
+    },
+    {
+      "question": "What is the sitecore.json file in a development solution?",
+      "options": {
+        "A": "The environment variables file for the Sitecore Docker deployment",
+        "B": "The configuration file for the Sitecore development tooling",
+        "C": "The solution integration file needed for deploying code changes to the environment",
+        "D": "A custom configuration file defining a solution for headless environments"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "The sitecore.json file is located in the root folder of the solution and it comes with the XM Cloud Foundation Head starter kit. In here we can configure what *.module.json files should be considered for serialization configuration, the plugins with its particular versions and some general settings for the serialization.\n\n_References:_\n\n- Setup Sitecore Content Serialization\n- Sitecore Content Serialization structural overview"
+    },
+    {
+      "question": "A developer has set up a local XM Cloud development environment and would like to connect Sitecore Pages to their locally running XM Cloud instance. However, after following the necessary steps, they're facing issues with the connection. Of the options below, what is the most likely potential reason for this issue?",
+      "options": {
+        "A": "The value of the local storage entry 'Sitecore.Pages.LocalXmCloudUrl' should be set to https://pages.sitecorecloud.io.",
+        "B": "The browser developer tools console does not support the local storage functionality required for this connection.",
+        "C": "The value of the local storage entry 'Sitecore.PagesXmCloud' should be set to enabled.",
+        "D": "The environment variable 'SITECORE_Pages_CORS_Allowed_Origins' is not correctly configured to include pages.sitecorecloud.io."
+      },
+      "answer": "D",
+      "question_type": "single"
+    },
+    {
+      "question": "If a developer wants to limit the serialization of items under a Navigation item to just the item itself and then one step below, what property should the developer add to the includes to indicate this limitation?",
+      "options": {
+        "A": "Scope",
+        "B": "Nothing—this is the default.",
+        "C": "Limit",
+        "D": "Name"
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, the scope property is used to control the depth of the serialization tree. The scope property can have one of the following values:\n\n- **Self** — only the item itself is serialized, not its descendants.\n- **Children** — the item and its immediate children are serialized, not the grandchildren or further descendants.\n- **Subtree** — the item and all its descendants are serialized, regardless of the depth.\n\nTo limit the serialization of items under a Navigation item to just the item itself and then one step below, the developer should add the scope property with the value Children to the includes section of the serialization configuration file. For example:\n\n```yaml\nincludes:\n- name: Navigation\n  path: /sitecore/content/MySite/Navigation\n  scope: Children\n```\n\n_References:_\n\n- The YAML serialization format | Sitecore Documentation\n- The XM Cloud build configuration | Sitecore Documentation\n- XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "A developer is using the Content Editor to set placeholder restrictions on a placeholder called headless-footer. Because these restrictions have been set on the placeholder settings within /sitecore/Layout/Placeholder Settings, which of the following statements is correct?",
+      "options": {
+        "A": "The restrictions apply for all placeholders called headless-footer within a single site in the XM Cloud Content Management instance.",
+        "B": "The restrictions apply for all placeholders called headless-footer on every page of every site that is in the XM Cloud Content Management instance.",
+        "C": "The restrictions only apply for a placeholder called headless-footer on a designated page.",
+        "D": "The restrictions only apply for subsequently created versions of a placeholder called headless-footer."
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, in the Content Editor, you can set placeholder restrictions for your layout placeholders. These restrictions are applied on all pages in the site. For example, if you add restrictions for a footer, these apply for all footers on every page of the site. In this way, you can control the content that content authors can place in layout placeholders. To add a placeholder setting for a site, you need to create a placeholder item in the Layout/Placeholder Settings folder and enter the placeholder key and the allowed components.\n\nThe other options are not correct:\n\n- **A)** The restrictions apply for all placeholders called headless-footer within a single site in the XM Cloud Content Management instance. This option is too narrow, as the placeholder restrictions apply to all sites that use the same placeholder key, not just one site.\n- **C)** The restrictions only apply for a placeholder called headless-footer on a designated page. This option is too specific, as the placeholder restrictions apply to all pages that use the same placeholder key, not just one page. However, you can create placeholder restrictions on specific pages in the Experience Editor, if you want to override the default settings.\n- **D)** The restrictions only apply for subsequently created versions of a placeholder called headless-footer. This option is incorrect, as the placeholder restrictions apply to all versions of the placeholder, not just the new ones.\n\n_References:_\n\n- Set placeholder restrictions | Sitecore Documentation\n- XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "Users in XM Cloud Pages want to modify and add specific components at a given point on the page. What would a developer do to allow the users to accomplish this task?",
+      "options": {
+        "A": "Enable the correct placeholder settings of the components to be modified to include the page template used for the content item users are editing.",
+        "B": "Include a placeholder as part of the layout markup and create a corresponding placeholder settings item with the appropriate allowed components.",
+        "C": "Set the standard values for the page template to include component modification options and make sure the template used by the page inherits appropriately.",
+        "D": "Enable the insert options of the components to be included for the page template and set the appropriate allowed components."
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, a placeholder is a named location on a page where components can be inserted. A placeholder can have one or more components assigned to it, and the content author can add, remove, or reorder the components in the XM Cloud Pages editor. To create a placeholder for a page, you need to follow these steps:\n\n1. In the Content Editor, create or select a rendering item that defines the metadata and parameters for your component.\n2. In the rendering item, in the Data section, in the Layout field, enter the HTML markup for your component. Include a placeholder tag with a unique name, such as `<sc-placeholder key='my-placeholder' />`.\n3. In the Content Editor, create or select a placeholder settings item that defines the allowed components for your placeholder. You can also clone an existing placeholder settings item and modify it as needed.\n4. In the placeholder settings item, in the Data section, in the Key field, enter the same name as the placeholder tag, such as my-placeholder.\n5. In the placeholder settings item, in the Data section, in the Allowed Controls field, select the components that you want to allow in the placeholder. You can also use the Edit button to open the Allowed Controls dialog box and select the components from a tree view.\n6. Register the component and the placeholder settings in the Components builder and add them to the Components library.\n7. In the XM Cloud Pages editor, drag and drop the component to the page and use the placeholder to insert other components as needed.\n\n_References:_\n\n- Create a placeholder for a component | Sitecore Documentation\n- XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "A developer needs to create a site for a company and must define the data structures in Sitecore to create items and content. What should the developer use to define the data structures?",
+      "options": {
+        "A": "Templates",
+        "B": "Rendering parameters",
+        "C": "Renderings",
+        "D": "Components data sources"
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, templates are the fundamental concept in Sitecore that determine the structure and behavior of content items. Templates define the fields, sections, and parameters that make up each item. Templates also enable inheritance, which allows items to share common fields and properties from their base templates. There are different types of templates in Sitecore, such as data templates, branch templates, and command templates.\n\nTo create the data structures for a site, the developer should use data templates, which define the fields used to control how data is entered. Data templates form the framework around which items are built. Sitecore associates a data template with every item in the content tree. The field types determine the editing controls shown to the user and they contain the raw values that are stored in the database.\n\nThe other options are not correct:\n\n- **Rendering parameters** are custom properties for a component that can be changed by the content author in the XM Cloud Pages editor. Rendering parameters allow the content author to customize the appearance and behavior of the component, but they do not define the data structure of the content item.\n- **Renderings** are items that define the metadata and parameters for a component. Renderings link a component to a data template, a headless variant, and a rendering parameter template. Renderings are used to create and manage components in the Components builder, but they do not define the data structure of the content item.\n- **Component data sources** are content items that provide the content for a component. Component data sources can have fields, such as text, image, or link, that can be edited by the content author in the XM Cloud Pages editor. Component data sources are based on data templates, but they are not templates themselves.\n\n_References:_\n\n- Data definition and template overview | Sitecore Documentation\n- Create a component with rendering parameters | Sitecore Documentation\n- Create a component that uses a data source item | Sitecore Documentation\n- XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "A developer wants to create a new component to display content from a datasource. Of the options listed below, what are the optimal steps to do this?",
+      "options": {
+        "A": "Create or reuse a SXA Module, insert a new rendering, and use the JSS CLI to scaffold out a new component.",
+        "B": "Create the new component in the Next.js application and import it to XM Cloud.",
+        "C": "Create or reuse a SXA Module, clone an existing component that uses a data source item, and create the React component based on the original cloned component.",
+        "D": "Create or reuse a SXA Module, clone an existing component that uses a context item, and create the React component based on the original cloned component."
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, a data source item is a content item that provides the content for a component. A data source item can have fields, such as text, image, or link, that can be edited by the content author in the XM Cloud Pages editor. To create a new component that displays content from a data source item, you need to follow these steps:\n\n1. Create or reuse a SXA Module, which is a folder that contains the renderings, data templates, and media items for your components.\n2. Insert a new rendering item in the SXA Module, which defines the metadata and parameters for your component. You can also clone an existing rendering item that uses a data source item and modify it as needed.\n3. Use the JSS CLI to scaffold out a new React component in your Next.js application, which defines the layout, style, and logic for your component. You can also copy and paste an existing React component that uses a data source item and modify it as needed.\n4. Register the React component in the Components builder and add it to the Components library.\n5. In the XM Cloud Pages editor, drag and drop the component to the page and select or create a data source item for the component. You can also edit the data source item's fields in the Properties panel.\n\n_References:_\n\n- Create a component that uses a data source item | Sitecore Documentation\n- XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "What information can be found in the deployment logs?",
+      "options": {
+        "A": "Content Management and Content Delivery deployment logs",
+        "B": "Content Management instance and Rendering Hosting logs",
+        "C": "Provisioning, Deployment, and Publishing information",
+        "D": "Provisioning, Build, Deployment, and Post Action information"
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, the deployment log displays the progress, status, warnings, and errors of an XM Cloud deployment. From the deployment log, you can also cancel a running deployment, rerun a failed deployment, promote the deployment to another environment, download logs, or open the XM Cloud Dashboard. The logs include information about: Provisioning -- the process of creating and configuring the resources required for the environment, such as the Content Management and Content Delivery instances, the database, the storage, and the network. Build -- the process of compiling the source code, running tests, and generating the deployment package. Deployment -- the process of deploying the package to the environment and applying any configuration changes. Post Action -- the process of performing any additional tasks after the deployment, such as publishing, indexing, or clearing caches. 1: XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "A developer needs to log in to the XM Cloud Deploy app to create a project using a starter template but requires the correct permissions. Which of the following should happen?",
+      "options": {
+        "A": "An Organization Admin or Organization Owner must update their role.",
+        "B": "An Organization Admin or Organization Owner must update their role using the XM Cloud Deploy app.",
+        "C": "Only the Organization Owner can update their role in the Sitecore Cloud Portal.",
+        "D": "Only the Organization Owner can update their role using the XM Cloud Deploy app."
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, to use the XM Cloud Deploy app, you must be an Organization Admin or Organization Owner in your Sitecore Cloud Portal organization. An Organization Admin or Organization Owner can grant a team member access to the XM Cloud Deploy app by changing their organization role to Admin2. This can be done in the Sitecore Cloud Portal, not in the XM Cloud Deploy app. 2: Invite team members to your Sitecore Cloud Portal organization 1: XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "A developer is working on managing environments within the XM Cloud Deploy app. They have created a new environment for the project and linked it to a specific repository branch. However, they realize that they need to change the linked repository branch due to new developments in the project. Which steps should they follow to achieve this?",
+      "options": {
+        "A": "Delete the current environment and create a new one with the desired repository branch.",
+        "B": "Unlink the current repository branch and then relink the desired branch to the environment through the project's 'Options' menu.",
+        "C": "Link the desired branch to the environment directly from the repository settings. The XM Cloud Deploy app will automatically update the linked branch.",
+        "D": "Go to the project page, click the environment, choose 'Options,' and then 'Edit environment details.' In the dialog, select the desired branch from the ''Link to branch' drop-down menu and save the changes."
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, you can link an environment to a specific branch of your repository in the XM Cloud Deploy app. This allows you to deploy different versions of your code to different environments. To change the linked branch for an existing environment, you need to follow these steps2: On the navigation pane of the XM Cloud Deploy app, click Projects. On the Projects page, click the project that contains the environment where you want to change the linked branch. On the project page, click the environment where you want to change the linked branch. On the environment page, click Options, then click Edit environment details. In the Edit environment details dialog, select the desired branch from the Link to branch drop-down menu. Click Save to confirm your changes. 2: Manage an environment in the XM Cloud Deploy app | Sitecore Documentation 1: XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "A developer is updating the security access rights for a new role in the Security Editor. Which of the following permissions are they able to manage? Select all that apply.",
+      "options": {
+        "A": "Write",
+        "B": "Debug",
+        "C": "Access",
+        "D": "Read",
+        "E": "Inheritance"
+      },
+      "answer": ["A", "D", "E"],
+      "question_type": "multiple",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, the Security Editor is a tool that allows you to assign access rights to your security accounts, such as users and roles. You can grant or deny the following access rights to individual items in the content tree2: Write -- grants or denies the right to edit the item and its fields. Read -- grants or denies the right to view the item and its fields. Inheritance -- grants or denies the right to inherit the access rights from the parent item. The other access rights, such as Debug, Access, Rename, Create, Delete, and Administer, are not available in the Security Editor, but can be assigned using other tools, such as the Access Viewer or the User Manager13. 1: XM Cloud Documentation for Developers - Sitecore 3: The security tools | Sitecore Documentation 2: The access rights | Sitecore Documentation"
+    },
+    {
+      "question": "A developer wants to invite a team member to their organization in the Sitecore Cloud Portal and give them access to only three specific apps. What role should they assign to this new team member?",
+      "options": {
+        "A": "Organization User",
+        "B": "Organization Member",
+        "C": "Organization Owner",
+        "D": "Organization Admin"
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, an Organization User is a team member who only has access to the apps that an Organization Admin or an Organization Owner assigns to them. They can be assigned up to 25 apps. This role allows you to control the access of your team members to specific apps and limit their permissions within those apps. To invite a team member as an Organization User, you need to follow these steps2: Log in to the Sitecore Cloud Portal using your administrator account. On the homepage, on the menu bar, click Admin, then on the Team members page, click Invite. In the Invite team members dialog box, enter the email address of the team member that you want to invite and select User as the Organization access level. To give the team member access to an app, click Add app and select the app and the access level you want them to have in that app. You can repeat this step for up to 25 apps. Click Send to send the invitation email to the team member. 2: Invite team members to your Sitecore Cloud Portal organization 1: XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "Which of the following must be done to delete or remove a user from an administrator role?",
+      "options": {
+        "A": "Delete the user or remove their administrator role from the Sitecore Cloud Portal.",
+        "B": "Create a new user account and assign a new role from the XM Cloud Deploy app.",
+        "C": "Delete the user or remove their administrator role from the XM Cloud Deploy app.",
+        "D": "Create a new user account and assign a new role from the Sitecore Cloud Portal."
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, the Sitecore Cloud Portal is where you can manage access to your DXP products, create users and manage their access to all your Sitecore DXP products. To delete or remove a user from an administrator role, you need to follow these steps2: Sign in to the Sitecore Cloud Portal using your administrator account. In the left navigation pane, click Users. In the Users list, find the user you want to delete or remove from the administrator role and click the Edit icon. In the Edit user dialog box, you can either delete the user by clicking the Delete user button or remove the administrator role by deselecting the Administrator checkbox. Click Save to confirm your changes. 1: XM Cloud Documentation for Developers - Sitecore 2: Manage users in the Sitecore Cloud Portal - Sitecore"
+    },
+    {
+      "question": "Why should a developer assign security to roles instead of users when setting up security on a site?",
+      "options": {
+        "A": "Security roles can assign individual rights and permissions to be configured by users.",
+        "B": "Role-based security allows multiple users to have the same username.",
+        "C": "Security can be managed more efficiently as the rights and permissions apply to a group of users.",
+        "D": "Individual users with a role can set and configure their own item security permissions."
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, security roles define how different users access different types of records in Sitecore. To control access to data and resources, you can create or modify security roles and change the security roles that are assigned to your users. A user can have multiple security roles. Security role privileges are cumulative. Users are granted the privileges that are available in each role that's assigned to them2. This makes it easier for you to manage your security system because you do not necessarily have to assign access rights for each item in your content tree. Instead, you only need to assign and manage the access rights on the parent items and then specify whether their descendants can inherit these access rights3."
+    },
+    {
+      "question": "A content author is unable to edit a company webpage in Sitecore. Where is the best place to check if the user has Write access to this content item?",
+      "options": {
+        "A": "Security Editor",
+        "B": "Role Manager",
+        "C": "Access Viewer",
+        "D": "Administrator Tools"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, a content author needs to have the Language Read and Language Write rights on the content item in the current language2. You can use the Access Viewer to check and assign the appropriate access rights for your user or role1. You can also use the Security Editor to set the read/write rights on the language level2."
+    },
+    {
+      "question": "When a developer selects the base templates for a new data template, what happens if those base templates contain a field with the same name?",
+      "options": {
+        "A": "The field will not be displayed on the data item.",
+        "B": "Duplicate field names will appear on the data item.",
+        "C": "XM Cloud will add a suffix to the field names to identify them.",
+        "D": "The fields will be merged on the data item."
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, a template inherits sections and fields from its base templates. When there are several base templates associated with a data template, fields and sections from inherited templates are merged. To configure the base templates for a data template, you can use the Base Templates dialog box in the Template Manager or the Content Editor1."
+    },
+    {
+      "question": "Where can a developer create and edit data templates?",
+      "options": {
+        "A": "Pages or Explorer",
+        "B": "Explorer or Portal",
+        "C": "Content Editor or Pages",
+        "D": "Content Editor"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers, you create and edit data templates in the Template Manager or the Template Builder in the Content Editor, which provide the same functionality with the only difference being the root item of the content tree that is shown in the user interface. In the Template Manager, the root item of the content tree is /Sitecore/Templates. You can also create additional data templates to be used in XM Cloud Pages2, which are web pages that can be customized with layouts and content."
+    },
+    {
+      "question": "A developer needs to clear the Experience Edge cache to resolve a publishing issue. How can that be done?",
+      "options": {
+        "A": "Use the Experience Edge Admin API to delete the content.",
+        "B": "Go to https://sitecore/admin/cache.aspx and clear the cache.",
+        "C": "Submit a support ticket to restart the Experience Edge tenant.",
+        "D": "Use the Experience Edge Admin API to clear the cache for the tenant."
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "To clear the Experience Edge cache and resolve publishing issues, a developer can use the Experience Edge Admin API. This API provides a specific endpoint to clear the entire cache for a tenant, which is the recommended method for directly addressing cache-related problems without deleting content or restarting services."
+    },
+    {
+      "question": "When a developer designates a Sitecore template field multilist type, what should they do next?",
+      "options": {
+        "A": "Add standard values to the item.",
+        "B": "Add the list items to the multilist item.",
+        "C": "Set the multilist list item's data source.",
+        "D": "Add a multilist field to the template."
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "After designating a Sitecore template field as a multilist type, the next step is to set the data source for the multilist. This involves specifying the location within the content tree from which the list items will be drawn. The data source defines the scope of items that can be selected and displayed in the multilist."
+    },
+    {
+      "question": "A developer wants to add a new language to a headless SXA site. Which steps are required to add a new language in XM Cloud?",
+      "options": {
+        "A": "Install a language pack on the Content Management instance and then add the language in /sitecore/system/languages.",
+        "B": "Add language in /sitecore/system/languages. Then, on the content item, change the language dropdown to the new language and add a new version.",
+        "C": "Add language in /sitecore/system/languages, right click the site root, and go to scripts -> Add Site language.",
+        "D": "They must enter the country code in the Language field. Then, on the content item, change the language dropdown to the new language and add a new version."
+      },
+      "answer": "C",
+      "question_type": "single"
+    },
+    {
+      "question": "A developer creates a new data template for a page. How do they ensure that the new template is available through Experience Edge?",
+      "options": {
+        "A": "Create the template in the configured locations for Experience Edge (Feature, Foundation, Project, User Defined).",
+        "B": "Add the parent path of the template to the Experience Edge config using a patch file.",
+        "C": "Use the Experience Edge Admin API to add the template to the schema.",
+        "D": "Create the template anywhere in the /sitecore/templates folder."
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "To ensure that a new data template is available through Experience Edge, it must be created in the configured locations that are recognized by the Experience Edge schema. These locations are typically structured under Feature, Foundation, Project, and User Defined paths within the Sitecore templates directory."
+    },
+    {
+      "question": "A developer creates templates and adds standard values; items created from the templates should automatically have the Title field populated with the name of the item. What should they do to ensure this occurs?",
+      "options": {
+        "A": "Set $name token in the new item's content Title field.",
+        "B": "Add sname token to the template's standard values Title field.",
+        "C": "Set_name token in the new item's content Title field.",
+        "D": "Add_name token to the template's standard values Title field."
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "In Sitecore XM Cloud, to automatically populate the Title field of items created from a template with the name of the item, the developer should set the $name token in the Title field of the template's standard values. This token is replaced with the actual item name when the item is created, ensuring that the Title field is automatically filled with the correct name."
+    },
+    {
+      "question": "A developer needs to configure a rendering in order to use dynamic placeholders. Which of the following steps is required? Select all that apply.",
+      "options": {
+        "A": "Include the IDynamicPlaceholder base template in the Rendering Parameters template.",
+        "B": "Link the placeholder settings item to the rendering item.",
+        "C": "Define the placeholder key using a question mark (?) in the placeholder settings item.",
+        "D": "In the component TSX file, set a unique placeholder key value that has not yet been defined."
+      },
+      "answer": ["A", "B", "C"],
+      "question_type": "multiple",
+      "explanation": "To configure a rendering for the use of dynamic placeholders in Sitecore XM Cloud, the following steps are required:\nInclude the IDynamicPlaceholder base template in the Rendering Parameters template to enable dynamic assignment of IDs to the placeholder key.\nLink the placeholder settings item to the rendering item to ensure that the dynamic placeholders are correctly associated with the rendering.\nDefine the placeholder key using a wildcard in the placeholder settings item, which allows for the generation of unique placeholder keys for every component on the page."
+    },
+    {
+      "question": "A developer changed the CSS grid system after a site was created. Which of the following can happen due to references to the previous grid system?",
+      "options": {
+        "A": "The changes break the layout of the site.",
+        "B": "The Grid Setup item and its dependencies were automatically updated.",
+        "C": "A new custom theme with a grid definition item was created.",
+        "D": "The new grid was automatically added as one of the grid options."
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "Changing the CSS grid system after a site has been created can lead to broken layouts due to references to the previous grid system. This is because grid systems have specific rules, classes, and options that are not automatically updated or compatible with the new system, requiring manual changes to ensure the layout functions correctly."
+    },
+    {
+      "question": "How can a developer differentiate between XM Cloud Components and Headless SXA Components?",
+      "options": {
+        "A": "XM Cloud Components offer drag-and-drop construction of pages. Headless SXA Components require manual coding and can only be added to a page by a developer.",
+        "B": "XM Cloud Components are a low/no code builder for creating components that can consume data from multiple data sources. Headless SXA components require code that consumes data from the same data sources.",
+        "C": "In XM Cloud Components, the Styles library ensures visual consistency across components. Headless SXA Components emphasize dynamic content mapping.",
+        "D": "XM Cloud Components provide responsive designs for different device types. Headless SXA Components are exclusively focused on static layouts."
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "XM Cloud Components provide a low-code or no-code solution for building components, allowing for the consumption of data from various sources without extensive coding. On the other hand, Headless SXA Components are designed for developers to code and consume data, typically from the same data sources, offering a more hands-on approach to component creation."
+    },
+    {
+      "question": "Which of the following tasks are performed by the publishing pipeline to ensure an accurate snapshot of the content available for publishing from the Content Management instance? Select all that apply.",
+      "options": {
+        "A": "Re-calling additional content to publish",
+        "B": "Calculating dependencies",
+        "C": "Excluding expired content",
+        "D": "Resolving dependencies"
+      },
+      "answer": ["A", "B", "D"],
+      "question_type": "multiple",
+      "explanation": "The publishing pipeline in Sitecore XM Cloud performs several tasks to ensure an accurate snapshot of all content is available for publishing from the Content Management instance. These tasks include recalling additional content to publish, calculating dependencies, and resolving dependencies. These steps are crucial for maintaining the integrity and consistency of the publication content."
+    },
+    {
+      "question": "A developer creates templates and adds standard values items. Items created from the template should automatically have the `Title` field populated with the name of the item. What should the dev do to ensure this occurs?",
+      "options": {
+        "A": "Set a source field on the template’s `Title` field.",
+        "B": "Add a token into the template’s standard values `Title` field.",
+        "C": "Set the template’s `Title` field to inherit from the item’s name.",
+        "D": "Add a token to the template’s available values `Title` field."
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "The `$name` token in the template’s standard values automatically populates the `Title` field with the item’s name when the item is created, ensuring consistency."
+    },
+    {
+      "question": "When deploying to XM Cloud, how are Sitecore Content Serialization (SCS) serialized items loaded into the Content Management (CM) instance?",
+      "options": {
+        "A": "The XM Cloud deployment process uses the SCS CLI to do a pull once the CM instance is active.",
+        "B": "The XM Cloud deploy process creates an Azure Resource (ARM) that injects the files into the CM instance.",
+        "C": "A build pipeline must be created to use the SCS CLI push command to push content after the XM Cloud Deploy app finishes.",
+        "D": "The XM Cloud deploy process uses serialized item batches through REST APIs to the XM Cloud CM to sync up serialization."
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "The Sitecore Cloud deployment process transfers serialized items to the CM instance by sending them in batches via REST APIs, ensuring the CM instance is populated with serialized content."
+    },
+    {
+      "question": "A developer needs to create a table to dynamically pull related data into the table structure in Sitecore to create items and content. What should the developer use to define this content structure?",
+      "options": {
+        "A": "Content fragments",
+        "B": "Configured parameters",
+        "C": "Templates",
+        "D": "Components data sources"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "Templates define the structure and organization of items in Sitecore, making them the correct approach for creating dynamic data structures that can be reused consistently."
+    },
+    {
+      "question": "How can a developer differentiate between XM Cloud Components and Headless SXA Components?",
+      "options": {
+        "A": "XM Cloud Components offer drag-and-drop creation of pages. Headless SXA Components require manual coding and can only be added by a developer.",
+        "B": "XM Cloud Components are code-driven solutions for creating components that can consume data from multiple data sources. Headless SXA Components require content editors to bind data inline from data sources.",
+        "C": "For XM Cloud Components, the Styles tab always ensures visual consistency across components. Headless SXA Components emphasize flexible content mapping.",
+        "D": "XM Cloud Components provide responsive designs for different device types. Headless SXA Components are exclusively focused on desktop layouts."
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "XM Cloud Components provide a low-code/no-code approach for creating components that can consume data from multiple sources. Headless SXA Components, by contrast, require developers to bind data sources manually."
+    },
+    {
+      "question": "A content author is unable to edit a component property in Sitecore. Where is the best place to check if the user still has access to that content item?",
+      "options": {
+        "A": "Security Editor",
+        "B": "Access Viewer",
+        "C": "Role Manager",
+        "D": "Site Authentication Tools"
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "The Access Viewer tool in Sitecore allows administrators to evaluate and troubleshoot access rights, showing aggregated user and role permissions to quickly identify whether access is missing or denied."
+    },
+    {
+      "question": "A build to XM Cloud fails. Which options are available for a developer to diagnose the error?",
+      "options": {
+        "A": "The Deploy app system status page",
+        "B": "The Content Management settings logs for the environment",
+        "C": "The project-related page in the Deploy app",
+        "D": "The deployment log files for the environment"
+      },
+      "answer": ["A", "B", "D"],
+      "question_type": "multiple",
+      "explanation": "Developers can use the Deploy app system status page, CM environment logs, and deployment logs to investigate build errors. These provide detailed diagnostic information. The project-related page in the Deploy app does not help in diagnosing build failures."
+    },
+    {
+      "question": "In the content tree, an administrator-level user cannot see the Layouts or Templates nodes. Which of the following would explain the missing nodes?",
+      "options": {
+        "A": "A template has not been established for the Content Editor.",
+        "B": "A layout has not been assigned for the content tree in the Content Editor.",
+        "C": "The Layouts and Templates folders need to be created by a developer.",
+        "D": "The 'Hidden items' check box has been unselected on the View tab of the ribbon."
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "In Sitecore XM Cloud, if an administrator-level user cannot see the Layouts or Templates nodes in the content tree, it is likely because the ''Hidden items'' option is not selected in the Content Editor's View tab. These nodes are typically marked as hidden to streamline the interface for users."
+    },
+    {
+      "question": "Which of these options best describes the purpose of the following query to the Experience Edge GraphQL schema?\n\n```graphql\nquery {\n  layout(site: \"experienceedge\", routePath: \"/\", language: \"en\") {\n    item {\n      homeltemPath: path\n      contentRoot: parent {\n        id\n        path\n      }\n    }\n  }\n}\n```",
+      "options": {
+        "A": "To get an item by ID",
+        "B": "To get the root item of a site",
+        "C": "To get the item layout for a URL",
+        "D": "To get information about a specific content site"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "The query to the Experience Edge GraphQL schema is designed to retrieve the layout information for a specific URL, which in this case is the root path (''/'') of a site named ''experienceedge''. This allows developers to access the Layout Service JSON for the item, which is essential for rendering the page in a headless setup."
+    },
+    {
+      "question": "When an item is published, the Experience Edge for XM Connector publishes a static snapshot of the Layout Service output of that item. If a change is made to a data source item that is referenced on the page, how is that content made visible on the website?",
+      "options": {
+        "A": "A developer must publish the data source item.",
+        "B": "A developer must publish the related page items.",
+        "C": "A developer must publish to the web database.",
+        "D": "A developer must reconnect to the Experience Edge Connector module."
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "When a change is made to a data source item in Sitecore XM Cloud, the updated content becomes visible on the website after the data source item itself is published. This is because the Experience Edge for XM Connector publishes a static snapshot of the Layout Service output, and any changes to the data source items require republishing to reflect on the website."
+    },
+    {
+      "question": "A developer wants to create a webhook that sends an HTTP request to a specified endpoint when the workflow moves to the approved state. What type of webhook should they use?",
+      "options": {
+        "A": "Submit handler",
+        "B": "Event handler",
+        "C": "Submit action",
+        "D": "Validation action"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "In Sitecore XM Cloud, a webhook submit action is used to send an HTTP request to a specified endpoint when an item changes workflow state or a workflow command runs. Therefore, for a developer wanting to create a webhook that triggers when the workflow moves to the approved state, a webhook submit action would be the appropriate choice."
+    },
+    {
+      "question": "A developer is tasked with creating an item using the Sitecore Authoring and Management GraphQL API. Which of the following GraphQL mutations is the correct way to create a new item?",
+      "options": {
+        "A": "createOrUpdateltem",
+        "B": "create Templateltem",
+        "C": "createltem",
+        "D": "updateltem"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "The correct GraphQL mutation to create a new item in Sitecore XM Cloud is createItem. This mutation allows developers to specify the necessary details such as the item's name, template ID, parent ID, language, and fields to create a new content item within the Sitecore content tree."
+    },
+    {
+      "question": "A developer is working with Sitecore's Authoring and Management API to manage their Sitecore content using GraphQL. They want to explore and interact with the API using the GraphQL integrated development environment (IDE). Which of the following statements is correct about using the GraphQL IDE?",
+      "options": {
+        "A": "A developer needs to be in the sitecore\\Admin role to access the GraphQL IDE.",
+        "B": "A developer needs to be in the sitecore\\Sitecore Client Users role to access the GraphQL IDE.",
+        "C": "The GraphQL IDE provides read-only access to the API.",
+        "D": "The GraphQL IDE is only available for non-production environments to ensure secure interactions."
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "Access to the GraphQL IDE for exploring and managing Sitecore content via the Authoring and Management API requires a developer to have the sitecore\\Sitecore Client Users role. This role grants the necessary permissions to use the IDE for various operations, not just read-only access."
+    },
+    {
+      "question": "Which of the following is part of the out-of-the-box technology stack for XM Cloud?",
+      "options": {
+        "A": "jQuery",
+        "B": "Python",
+        "C": "Svelte Kit",
+        "D": "React"
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "XM Cloud includes a modern technology stack that supports various frameworks and libraries for development. React is part of this stack, as it is commonly used in conjunction with Sitecore's headless services and JSS (JavaScript Services) for building dynamic user interfaces."
+    },
+    {
+      "question": "What information can be found in the deployment logs?",
+      "options": {
+        "A": "Content Management and Content Delivery deployment logs",
+        "B": "Content Management instance and Rendering Hosting logs",
+        "C": "Provisioning, Deployment, and Publishing information",
+        "D": "Provisioning, Build, Deployment, and Post Action information"
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers1, the deployment log displays the progress, status, warnings, and errors of an XM Cloud deployment. From the deployment log, you can also cancel a running deployment, rerun a failed deployment, promote the deployment to another environment, download logs, or open the XM Cloud Dashboard. The logs include information about:  \nProvisioning -- the process of creating and configuring the resources required for the environment, such as the Content Management and Content Delivery instances, the database, the storage, and the network.\n\n[https://doc.sitecore.com/xmc/en/developers/xm-cloud/sitecore-experience-manager/the-deployment-log.html](https://doc.sitecore.com/xmc/en/developers/xm-cloud/sitecore-experience-manager/the-deployment-log.html)  \n[https://doc.sitecore.com/xmc/en/developers/xm-cloud/sitecore-experience-manager/the-deployment-log.html](https://doc.sitecore.com/xmc/en/developers/xm-cloud/sitecore-experience-manager/the-deployment-log.html)  \n[https://doc.sitecore.com/xmc/en/developers/xm-cloud/sitecore-experience-manager/the-deployment-log.html](https://doc.sitecore.com/xmc/en/developers/xm-cloud/sitecore-experience-manager/the-deployment-log.html)\n\nBuild -- the process of compiling the source code, running tests, and generating the deployment package.  \nDeployment -- the process of deploying the package to the environment and applying any configuration changes.  \nPost Action -- the process of performing any additional tasks after the deployment, such as publishing, indexing, or clearing caches.\n\n1: XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "A developer wants to add a new language to a headless SXA site. Which steps are required to add a new language in XM Cloud?",
+      "options": {
+        "A": "Install a language pack on the Content Management instance and then add the language in /sitecore/system/languages.",
+        "B": "Add language in /sitecore/system/languages. Then, on the content item, change the language dropdown to the new language and add a new version.",
+        "C": "Add language in /sitecore/system/languages, right click the site root, and go to scripts -> Add Site language.",
+        "D": "They must enter the country code in the Language field. Then, on the content item, change the language dropdown to the new language and add a new version."
+      },
+      "answer": "C",
+      "question_type": "single"
+    },
+    {
+      "question": "To connect Sitecore Pages to your local XM Cloud instance, which steps are involved?",
+      "options": {
+        "A": "Open the local Content Management instance and set the predefined rendering host field value in Sitecore to https://pages.sitecorecloud.io",
+        "B": "Open Pages and create an entry in Local Storage for the key 'Sitecore.Pages.LocaIXmCloudUrl' with the following value: https://xmcloudcm. localhost",
+        "C": "Open Pages and create an entry in Local Storage for the key 'Sitecore.Pages.LocaIXmCloudUrl' with the following value: https://pages.sitecorecloud.io",
+        "D": "Open the local Content Management instance and set the predefined rendering host field value in Sitecore to https://xmcloudcm.localhost"
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers1, after setting up your local XM Cloud development environment, Sitecore Pages is not connected to your locally running XM Cloud instance. You can connect your local XM Cloud application to Sitecore Pages by setting a local storage key in your browser. This allows you to use Sitecore Pages to edit content and layouts on your local front-end application. To connect Sitecore Pages to your local XM Cloud instance, you need to follow these steps2:\n\nIn your browser, navigate to the Sitecore Pages application.  \nOpen the developer tools console of your browser and find the local storage section. The location differs between browsers:  \nFor Chrome and Edge, open the Application panel. In the Storage section, expand the Local Storage section.  \nFor Firefox, open the Storage panel, and expand the Local Storage section.  \nIn the Local Storage panel, click the entry for Sitecore Pages 9 to reveal the local storage entries.  \nCreate a new entry by adding a new row with the following values:  \nKey: Sitecore.Pages.LocalXmCloudUrl.\n\n[https://doc.sitecore.com/xmc/en/developers/xm-cloud/connect-xm-cloud-pages-to-your-local-xm-cloud-instance.html](https://doc.sitecore.com/xmc/en/developers/xm-cloud/connect-xm-cloud-pages-to-your-local-xm-cloud-instance.html)  \n[https://doc.sitecore.com/xmc/en/developers/xm-cloud/connect-xm-cloud-pages-to-your-local-xm-cloud-instance.html](https://doc.sitecore.com/xmc/en/developers/xm-cloud/connect-xm-cloud-pages-to-your-local-xm-cloud-instance.html)  \n[https://doc.sitecore.com/xmc/en/developers/xm-cloud/connect-xm-cloud-pages-to-your-local-xm-cloud-instance.html](https://doc.sitecore.com/xmc/en/developers/xm-cloud/connect-xm-cloud-pages-to-your-local-xm-cloud-instance.html)  \n[https://doc.sitecore.com/xmc/en/developers/xm-cloud/connect-xm-cloud-pages-to-your-local-xm-cloud-instance.html](https://doc.sitecore.com/xmc/en/developers/xm-cloud/connect-xm-cloud-pages-to-your-local-xm-cloud-instance.html)  \n[https://pages.sitecorecloud.io/](https://pages.sitecorecloud.io/)\n\nValue: the URL of your local XM Cloud instance. For example, 10.  \nRefresh the 9 page to see your local front-end application.\n\n2: Connect Sitecore Pages to your local XM Cloud instance 1: XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "A developer is working on managing environments within the XM Cloud Deploy app. They have created a new environment for the project and linked it to a specific repository branch. However, they realize that they need to change the linked repository branch due to new developments in the project. Which steps should they follow to achieve this?",
+      "options": {
+        "A": "Delete the current environment and create a new one with the desired repository branch.",
+        "B": "Unlink the current repository branch and then relink the desired branch to the environment through the project's 'Options' menu.",
+        "C": "Link the desired branch to the environment directly from the repository settings. The XM Cloud Deploy app will automatically update the linked branch.",
+        "D": "Go to the project page, click the environment, choose 'Options,' and then 'Edit environment details.' In the dialog, select the desired branch from the ''Link to branch' drop-down menu and save the changes."
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "According to the Sitecore XM Cloud Documentation for Developers1, you can link an environment to a specific branch of your repository in the XM Cloud Deploy app. This allows you to deploy different versions of your code to different environments. To change the linked branch for an existing environment, you need to follow these steps2:\n\nOn the navigation pane of the XM Cloud Deploy app, click Projects.  \nOn the Projects page, click the project that contains the environment where you want to change the linked branch.  \nOn the project page, click the environment where you want to change the linked branch.  \nOn the environment page, click Options, then click Edit environment details.  \nIn the Edit environment details dialog, select the desired branch from the Link to branch drop-down menu.  \nClick Save to confirm your changes.\n\n2: Manage an environment in the XM Cloud Deploy app | Sitecore Documentation 1: XM Cloud Documentation for Developers - Sitecore"
+    },
+    {
+      "question": "Which of the following statements accurately describes the purpose of Headless variants in Sitecore XM Cloud?",
+      "options": {
+        "A": "Headless variants define how a rendering appears and what content it displays.",
+        "B": "Headless variants determine the order in which renderings are displayed on a webpage.",
+        "C": "Headless variants enable the creation of custom rendering items for components from scratch.",
+        "D": "Headless variants allow renderings to be edited and customized in the Content Editor."
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "Headless variants allow developers to define multiple versions of a rendering with different layouts, styles, and content. They can be created in the Components builder and reused across XM Cloud Pages. This avoids creating multiple separate renderings."
+    },
+    {
+      "question": "A developer is creating a component with these requirements:\n\n- Image Left, Title, Call to action\n    \n- Image Right, Title, Call to action\n    \n- Image Centered, Call to action\n    \n\nThe component should be able to display the same content in all three options. What is the best way to build this?",
+      "options": {
+        "A": "Three separate components with the compatible renderings set",
+        "B": "One component with logic in the component to change the view",
+        "C": "One component with three Headless variants",
+        "D": "One component with rendering parameters to control the layout"
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "Rendering parameters define custom properties for a component that authors can change in Pages. By adding a parameter (e.g., layout: left/right/center), one component can flexibly adapt without needing multiple variants."
+    },
+    {
+      "question": "A developer can reference an external code base that includes components so they can be used in the Components builder interface. Which of the following are possible results of adding React components to the Components builder?",
+      "options": {
+        "A": "The registered component is scoped to only one environment.",
+        "B": "A content author can enter values for the defined input parameters.",
+        "C": "The registered component is part of the Components library.",
+        "D": "The registered component can be previewed in the Component builder."
+      },
+      "answer": ["B", "C", "D"],
+      "question_type": "multiple",
+      "explanation": "Registered React components appear in the Components library, can expose editable input parameters, and can be previewed. They are **not scoped to one environment**—they’re available across all environments."
+    },
+    {
+      "question": "A build to XM Cloud fails. Which options are available for a developer to diagnose the error?",
+      "options": {
+        "A": "The Deploy app system status page",
+        "B": "The Content Management instance logs for the environment",
+        "C": "The project details page in the Deploy app",
+        "D": "The deployment log files for the environment"
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "Deployment log files contain progress, status, warnings, and errors of an XM Cloud deployment. They can be accessed and downloaded from the Deploy app for troubleshooting. Other options give only general or runtime info."
+    },
+    {
+      "question": "Which of the following are ways to create an XM Cloud environment?",
+      "options": {
+        "A": "Environments are automatically created during the deployment; it is not required to create environments explicitly.",
+        "B": "Defining the environment at `.env` file from the source code and re-deploying it.",
+        "C": "The CLI, the Deploy app, or REST API.",
+        "D": "The only way to create a cloud environment is from the Sitecore Cloud Portal UI."
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "XM Cloud environments can be created via:\n\n- **CLI** (sitecore environment create)\n    \n- **Deploy app** (UI)\n    \n- **REST API** (programmatic).\n    "
+    },
+    {
+      "question": "To connect Sitecore Pages to your local XM Cloud instance, which steps are involved?",
+      "options": {
+        "A": "In CM, set predefined rendering host to `https://pages.sitecorecloud.io`",
+        "B": "In Pages, add Local Storage key `Sitecore.Pages.LocalXmCloudUrl` = `https://xmcloudcm.localhost`",
+        "C": "In Pages, add Local Storage key `Sitecore.Pages.LocalXmCloudUrl` = `https://pages.sitecorecloud.io`",
+        "D": "In CM, set predefined rendering host to `https://xmcloudcm.localhost`"
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "Add a Local Storage entry in your browser developer tools:\n\n- Key: `Sitecore.Pages.LocalXmCloudUrl`\n    \n- Value: local CM instance URL (`https://xmcloudcm.localhost`)\n    "
+    },
+    {
+      "question": "Which of the following needs to happen for a developer to log in into the XM Cloud Deploy app?",
+      "options": {
+        "A": "An Organization Admin or Organization Owner must update their role in the Sitecore Cloud Portal.",
+        "B": "Only the Organization Owner can update their role in the Sitecore Cloud Portal.",
+        "C": "Only the Organization Owner can update their role using the XM Cloud Deploy app.",
+        "D": "An Organization Admin or Organization Owner must update their role using the XM Cloud Deploy app."
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "To access the Deploy app, the user must be granted the Admin role in the Sitecore Cloud Portal by an Org Admin or Org Owner. It cannot be done from the Deploy app itself."
+    },
+    {
+      "question": "A developer wants to deploy to XM Cloud, but the project is not using a source code provider that has an out-of-the-box connector. How can they deploy?",
+      "options": {
+        "A": "Use the Sitecore Cloud CLI to create a project and deployment.",
+        "B": "Create a Sitecore Update Package using SCS.",
+        "C": "Use Vercel to connect to their source code provider.",
+        "D": "Create a custom connector for the Deploy app."
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "The **Sitecore Cloud CLI** allows deployment to XM Cloud regardless of source code provider. It can authenticate, create projects, push items, and trigger deployments."
+    },
+    {
+      "question": "Which of the following tasks are performed by the publishing pipeline to create an accurate snapshot of the content? Select all that apply.",
+      "options": {
+        "A": "Calculating additional entities to publish",
+        "B": "Calculating dependencies",
+        "C": "Archiving expired content",
+        "D": "Resolving dependencies"
+      },
+      "answer": ["A", "B", "D"],
+      "question_type": "multiple",
+      "explanation": "The publishing pipeline recalls additional entities, calculates dependencies, and resolves dependencies. Archiving expired content is not part of publishing."
+    },
+    {
+      "question": "The XM Cloud Pages editor comes with a set of devices (Desktop, Mobile). Which fields must a developer specify to add a new device?",
+      "options": {
+        "A": "Device height, visibility, an icon",
+        "B": "Device height, visibility, responsive breakpoints",
+        "C": "Device width, visibility, an icon",
+        "D": "Device width, visibility, responsive breakpoints"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "New devices require **width (px)**, **visibility options** (Disabled, Fixed, Optional), and **an icon**."
+    },
+    {
+      "question": "A multinational clothing company wants regional sites per country with same branding but unique content. What’s the most efficient rendering host deployment?",
+      "options": {
+        "A": "Separate XM Cloud instances per region",
+        "B": "Rendering host app per site",
+        "C": "A single rendering host with JSS multisite",
+        "D": "One site collection/site for all regions"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "Using JSS multisite, a single rendering host supports multiple sites, centralizing updates while allowing regional content."
+    },
+    {
+      "question": "When deploying to XM Cloud, which resources are provisioned?",
+      "options": {
+        "A": "CM instance, Editing Host, and Experience Edge",
+        "B": "CM instance and Experience Edge",
+        "C": "CM instance and Vercel app",
+        "D": "CM instance and CD instance"
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "Provisioning includes:\n\n- **Content Management instance**\n    \n- **Editing Host**\n    \n- **Experience Edge**\n    "
+    },
+    {
+      "question": "A developer needs to remove a site collection folder. Which script should they run from the Content Editor?",
+      "options": {
+        "A": "Remove Site Collection",
+        "B": "Remove Folder",
+        "C": "Remove Site Folder",
+        "D": "Remove Site Collection Folder"
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "The “Remove Site Collection Folder” script cleanly removes a site collection and its associated items."
+    },
+    {
+      "question": "A multinational company wants dedicated content per brand and country, within one Sitecore instance. Which approach?",
+      "options": {
+        "A": "Separate XM Cloud instances",
+        "B": "One site collection and site for all",
+        "C": "Individual site collections per brand + site per country",
+        "D": "One site per brand, language per country"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "Best practice: **site collection per brand, site per country**. This provides structure and separation while using one XM Cloud instance."
+    },
+    {
+      "question": "Which of the following is part of the out-of-the-box technology stack for XM Cloud?",
+      "options": {
+        "A": "jQuery",
+        "B": "Python",
+        "C": "Svelte Kit",
+        "D": "React"
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "XM Cloud includes **React** in its technology stack, typically used with JSS for headless front-end development."
     }
   ]
 }

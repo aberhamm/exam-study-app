@@ -2,7 +2,7 @@
 import type { ExternalQuestion } from '@/types/external-question';
 import type { NormalizedQuestion } from '@/types/normalized';
 
-const LETTER_TO_INDEX = { A: 0, B: 1, C: 2, D: 3 } as const;
+const LETTER_TO_INDEX = { A: 0, B: 1, C: 2, D: 3, E: 4 } as const;
 
 // small, deterministic id from question+answer (good enough for client use)
 function hashId(input: string): string {
@@ -21,10 +21,14 @@ export function normalizeQuestions(qs: ExternalQuestion[]): NormalizedQuestion[]
       ? q.answer.map(letter => LETTER_TO_INDEX[letter])
       : LETTER_TO_INDEX[q.answer];
 
+    const choices = q.options.E
+      ? [q.options.A, q.options.B, q.options.C, q.options.D, q.options.E]
+      : [q.options.A, q.options.B, q.options.C, q.options.D];
+
     return {
       id,
       prompt: q.question,
-      choices: [q.options.A, q.options.B, q.options.C, q.options.D],
+      choices,
       answerIndex,
       questionType,
       explanation: q.explanation,

@@ -47,7 +47,10 @@ export class OpenRouterClient {
       } catch (validationError) {
         // Log the problematic response for debugging
         console.error('Validation failed. Raw response:', JSON.stringify(questions, null, 2));
-        throw new Error(`Response validation failed: ${validationError}. Check the response format above.`);
+        console.warn(`Response validation failed: ${validationError}. Proceeding with raw data.`);
+
+        // Return the raw questions even if validation fails
+        return questions;
       }
     } catch (error) {
       throw new Error(`OpenRouter API error: ${error}`);

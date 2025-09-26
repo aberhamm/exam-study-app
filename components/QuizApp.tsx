@@ -292,7 +292,7 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
     (e: KeyboardEvent) => {
       if (!currentQuestion || quizState.showResult) return;
 
-      if (e.key >= '1' && e.key <= '4') {
+      if (e.key >= '1' && e.key <= '5') {
         const answerIndex = parseInt(e.key) - 1;
         if (answerIndex < currentQuestion.choices.length) {
           selectAnswer(answerIndex);
@@ -598,7 +598,7 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
                   const correctArray = Array.isArray(currentQuestion.answerIndex)
                     ? currentQuestion.answerIndex
                     : [];
-                  const isCorrectAnswer = correctArray.includes(index as 0 | 1 | 2 | 3);
+                  const isCorrectAnswer = correctArray.includes(index as 0 | 1 | 2 | 3 | 4);
                   showCorrect = isCorrectAnswer && isSelected;
                 }
               }
@@ -713,8 +713,8 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
           {currentQuestion?.questionType === 'multiple'
             ? quizState.showFeedback
               ? 'Use Enter/Space to continue to next question'
-              : 'Use keys 1-4 to toggle selections, Enter/Space to submit'
-            : 'Use keys 1-4 to select answers, Enter/Space to continue'}
+              : 'Use keys 1-5 to toggle selections, Enter/Space to submit'
+            : 'Use keys 1-5 to select answers, Enter/Space to continue'}
         </div>
 
         {/* Restart Confirmation Dialog */}
