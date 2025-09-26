@@ -4,12 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StudyPanel } from '@/components/StudyPanel';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { Header } from '@/components/Header';
 import { Timer } from '@/components/Timer';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { TestSettings } from '@/lib/test-settings';
 import { shuffleArray } from '@/lib/question-utils';
-import { APP_CONFIG } from '@/lib/app-config';
 
 type QuizState = {
   currentQuestionIndex: number;
@@ -244,10 +243,7 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
     return (
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-6 space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">{APP_CONFIG.APP_NAME_SHORT}</h1>
-            <ThemeToggle />
-          </div>
+          <Header variant="short" />
           <div className="flex items-center justify-center py-20">
             <Card className="p-6">
               <div className="text-center">
@@ -276,10 +272,7 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-6 space-y-6">
           {/* Header with Theme Toggle */}
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">{APP_CONFIG.APP_NAME_SHORT}</h1>
-            <ThemeToggle />
-          </div>
+          <Header variant="short" />
 
           <Card className="p-6">
             <div className="text-center space-y-4">
@@ -380,9 +373,9 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-4xl mx-auto px-6 space-y-6">
         {/* Header with Theme Toggle and Settings */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold">{APP_CONFIG.APP_NAME_SHORT}</h1>
+        <Header
+          variant="short"
+          leftContent={
             <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
               <span className="bg-muted px-2 py-1 rounded">
                 {testSettings.questionType === 'all'
@@ -394,8 +387,8 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
               <span>•</span>
               <span>{testSettings.questionCount} questions</span>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
+          }
+          rightContent={
             <Button
               variant="outline"
               size="sm"
@@ -404,9 +397,8 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
             >
               ← Settings
             </Button>
-            <ThemeToggle />
-          </div>
-        </div>
+          }
+        />
 
         {/* Mobile Settings Display */}
         <div className="md:hidden flex justify-between items-center text-sm">

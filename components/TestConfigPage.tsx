@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Header } from "@/components/Header";
 import {
   TEST_SETTINGS,
   TestSettings,
@@ -13,7 +13,6 @@ import {
   loadTestSettings,
   saveTestSettings
 } from "@/lib/test-settings";
-import { APP_CONFIG } from "@/lib/app-config";
 import type { NormalizedQuestion } from "@/types/normalized";
 
 type Props = {
@@ -200,10 +199,7 @@ export function TestConfigPage({ questions, examTitle, onStartTest, loading, err
     return (
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-6 space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">{APP_CONFIG.APP_NAME}</h1>
-            <ThemeToggle />
-          </div>
+          <Header variant="full" />
           <div className="flex items-center justify-center py-20">
             <div className="text-lg">Loading questions...</div>
           </div>
@@ -216,10 +212,7 @@ export function TestConfigPage({ questions, examTitle, onStartTest, loading, err
     return (
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-6 space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">{APP_CONFIG.APP_NAME}</h1>
-            <ThemeToggle />
-          </div>
+          <Header variant="full" />
           <div className="flex items-center justify-center py-20">
             <Card className="p-6">
               <div className="text-red-600 dark:text-red-400 text-center">
@@ -237,10 +230,7 @@ export function TestConfigPage({ questions, examTitle, onStartTest, loading, err
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-4xl mx-auto px-6 space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold">{APP_CONFIG.APP_NAME}</h1>
-          <ThemeToggle />
-        </div>
+        <Header variant="full" />
 
         {/* Exam Title */}
         {examTitle && (
