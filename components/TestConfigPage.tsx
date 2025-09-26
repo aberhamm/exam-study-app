@@ -13,16 +13,18 @@ import {
   loadTestSettings,
   saveTestSettings
 } from "@/lib/test-settings";
+import { APP_CONFIG } from "@/lib/app-config";
 import type { NormalizedQuestion } from "@/types/normalized";
 
 type Props = {
   questions: NormalizedQuestion[] | null;
+  examTitle?: string;
   onStartTest: (settings: TestSettings) => void;
   loading: boolean;
   error: string | null;
 };
 
-export function TestConfigPage({ questions, onStartTest, loading, error }: Props) {
+export function TestConfigPage({ questions, examTitle, onStartTest, loading, error }: Props) {
   const [settings, setSettings] = useState<TestSettings>(DEFAULT_TEST_SETTINGS);
   const [customQuestionCount, setCustomQuestionCount] = useState<string>('');
   const [useCustomCount, setUseCustomCount] = useState(false);
@@ -199,7 +201,7 @@ export function TestConfigPage({ questions, onStartTest, loading, error }: Props
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-6 space-y-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">SCXMCL Study Utility</h1>
+            <h1 className="text-xl font-semibold">{APP_CONFIG.APP_NAME}</h1>
             <ThemeToggle />
           </div>
           <div className="flex items-center justify-center py-20">
@@ -215,7 +217,7 @@ export function TestConfigPage({ questions, onStartTest, loading, error }: Props
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-6 space-y-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">SCXMCL Study Utility</h1>
+            <h1 className="text-xl font-semibold">{APP_CONFIG.APP_NAME}</h1>
             <ThemeToggle />
           </div>
           <div className="flex items-center justify-center py-20">
@@ -236,9 +238,16 @@ export function TestConfigPage({ questions, onStartTest, loading, error }: Props
       <div className="max-w-4xl mx-auto px-6 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold">SCXMCL Study Utility</h1>
+          <h1 className="text-xl font-semibold">{APP_CONFIG.APP_NAME}</h1>
           <ThemeToggle />
         </div>
+
+        {/* Exam Title */}
+        {examTitle && (
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-primary">{examTitle}</h2>
+          </div>
+        )}
 
         {/* Test Configuration */}
         <Card className="p-8">

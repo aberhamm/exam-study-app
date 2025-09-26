@@ -15,7 +15,7 @@ import { prepareQuestionsForTest } from "@/lib/question-utils";
 type AppView = 'config' | 'quiz';
 
 export default function Home() {
-  const { data: allQuestions, error, loading } = useQuestions();
+  const { data: allQuestions, examMetadata, error, loading } = useQuestions();
   const [currentView, setCurrentView] = useState<AppView>('config');
   const [testSettings, setTestSettings] = useState<TestSettings>(DEFAULT_TEST_SETTINGS);
 
@@ -39,6 +39,7 @@ export default function Home() {
     return (
       <TestConfigPage
         questions={allQuestions}
+        examTitle={examMetadata?.examTitle}
         onStartTest={handleStartTest}
         loading={loading}
         error={error}

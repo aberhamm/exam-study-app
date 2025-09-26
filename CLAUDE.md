@@ -1,1 +1,2 @@
 - Document the application by updating the README.md or by creating .md files in the docs/ folder.
+- respect formatting rules configured
