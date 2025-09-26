@@ -25,8 +25,16 @@ export const ExternalQuestionZ = z.object({
   study: z.array(StudyLinkZ).optional(),
 });
 
+export const WelcomeConfigZ = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  ctaText: z.string().optional(),
+  showDefaultSubtitle: z.boolean().optional().default(true),
+});
+
 export const ExternalQuestionsFileZ = z.object({
   examId: z.string().optional().default('sitecore-xmc'),
   examTitle: z.string().optional().default('Sitecore XM Cloud'),
+  welcomeConfig: WelcomeConfigZ.optional(),
   questions: z.array(ExternalQuestionZ),
 });

@@ -9,7 +9,15 @@ export type NormalizedQuestion = {
   study?: { chunkId: string; url?: string; anchor?: string; excerpt?: string }[];
 };
 
+export type WelcomeConfig = {
+  title?: string;
+  description?: string;
+  ctaText?: string;
+  showDefaultSubtitle?: boolean;
+};
+
 export type ExamMetadata = {
   examId: string;
   examTitle: string;
+  welcomeConfig?: WelcomeConfig;
 };

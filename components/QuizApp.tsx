@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { StudyPanel } from '@/components/StudyPanel';
 import { useHeader } from '@/contexts/HeaderContext';
 import { Timer } from '@/components/Timer';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { TestSettings } from '@/lib/test-settings';
 import { shuffleArray } from '@/lib/question-utils';
+import { saveExamState, clearExamState, createExamState, updateExamState, type ExamState } from '@/lib/exam-state';
 
 type QuizState = {
   currentQuestionIndex: number;
@@ -29,26 +31,48 @@ type Props = {
   questions: NormalizedQuestion[];
   testSettings: TestSettings;
   onBackToSettings: () => void;
+  initialExamState?: ExamState | null;
 };
 
-export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSettings }: Props) {
-  const [questions, setQuestions] = useState<NormalizedQuestion[]>(preparedQuestions);
+export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSettings, initialExamState }: Props) {
+  const [questions, setQuestions] = useState<NormalizedQuestion[]>(initialExamState?.questions || preparedQuestions);
   const { setConfig } = useHeader();
+  const [showRestartDialog, setShowRestartDialog] = useState(false);
   const [quizState, setQuizState] = useState<QuizState>({
-    currentQuestionIndex: 0,
-    selectedAnswers: [],
-    showResult: false,
-    showFeedback: false,
-    score: 0,
-    incorrectAnswers: [],
-    timerRunning: true,
-    timeElapsed: 0,
+    currentQuestionIndex: initialExamState?.currentQuestionIndex || 0,
+    selectedAnswers: initialExamState?.selectedAnswers || [],
+    showResult: initialExamState?.showResult || false,
+    showFeedback: initialExamState?.showFeedback || false,
+    score: initialExamState?.score || 0,
+    incorrectAnswers: initialExamState?.incorrectAnswers || [],
+    timerRunning: initialExamState?.timerRunning ?? true,
+    timeElapsed: initialExamState?.timeElapsed || 0,
   });
 
   // Ensure questions are set when component mounts or props change
   useEffect(() => {
-    setQuestions(preparedQuestions);
-  }, [preparedQuestions]);
+    if (!initialExamState) {
+      setQuestions(preparedQuestions);
+    }
+  }, [preparedQuestions, initialExamState]);
+
+  // Save exam state to localStorage whenever quiz state changes
+  useEffect(() => {
+    if (!quizState.showResult && questions.length > 0) {
+      const examState = createExamState(questions, testSettings);
+      const updatedState = updateExamState(examState, {
+        currentQuestionIndex: quizState.currentQuestionIndex,
+        selectedAnswers: quizState.selectedAnswers,
+        showResult: quizState.showResult,
+        showFeedback: quizState.showFeedback,
+        score: quizState.score,
+        incorrectAnswers: quizState.incorrectAnswers,
+        timerRunning: quizState.timerRunning,
+        timeElapsed: quizState.timeElapsed
+      });
+      saveExamState(updatedState);
+    }
+  }, [quizState, questions, testSettings]);
 
   // Configure header based on quiz state
   useEffect(() => {
@@ -86,14 +110,24 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
           </div>
         ),
         rightContent: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onBackToSettings}
-            className="hidden md:flex"
-          >
-            ← Settings
-          </Button>
+          <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowRestartDialog(true)}
+              className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+              title="Restart exam"
+            >
+              🔄 Restart
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onBackToSettings}
+            >
+              ← Settings
+            </Button>
+          </div>
         ),
         visible: true,
       });
@@ -209,6 +243,9 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
   }, [isLastQuestion, quizState, finishQuiz]);
 
   const resetQuiz = () => {
+    // Clear exam state from localStorage
+    clearExamState();
+
     // Randomize questions again on reset
     setQuestions(shuffleArray(preparedQuestions));
 
@@ -224,6 +261,15 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
     };
 
     setQuizState(resetState);
+  };
+
+  const handleRestartConfirm = () => {
+    setShowRestartDialog(false);
+    resetQuiz();
+  };
+
+  const handleRestartCancel = () => {
+    setShowRestartDialog(false);
   };
 
   const handleTimeUp = useCallback(() => {
@@ -437,9 +483,20 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
             <span>•</span>
             <span>{testSettings.questionCount} questions</span>
           </div>
-          <Button variant="outline" size="sm" onClick={onBackToSettings}>
-            Settings
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowRestartDialog(true)}
+              className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 text-xs px-2"
+              title="Restart exam"
+            >
+              🔄
+            </Button>
+            <Button variant="outline" size="sm" onClick={onBackToSettings}>
+              Settings
+            </Button>
+          </div>
         </div>
 
         {/* Timer and Progress Indicator */}
@@ -646,6 +703,30 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
               : 'Use keys 1-4 to toggle selections, Enter/Space to submit'
             : 'Use keys 1-4 to select answers, Enter/Space to continue'}
         </div>
+
+        {/* Restart Confirmation Dialog */}
+        <Dialog open={showRestartDialog} onOpenChange={setShowRestartDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Restart Exam</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to restart the exam? This will lose all your current progress and cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleRestartCancel}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRestartConfirm}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Restart Exam
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }

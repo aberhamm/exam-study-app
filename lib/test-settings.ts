@@ -77,3 +77,10 @@ export function clearTestSettings(): void {
     sessionStorage.removeItem(TEST_SETTINGS.SESSION_STORAGE_KEY);
   }
 }
+
+export function resetToDefaults(): TestSettings {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(TEST_SETTINGS.SESSION_STORAGE_KEY);
+  }
+  return DEFAULT_TEST_SETTINGS;
+}

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useHeader } from "@/contexts/HeaderContext";
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   TEST_SETTINGS,
   TestSettings,
@@ -13,23 +15,24 @@ import {
   loadTestSettings,
   saveTestSettings
 } from "@/lib/test-settings";
-import type { NormalizedQuestion } from "@/types/normalized";
+import type { NormalizedQuestion, ExamMetadata } from "@/types/normalized";
 
 type Props = {
   questions: NormalizedQuestion[] | null;
-  examTitle?: string;
+  examMetadata?: ExamMetadata | null;
   onStartTest: (settings: TestSettings) => void;
   loading: boolean;
   error: string | null;
 };
 
-export function TestConfigPage({ questions, examTitle, onStartTest, loading, error }: Props) {
+export function TestConfigPage({ questions, examMetadata, onStartTest, loading, error }: Props) {
   const [settings, setSettings] = useState<TestSettings>(DEFAULT_TEST_SETTINGS);
   const { setConfig } = useHeader();
   const [customQuestionCount, setCustomQuestionCount] = useState<string>('');
   const [useCustomCount, setUseCustomCount] = useState(false);
   const [customTimerDuration, setCustomTimerDuration] = useState<string>('');
   const [useCustomTimer, setUseCustomTimer] = useState(false);
+  const [showConfiguration, setShowConfiguration] = useState(false);
 
   // Configure header on mount
   useEffect(() => {
@@ -44,20 +47,31 @@ export function TestConfigPage({ questions, examTitle, onStartTest, loading, err
   // Load saved settings on mount
   useEffect(() => {
     const savedSettings = loadTestSettings();
-    setSettings(savedSettings);
+    // Ensure the question count is at least the default if no valid saved settings
+    if (savedSettings.questionCount < TEST_SETTINGS.DEFAULT_QUESTION_COUNT) {
+      const correctedSettings = { ...savedSettings, questionCount: TEST_SETTINGS.DEFAULT_QUESTION_COUNT };
+      setSettings(correctedSettings);
+      saveTestSettings(correctedSettings);
+    } else {
+      setSettings(savedSettings);
+    }
 
-    // Check if saved count is a preset or custom
-    const isPreset = (TEST_SETTINGS.QUESTION_COUNT_PRESETS as readonly number[]).includes(savedSettings.questionCount);
+    // Use the final settings for preset checking
+    const finalSettings = savedSettings.questionCount < TEST_SETTINGS.DEFAULT_QUESTION_COUNT ?
+      { ...savedSettings, questionCount: TEST_SETTINGS.DEFAULT_QUESTION_COUNT } : savedSettings;
+
+    // Check if final count is a preset or custom
+    const isPreset = (TEST_SETTINGS.QUESTION_COUNT_PRESETS as readonly number[]).includes(finalSettings.questionCount);
     if (!isPreset) {
       setUseCustomCount(true);
-      setCustomQuestionCount(savedSettings.questionCount.toString());
+      setCustomQuestionCount(finalSettings.questionCount.toString());
     }
 
     // Check if saved timer is a preset or custom
-    const isTimerPreset = (TEST_SETTINGS.TIMER_DURATION_PRESETS as readonly number[]).includes(savedSettings.timerDuration);
+    const isTimerPreset = (TEST_SETTINGS.TIMER_DURATION_PRESETS as readonly number[]).includes(finalSettings.timerDuration);
     if (!isTimerPreset) {
       setUseCustomTimer(true);
-      setCustomTimerDuration(savedSettings.timerDuration.toString());
+      setCustomTimerDuration(finalSettings.timerDuration.toString());
     }
   }, []);
 
@@ -229,15 +243,79 @@ export function TestConfigPage({ questions, examTitle, onStartTest, loading, err
 
   return (
     <div className="space-y-6">
-      {/* Exam Title */}
-      {examTitle && (
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-primary">{examTitle}</h2>
+      {/* Welcome Section */}
+      <div className="text-center space-y-4">
+        {examMetadata?.examTitle && (
+          <h1 className="text-4xl font-bold text-primary mb-4">{examMetadata.examTitle}</h1>
+        )}
+        <div className="max-w-2xl mx-auto">
+          {(examMetadata?.welcomeConfig?.showDefaultSubtitle ?? true) && (
+            <h2 className="text-2xl font-semibold mb-3">
+              {examMetadata?.welcomeConfig?.title || "Welcome to Your Study Session"}
+            </h2>
+          )}
+          {examMetadata?.welcomeConfig?.description ? (
+            <div className="text-lg text-muted-foreground mb-6 text-left space-y-4">
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  ul: ({ children }) => <ul className="list-disc pl-6 space-y-2 my-4">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-6 space-y-2 my-4">{children}</ol>,
+                  li: ({ children }) => <li className="ml-0">{children}</li>,
+                  h3: ({ children }) => <h3 className="text-xl font-semibold mt-6 mb-3">{children}</h3>,
+                  h2: ({ children }) => <h2 className="text-2xl font-semibold mt-6 mb-3">{children}</h2>,
+                  p: ({ children }) => <p className="mb-4 leading-relaxed">{children}</p>,
+                  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                  a: ({ children, href }) => <a href={href} className="text-primary hover:underline font-medium" target="_blank" rel="noopener noreferrer">{children}</a>,
+                  hr: () => <hr className="my-6 border-border" />
+                }}
+              >
+                {examMetadata.welcomeConfig.description}
+              </Markdown>
+            </div>
+          ) : (
+            <p className="text-lg text-muted-foreground mb-6">
+              Get ready to test your knowledge and improve your understanding.
+              Configure your exam settings below and start when you&apos;re ready.
+            </p>
+          )}
         </div>
-      )}
 
-      {/* Test Configuration */}
-      <Card className="p-8">
+        {/* Quick Start Button or Configuration Toggle */}
+        {isValidConfiguration ? (
+          <div className="space-y-3">
+            <Button onClick={handleStartTest} size="lg" className="px-8 py-3 text-lg">
+              {examMetadata?.welcomeConfig?.ctaText || `Start Exam (${settings.questionCount} ${settings.questionType === 'all' ? '' : settings.questionType} questions)`}
+            </Button>
+            <div>
+              <Button
+                variant="ghost"
+                onClick={() => setShowConfiguration(!showConfiguration)}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                {showConfiguration ? '▲ Hide' : '▼ Show'} Configuration
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-amber-600 dark:text-amber-400 font-medium">
+              Please configure your exam settings below
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfiguration(true)}
+              className="px-6"
+            >
+              Configure Exam
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Test Configuration - Collapsible */}
+      {showConfiguration && (
+        <Card className="p-8">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2">Configure Your Test</h2>
             <p className="text-muted-foreground">
@@ -409,6 +487,7 @@ export function TestConfigPage({ questions, examTitle, onStartTest, loading, err
             )}
           </div>
         </Card>
+      )}
     </div>
   );
 }

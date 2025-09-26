@@ -19,7 +19,8 @@ export function useQuestions(examId: string = 'sitecore-xmc') {
         setData(normalizeQuestions(parsed.questions));
         setExamMetadata({
           examId: parsed.examId || examId,
-          examTitle: parsed.examTitle || 'Sitecore XM Cloud'
+          examTitle: parsed.examTitle || 'Sitecore XM Cloud',
+          welcomeConfig: parsed.welcomeConfig
         });
       } catch (e) {
         setError("Failed to load questions.");

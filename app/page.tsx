@@ -11,6 +11,7 @@ import {
   saveTestSettings
 } from "@/lib/test-settings";
 import { prepareQuestionsForTest } from "@/lib/question-utils";
+import { loadExamState, isExamStateValid, type ExamState } from "@/lib/exam-state";
 
 type AppView = 'config' | 'quiz';
 
@@ -18,16 +19,26 @@ export default function Home() {
   const { data: allQuestions, examMetadata, error, loading } = useQuestions();
   const [currentView, setCurrentView] = useState<AppView>('config');
   const [testSettings, setTestSettings] = useState<TestSettings>(DEFAULT_TEST_SETTINGS);
+  const [resumeExamState, setResumeExamState] = useState<ExamState | null>(null);
 
-  // Load saved settings on mount
+  // Load saved settings and check for existing exam state on mount
   useEffect(() => {
     const savedSettings = loadTestSettings();
     setTestSettings(savedSettings);
+
+    // Check for existing exam state
+    const existingExamState = loadExamState();
+    if (existingExamState && isExamStateValid(existingExamState)) {
+      setResumeExamState(existingExamState);
+      setTestSettings(existingExamState.testSettings);
+      setCurrentView('quiz');
+    }
   }, []);
 
   const handleStartTest = (settings: TestSettings) => {
     setTestSettings(settings);
     saveTestSettings(settings);
+    setResumeExamState(null); // Clear any existing exam state for new exam
     setCurrentView('quiz');
   };
 
@@ -39,7 +50,7 @@ export default function Home() {
     return (
       <TestConfigPage
         questions={allQuestions}
-        examTitle={examMetadata?.examTitle}
+        examMetadata={examMetadata}
         onStartTest={handleStartTest}
         loading={loading}
         error={error}
@@ -57,6 +68,7 @@ export default function Home() {
       questions={preparedQuestions}
       testSettings={testSettings}
       onBackToSettings={handleBackToSettings}
+      initialExamState={resumeExamState}
     />
   );
 }
