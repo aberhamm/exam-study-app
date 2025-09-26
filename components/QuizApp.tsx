@@ -123,7 +123,10 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
             <Button
               variant="outline"
               size="sm"
-              onClick={onBackToSettings}
+              onClick={() => {
+                clearExamState();
+                onBackToSettings();
+              }}
             >
               ← Settings
             </Button>
@@ -343,7 +346,10 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">No Questions Available</h2>
             <p>No questions found to display.</p>
-            <Button onClick={onBackToSettings} className="mt-4">
+            <Button onClick={() => {
+              clearExamState();
+              onBackToSettings();
+            }} className="mt-4">
               Back to Settings
             </Button>
           </div>
@@ -375,7 +381,10 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
                 <Button onClick={resetQuiz} size="lg">
                   Start New Quiz
                 </Button>
-                <Button onClick={onBackToSettings} variant="outline" size="lg">
+                <Button onClick={() => {
+                  clearExamState();
+                  onBackToSettings();
+                }} variant="outline" size="lg">
                   Change Settings
                 </Button>
               </div>
@@ -493,7 +502,10 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
             >
               🔄
             </Button>
-            <Button variant="outline" size="sm" onClick={onBackToSettings}>
+            <Button variant="outline" size="sm" onClick={() => {
+              clearExamState();
+              onBackToSettings();
+            }}>
               Settings
             </Button>
           </div>

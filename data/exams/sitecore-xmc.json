@@ -17,15 +17,8 @@
         "D": "WYSIWYG"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is NOT a component of the XM Cloud Developer Workflow?",
@@ -68,15 +61,8 @@
         "D": "To customize the Sitecore user interface"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following best describes a Site Collection in XM Cloud?",
@@ -87,15 +73,8 @@
         "D": "A CMS instance"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is required to create a project in the XM Cloud Deploy App?",
@@ -106,15 +85,8 @@
         "D": "No special role is required"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can you deploy customizations from the XM Cloud Deploy App?",
@@ -125,15 +97,8 @@
         "D": "Using a physical media like a USB drive"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is a Partial Design in XM Cloud?",
@@ -144,15 +109,8 @@
         "D": "A type of rendering"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which command is used to pull serialized items from the remote XM Cloud environment?",
@@ -163,15 +121,8 @@
         "D": "dotnet sitecore items download"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does Sitecore Content Serialization (SCS) allow you to do?",
@@ -182,15 +133,8 @@
         "D": "Deploy code to an environment"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which role is necessary to manage permissions for items, roles, and users in XM Cloud?",
@@ -201,15 +145,8 @@
         "D": "Sitecore Client Publishing"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What enables the management of sites within site collections in XM Cloud?",
@@ -220,15 +157,8 @@
         "D": "Sitecore CLI"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following best describes the function of the 'Headless SXA Site Wizard'?",
@@ -239,15 +169,8 @@
         "D": "It serializes and deserializes items from source control."
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the primary purpose of the Sitecore APIs & Webhooks?",
@@ -258,15 +181,8 @@
         "D": "To develop frontend themes for Sitecore"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is a key step in running a local XM Cloud environment?",
@@ -277,15 +193,8 @@
         "D": "Using a physical server"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How are Page Designs in XM Cloud organized?",
@@ -296,15 +205,8 @@
         "D": "Within the Content Editor exclusively"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What must a Rendering Parameters template inherit from to use dynamic placeholders?",
@@ -315,15 +217,8 @@
         "D": "IRenderingParameters"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What action can you take with the Sitecore CLI regarding XM Cloud?",
@@ -334,15 +229,8 @@
         "D": "Launch the Sitecore Desktop"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the role of the 'Access Viewer' in Sitecore Security?",
@@ -353,15 +241,8 @@
         "D": "It manages the encryption of user data."
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What feature of Sitecore XM Cloud allows for the grouping of logically connected components like header, footer, and sidebar?",
@@ -372,15 +253,8 @@
         "D": "Component Builder"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following describes the method to deploy a project using XM Cloud Deploy App?",
@@ -391,15 +265,8 @@
         "D": "Using the Sitecore desktop application"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In XM Cloud, what is the significance of the 'Sitecore.json' file?",
@@ -410,15 +277,8 @@
         "D": "It specifies the project's license information."
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the role of the 'Everyone' role in Sitecore?",
@@ -429,15 +289,8 @@
         "D": "It is used for external authentication only."
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can webhooks be utilized in a Sitecore XM Cloud workflow?",
@@ -448,15 +301,8 @@
         "D": "As a method for serializing data"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the 'Sitecore Client Publishing' role enable?",
@@ -467,15 +313,8 @@
         "D": "Configuration of XM Cloud environments"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which step is essential for connecting Sitecore Pages to your local XM Cloud instance?",
@@ -486,15 +325,8 @@
         "D": "Configuring a VPN connection to the XM Cloud data center"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the main advantage of using GraphQL Mutations in Sitecore?",
@@ -505,15 +337,8 @@
         "D": "They offer a method for encrypting user data."
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which command is used to authorize a local project in your XM Cloud organization?",
@@ -524,15 +349,8 @@
         "D": "dotnet sitecore init"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the function of Standard Values in Sitecore?",
@@ -543,15 +361,8 @@
         "D": "To serialize and deserialize content items"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which feature in XM Cloud allows developers to manage multi-site environments within a single instance?",
@@ -562,15 +373,8 @@
         "D": "Deploy App"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the primary benefit of using the XM Cloud's Headless Architecture?",
@@ -581,15 +385,8 @@
         "D": "It facilitates easier content management and delivery across various platforms."
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In Sitecore XM Cloud, what is the role of the 'Deploy App'?",
@@ -600,15 +397,8 @@
         "D": "To serialize and deserialize content items"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which command in the Sitecore CLI is used for connecting to a remote XM Cloud hosted instance?",
@@ -619,15 +409,8 @@
         "D": "sitecore remote set"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the primary function of Sitecore's Experience Edge API?",
@@ -638,15 +421,8 @@
         "D": "To manage user roles and permissions within Sitecore"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is necessary for deploying customizations from the XM Cloud Deploy App?",
@@ -657,15 +433,8 @@
         "D": "Manual code changes within the XM Cloud UI"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How are device settings, such as width and visibility, defined in XM Cloud Pages?",
@@ -676,15 +445,8 @@
         "D": "Via direct database configuration"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of using webhooks in Sitecore workflows?",
@@ -695,15 +457,8 @@
         "D": "For real-time user interaction tracking"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is a step in configuring a local XM Cloud instance for development?",
@@ -714,15 +469,8 @@
         "D": "Manual synchronization of content items"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which GraphQL operation is used for authoring operations in XM Cloud?",
@@ -733,15 +481,8 @@
         "D": "Interface"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the main advantage of a Hybrid SaaS CMS like Sitecore XM Cloud?",
@@ -752,15 +493,8 @@
         "D": "It does not support multi-site management."
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following best describes the function of the Sitecore CLI in XM Cloud?",
@@ -771,15 +505,8 @@
         "D": "Direct editing of live site content"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How does XM Cloud facilitate content delivery?",
@@ -790,15 +517,8 @@
         "D": "Through manual code deployment"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In the context of XM Cloud, what is the purpose of defining placeholders?",
@@ -809,15 +529,8 @@
         "D": "To specify the file paths for static assets"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the 'Sitecore.json' file primarily configure in XM Cloud?",
@@ -828,15 +541,8 @@
         "D": "The network configurations for the XM Cloud instance"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is required to deploy a project in XM Cloud using the Deploy App?",
@@ -847,15 +553,8 @@
         "D": "Direct access to the XM Cloud database"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which feature allows for the creation of new pages based on templates in XM Cloud?",
@@ -866,15 +565,8 @@
         "D": "Content Editor"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How is security managed for items, roles, and users in Sitecore XM Cloud?",
@@ -885,15 +577,8 @@
         "D": "Using manual code changes in the Deploy App"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What role does the 'Sitecore Client Publishing' function serve in XM Cloud?",
@@ -904,15 +589,8 @@
         "D": "It is used for database administration tasks."
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which command in the Sitecore CLI is essential for pulling serialized items from a remote XM Cloud environment?",
@@ -923,15 +601,8 @@
         "D": "sitecore items download"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore XM Cloud feature allows developers to manage and share digital assets across sites within a collection?",
@@ -942,15 +613,8 @@
         "D": "Shared Data"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In Sitecore XM Cloud, what is the primary purpose of the 'Experience Edge'?",
@@ -961,15 +625,8 @@
         "D": "To manage the deployment of XM Cloud projects"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the significance of 'dynamic placeholders' in Sitecore XM Cloud?",
@@ -980,15 +637,8 @@
         "D": "They serve as placeholders for future feature development."
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which tool is essential for connecting a local development environment to an XM Cloud instance for testing and development?",
@@ -999,15 +649,8 @@
         "D": "Sitecore Azure Toolkit"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How does Sitecore XM Cloud's 'Headless SXA' differ from traditional Sitecore SXA?",
@@ -1018,15 +661,8 @@
         "D": "It simplifies the deployment process by automating tasks."
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the creation of a 'Project' in the XM Cloud Deploy App involve?",
@@ -1037,15 +673,8 @@
         "D": "Outlining the project's content hierarchy and taxonomy"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What functionality does the 'dotnet sitecore ser pull' command provide?",
@@ -1056,15 +685,8 @@
         "D": "It pulls the latest codebase from the Sitecore repository."
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which feature is critical for creating and managing page designs and partial designs in XM Cloud?",
@@ -1075,15 +697,8 @@
         "D": "Component Builder"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In the context of Sitecore XM Cloud security, what does the 'Access Viewer' tool help administrators manage?",
@@ -1094,15 +709,8 @@
         "D": "Deployment logs and history for troubleshooting"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does an organization represent in Sitecore XM Cloud?",
@@ -1113,15 +721,8 @@
         "D": "A set of environment variables"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is automatically created when you initiate a project using the Deploy app in Sitecore XM Cloud?",
@@ -1132,15 +733,8 @@
         "D": "A content delivery network"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does an environment in Sitecore XM Cloud include?",
@@ -1151,15 +745,8 @@
         "D": "A single user account"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What characterizes a site within Sitecore XM Cloud?",
@@ -1170,15 +757,8 @@
         "D": "It directly integrates with third-party content management systems"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the XM Cloud foundation template?",
@@ -1189,15 +769,8 @@
         "D": "A pre-built environment for testing"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of the Sitecore Cloud Portal?",
@@ -1208,15 +781,8 @@
         "D": "To deploy new XM Cloud instances"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What can you manage through the XM Cloud Deploy app?",
@@ -1227,15 +793,8 @@
         "D": "Environments and XM Cloud projects"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What service endpoint does Experience Edge provide?",
@@ -1246,15 +805,8 @@
         "D": "A database service for content storage"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What types of environment variables are included in XM Cloud?",
@@ -1265,15 +817,8 @@
         "D": "Public, private, and protected"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which statement best describes a Content Management instance in XM Cloud?",
@@ -1284,15 +829,8 @@
         "D": "It is exclusively for user management and permissions"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is NOT a structure created for the app in Sitecore during the initial code-first app deployment?",
@@ -1303,15 +841,8 @@
         "D": "Content Delivery Network (CDN) root"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "When is the Sitecore-first workflow recommended?",
@@ -1322,15 +853,8 @@
         "D": "When developers do not implement the JavaScript application"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What template should be used when creating rendering items in a Sitecore-first workflow?",
@@ -1341,15 +865,8 @@
         "D": "Controller rendering"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In a Sitecore-first workflow, what happens if a component name cannot be mapped in the JSS app?",
@@ -1360,15 +877,8 @@
         "D": "The issue is logged silently"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What must also be done when adding a placeholder to a rendering in Sitecore?",
@@ -1379,15 +889,8 @@
         "D": "Nothing, it's automatically handled by Sitecore"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What command is used for deploying new code artifacts in the Sitecore-first development process?",
@@ -1398,15 +901,8 @@
         "D": "jss start"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which JSS CLI command is used to deploy a new component directly to the Sitecore database?",
@@ -1417,15 +913,8 @@
         "D": "jss deploy app"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What template includes additional fields for setting up Integrated GraphQL queries and configuring placeholders?",
@@ -1436,15 +925,8 @@
         "D": "XSLT template"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which development workflow allows developers to have their own instance of Sitecore for development?",
@@ -1455,15 +937,8 @@
         "D": "Cloud-first development"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the 'jss deploy template' command do?",
@@ -1474,15 +949,8 @@
         "D": "Generates a new JSS project template"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What must be matched between a rendering in Sitecore and its corresponding component in the JSS app?",
@@ -1493,15 +961,8 @@
         "D": "The rendering's template ID"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How is creating routes in a Sitecore-first workflow described?",
@@ -1512,15 +973,8 @@
         "D": "Entirely managed by Sitecore with no developer input needed"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is NOT a purpose of the 'jss deploy template' command?",
@@ -1531,15 +985,8 @@
         "D": "To create settings items"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is true about incremental deployments in Sitecore-first development?",
@@ -1550,15 +997,8 @@
         "D": "They involve manual copying of files to the Sitecore instance"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What feature is unique to the JSON Rendering template in Sitecore?",
@@ -1569,15 +1009,8 @@
         "D": "Automatic publishing to live sites"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What SDKs does Sitecore use to allow front-end developers to build JavaScript apps on top of Sitecore?",
@@ -1588,15 +1021,8 @@
         "D": "Sitecore React Rendering SDK"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does SXA stand for in the context of XM Cloud development?",
@@ -1607,15 +1033,8 @@
         "D": "Sitecore Extended Applications"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In Sitecore, what is the purpose of creating a headless site collection?",
@@ -1626,15 +1045,8 @@
         "D": "To deploy applications to the cloud"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How do you create a headless site collection in Sitecore?",
@@ -1645,15 +1057,8 @@
         "D": "Upload a configuration file to the server"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is a primary feature of headless sites in Sitecore?",
@@ -1664,15 +1069,8 @@
         "D": "They enable server-side rendering by default"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which folder is specifically mentioned as necessary for multilingual apps in a headless Sitecore site?",
@@ -1683,15 +1081,8 @@
         "D": "Dictionary"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is a key practice when naming SXA sites in Sitecore?",
@@ -1702,15 +1093,8 @@
         "D": "Avoid blank spaces"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What functionality does the Settings folder in a headless site provide?",
@@ -1721,15 +1105,8 @@
         "D": "It stores SEO optimization settings"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the benefit of having multiple site collections in Sitecore?",
@@ -1740,15 +1117,8 @@
         "D": "Facilitates rapid development and testing"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which tab in the headless site creation wizard is recommended to be configured at a later stage?",
@@ -1759,15 +1129,8 @@
         "D": "Security"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What can be used for complex solutions in Sitecore XM Cloud?",
@@ -1778,15 +1141,8 @@
         "D": "Single page applications"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can you create a group of site collections in Sitecore XM Cloud?",
@@ -1797,15 +1153,8 @@
         "D": "Using the API to programmatically create collections"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "For governance reasons, what can be decided to use in Sitecore XM Cloud?",
@@ -1816,15 +1165,8 @@
         "D": "Direct access to the content database"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How do you create a group of sites in Sitecore XM Cloud?",
@@ -1835,15 +1177,8 @@
         "D": "Manually in the Sitecore database"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the method to organize different sites for different countries in Sitecore XM Cloud?",
@@ -1854,15 +1189,8 @@
         "D": "Creating groups of sites for each country"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which example does not match the given model for grouping in Sitecore XM Cloud?",
@@ -1873,15 +1201,8 @@
         "D": "Consumer goods brand segmentation"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What can SXA share between headless sites within a site collection?",
@@ -1892,15 +1213,8 @@
         "D": "Only partial designs"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How do you make a headless site a shared site?",
@@ -1911,15 +1225,8 @@
         "D": "In the Experience Editor, by setting the site as 'Shared'"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the first step to use a page design from a shared site?",
@@ -1930,15 +1237,8 @@
         "D": "Use Sitecore PowerShell Extensions"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can you share data sources between sites of a site collection?",
@@ -1949,15 +1249,8 @@
         "D": "Selecting Content Blocks from both the Master site and your local site"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What must be adjusted to enable cross-site linking for headless sites?",
@@ -1968,15 +1261,8 @@
         "D": "The Experience Editor's configuration"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the default value of the Link Settings field for cross-site linking?",
@@ -1987,15 +1273,8 @@
         "D": "All sites, including external sites"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How do you make a site linkable?",
@@ -2006,15 +1285,8 @@
         "D": "By publishing the site to a live environment"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is shared as a delegated area?",
@@ -2025,15 +1297,8 @@
         "D": "The site's media library only"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does adding a shared site imply?",
@@ -2044,15 +1309,8 @@
         "D": "That no further configuration is necessary"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What allows content authors to add links to sites?",
@@ -2063,15 +1321,8 @@
         "D": "The Sitecore API"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the default value of the Link Settings field for cross-site linking in Sitecore XM Cloud?",
@@ -2082,15 +1333,8 @@
         "D": "All linkable"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can you make a site linkable in Sitecore XM Cloud?",
@@ -2101,15 +1345,8 @@
         "D": "By configuring the Site Definition item"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which option is NOT a type of link that can be added using the Link List and Navigation renderings in Sitecore XM Cloud?",
@@ -2120,15 +1357,8 @@
         "D": "External links"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In Sitecore XM Cloud, if a site is set to be able to link across site collections, what type of links can you insert using the Insert a link dialog box?",
@@ -2139,15 +1369,8 @@
         "D": "Links to all sites within all site collections"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What property must be added to make non-SXA sites linkable in Sitecore XM Cloud?",
@@ -2158,15 +1381,8 @@
         "D": "enableLinking=\"true\""
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Where does SXA create a site collection templates location by default?",
@@ -2177,15 +1393,8 @@
         "D": "/sitecore/layout/Templates"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How does SXA validate items for template compatibility?",
@@ -2196,15 +1405,8 @@
         "D": "By item path"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the recommended method for extending an SXA template to avoid Experience Editor issues?",
@@ -2215,15 +1417,8 @@
         "D": "Directly modify the SXA template"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the prefix used in SXA for template names that function as base templates but cannot be used to create items?",
@@ -2234,15 +1429,8 @@
         "D": "_Searchable"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What should you do to ensure you do not break the template inheritance?",
@@ -2253,15 +1441,8 @@
         "D": "Rename the template"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "You can deploy a new XM Cloud XM instance with which of the following methods?",
@@ -2272,15 +1453,8 @@
         "D": "Sitecore Experience Edge"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "XM Cloud publishes and retrieves content solely through which one of the following?",
@@ -2291,15 +1465,8 @@
         "D": "A content delivery server"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following use cases would benefit most from deploying an XM instance with XM Cloud?",
@@ -2310,15 +1477,8 @@
         "D": "A customer requires a fully on-premises solution for compliance reasons and does not wish to utilize cloud services."
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the default behavior when you use the 'deployment create' command in the Sitecore XM Cloud plugin?",
@@ -2329,15 +1489,8 @@
         "D": "A different directory from the current working directory is used as the default upload directory."
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What happens when you use the '--no-start' argument with the 'deployment' command?",
@@ -2348,15 +1501,8 @@
         "D": "The CLI is blocked until the deployment is complete."
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the result of using the '--no-watch' argument with the 'deployment' command?",
@@ -2367,15 +1513,8 @@
         "D": "A different directory is automatically selected for uploading code."
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the default upload directory when using the 'deployment create' command without specifying an upload flag?",
@@ -2386,15 +1525,8 @@
         "D": "The current working directory."
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can you monitor the progress of a deployment if the '--no-watch' argument is used?",
@@ -2405,15 +1537,8 @@
         "D": "By navigating to the URL provided in the CLI."
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the minimum .NET version required to install the Sitecore Command Line Interface?",
@@ -2424,15 +1549,8 @@
         "D": ".NET Framework 4.8"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which command initializes a new project for the Sitecore CLI?",
@@ -2443,15 +1561,8 @@
         "D": "dotnet new tool-manifest"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can other developers working on the same Sitecore CLI project install the Sitecore CLI?",
@@ -2462,15 +1573,8 @@
         "D": "dotnet nuget add source"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "To install the XM Cloud plugin for the Sitecore CLI, which command should be used?",
@@ -2481,15 +1585,8 @@
         "D": "dotnet install xmcloud-plugin"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore CLI command is used to verify the installation and list installed plugins?",
@@ -2500,15 +1597,8 @@
         "D": "dotnet sitecore plugins --show"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Why is it not recommended to install the Sitecore CLI as a global tool?",
@@ -2519,15 +1609,8 @@
         "D": "Global installation does not support XM Cloud plugins."
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of the 'cloud' command in the Sitecore XM Cloud plugin?",
@@ -2538,15 +1621,8 @@
         "D": "To update the Sitecore XM Cloud plugin itself."
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which command is used to authenticate a user with an XM Cloud organization through the CLI?",
@@ -2557,15 +1633,8 @@
         "D": "login"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which option displays developer help and usage information about the 'cloud' CLI command?",
@@ -2576,15 +1645,8 @@
         "D": "--options"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the 'cloud logout' CLI subcommand do?",
@@ -2595,15 +1657,8 @@
         "D": "Uninstalls the XM Cloud plugin."
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which CLI subcommand is used for managing and interacting with XM Cloud deployments for a given environment?",
@@ -2614,15 +1669,8 @@
         "D": "project"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "A multinational clothing company wants to create brand sites for its online presence. Each site would have unique branding, content, and components. The content architecture requires a site per region. Which approach should be taken to deploy the rendering host?",
@@ -2633,15 +1681,8 @@
         "D": "Create a single site collection and site for all brands, countries, and manage their resources manually"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What Sitecore Content Serialization command can a developer use to ensure that they don't forget to pull changes made within a developer-managed location?",
@@ -2652,15 +1693,8 @@
         "D": "The package create command"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "When deploying to XM Cloud, how are Sitecore Content Serialization (SCS) serialized items created in the Content Management (CM) instance?",
@@ -2671,15 +1705,8 @@
         "D": "The XM Cloud deploy process uses serialized item batches through REST APIs at the XM Cloud CM to speed up serialization."
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the default scope for a serialization include if the scope parameter is not defined?",
@@ -2690,15 +1717,8 @@
         "D": "ItemAndChildren"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In XM Cloud Pages, where can you add a component?",
@@ -2709,15 +1729,8 @@
         "D": "In a non-editable section"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can you reorder components within a placeholder in XM Cloud Pages?",
@@ -2728,15 +1741,8 @@
         "D": "It is not possible to reorder components"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is required before you create a webpage in XM Cloud Pages?",
@@ -2747,15 +1753,8 @@
         "D": "Manual coding of the webpage"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can a new page design be assigned to a template in XM Cloud Pages?",
@@ -2766,15 +1765,8 @@
         "D": "By editing the template's properties"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the green badge indicate when managing dynamic content in a component in XM Cloud Pages?",
@@ -2785,15 +1777,8 @@
         "D": "The component needs updating"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is a partial design in XM Cloud Pages?",
@@ -2804,15 +1789,8 @@
         "D": "A static webpage design"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is required to use a page design in a page in XM Cloud Pages?",
@@ -2823,15 +1801,8 @@
         "D": "Approval from a Sitecore administrator"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What must you do to use your partial designs in a page in XM Cloud Pages?",
@@ -2842,15 +1813,8 @@
         "D": "Integrate them using a special plugin"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What action triggers the cursor to change to a 'prohibited' icon when adding a component in XM Cloud Pages?",
@@ -2861,15 +1825,8 @@
         "D": "Hovering over the Components tab"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How do you remove a component from a page in XM Cloud Pages?",
@@ -2880,15 +1837,8 @@
         "D": "Remove it from the Components library"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the first step in assigning an existing page design to a template in XM Cloud Pages?",
@@ -2899,15 +1849,8 @@
         "D": "Publish the page design"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is a fallback strategy for missing mapped data in dynamic content within XM Cloud Pages?",
@@ -2918,15 +1861,8 @@
         "D": "Send a notification to the admin"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In the context of XM Cloud Pages, what allows a developer to define under which templates the new page template will be available?",
@@ -2937,15 +1873,8 @@
         "D": "The Component Configuration panel"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In XM Cloud Pages Personalize, how can you create a page variant?",
@@ -2956,15 +1885,8 @@
         "D": "Through the 'Page Properties' dialogue in the Experience Editor."
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the maximum number of variants per default page you can create in XM Cloud Pages Personalize?",
@@ -2975,15 +1897,8 @@
         "D": "16"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What can you NOT do directly in a page variant to personalize a page in XM Cloud?",
@@ -2994,15 +1909,8 @@
         "D": "Use direct inline editing"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How many conditions per audience can you include in a page variant in XM Cloud Pages Personalize?",
@@ -3013,15 +1921,8 @@
         "D": "10"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What type of condition template is used to specify content visibility based on the visitor's device type?",
@@ -3032,15 +1933,8 @@
         "D": "Page views"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which template category does NOT exist in XM Cloud Pages Personalize's audience builder?",
@@ -3051,15 +1945,8 @@
         "D": "Point of sale"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How are condition groups evaluated in XM Cloud Pages Personalize?",
@@ -3070,15 +1957,8 @@
         "D": "Based on the complexity of conditions"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What action is NOT possible with condition groups in XM Cloud Pages Personalize?",
@@ -3089,15 +1969,8 @@
         "D": "Add a condition to an existing group"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In the context of XM Cloud Pages Personalize, what does the teal border around a component indicate?",
@@ -3108,15 +1981,8 @@
         "D": "The component is locked for editing"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which operator is used in XM Cloud Pages Personalize to evaluate conditions that must all be true for an audience?",
@@ -3127,15 +1993,8 @@
         "D": "OR"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which search provider does the Experience Edge for XM Connector support?",
@@ -3146,15 +2005,8 @@
         "D": "MongoDB"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What must you republish if you change a rendering configuration or Layout Service extension affecting the output of the Layout Service?",
@@ -3165,15 +2017,8 @@
         "D": "The affected items"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the maximum size for Media items in Experience Edge for XM?",
@@ -3184,15 +2029,8 @@
         "D": "No limit"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the default value of 'first' in paginated queries within the Experience Edge schema?",
@@ -3203,15 +2041,8 @@
         "D": "20"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "During the publishing process to Experience Edge, what event is published first?",
@@ -3222,15 +2053,8 @@
         "D": "MediaUpload"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What should you use for local development according to best practices for working with Experience Edge for XM?",
@@ -3241,15 +2065,8 @@
         "D": "Local GraphQL server"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How does Experience Edge for XM enforce security constraints on Sitecore content?",
@@ -3260,15 +2077,8 @@
         "D": "Via encrypted channels only"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the limit for the number of sites per tenant in Experience Edge?",
@@ -3279,15 +2089,8 @@
         "D": "No limit"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What mechanism is used to secure calls to the Experience Edge API, other than the Delivery API?",
@@ -3298,15 +2101,8 @@
         "D": "IP whitelisting"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the base URL for the Sitecore XM Cloud Admin API in Sitecore Experience Edge for XM?",
@@ -3317,15 +2113,8 @@
         "D": "https://sitecorecloud.edge.api/admin/v1"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which HTTP verb is used to clear the entire cache for a given tenant using the Sitecore Experience Edge Admin API?",
@@ -3336,15 +2125,8 @@
         "D": "PUT"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the default time-to-live (TTL) value for content and media items in the Sitecore Experience Edge Admin API's cache settings?",
@@ -3355,15 +2137,8 @@
         "D": "8 hours"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following endpoints is NOT part of the Sitecore Experience Edge Admin API?",
@@ -3374,15 +2149,8 @@
         "D": "GetWebhookById"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is required in the header for all Sitecore Experience Edge Admin API endpoints?",
@@ -3393,15 +2161,8 @@
         "D": "Client ID"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How is a new webhook created using the Sitecore Experience Edge Admin API?",
@@ -3412,15 +2173,8 @@
         "D": "Sending a PATCH request to the /webhooks endpoint"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which endpoint is used to update settings for a tenant using the Experience Edge Admin API?",
@@ -3431,15 +2185,8 @@
         "D": "ChangeSettings"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What format is used for patch operations in the Sitecore Experience Edge Admin API?",
@@ -3450,15 +2197,8 @@
         "D": "application/json-patch+json"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which API key scope is required to access the Delivery API using the Experience Edge Token API?",
@@ -3469,15 +2209,8 @@
         "D": "delivery-access"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the default execution mode for a webhook in Sitecore XM Cloud?",
@@ -3488,15 +2221,8 @@
         "D": "OnUpdate"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which HTTP methods are supported for making web requests with webhooks in Sitecore XM Cloud?",
@@ -3507,15 +2233,8 @@
         "D": "GET, POST, and PUT"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What information does the 'OnUpdate' execution mode include in a webhook request body?",
@@ -3526,15 +2245,8 @@
         "D": "An encrypted token for authentication"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What type of content can be set in the 'headers' of a webhook to specify the format of the body?",
@@ -3545,15 +2257,8 @@
         "D": "text/plain"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which field in the webhook configuration is used to describe the purpose of the webhook?",
@@ -3564,15 +2269,8 @@
         "D": "Body"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of the 'BodyInclude' field in the webhook configuration?",
@@ -3583,15 +2281,8 @@
         "D": "To indicate the URI to make the web request to"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How does the 'OnEnd' execution mode determine when the webhook is executed?",
@@ -3602,15 +2293,8 @@
         "D": "At the beginning and end of the publishing job"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which JSON object is used to describe an entity that was updated and caused the webhook execution?",
@@ -3621,15 +2305,8 @@
         "D": "Webhook"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In the 'WebHookRequest' object, what does the 'continues' boolean indicate?",
@@ -3640,15 +2317,8 @@
         "D": "If the webhook execution is in 'OnUpdate' or 'OnEnd' mode"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What key should be used to connect your local XM application to XM Cloud Pages?",
@@ -3659,15 +2329,8 @@
         "D": "Local.XMCloud.PagesUrl"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What environment variable is required to configure your XM Cloud instance to connect with XM Cloud Pages?",
@@ -3678,15 +2341,8 @@
         "D": "SITECORE_XMCloud_Pages"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "To create a project in the Deploy app, which role must you have in the organization?",
@@ -3697,15 +2353,8 @@
         "D": "Team Lead"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which source control provider does the Deploy app support for storing environment code?",
@@ -3716,15 +2365,8 @@
         "D": "Bitbucket"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "When deploying an XM Cloud website using the Vercel connector, what does the process automatically set up?",
@@ -3735,15 +2377,8 @@
         "D": "XM Cloud Deploy API integration"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is required before starting XM Cloud development using an existing solution?",
@@ -3754,15 +2389,8 @@
         "D": "Install Sitecore locally using the Sitecore Installation Framework"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What represents a single Sitecore Content Management (CM) instance along with all services for hosting a Sitecore solution?",
@@ -3773,15 +2401,8 @@
         "D": "XM Cloud Template"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which command is used to log in to XM Cloud via the Sitecore CLI?",
@@ -3792,15 +2413,8 @@
         "D": "dotnet sitecore cloud login"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of the --upload parameter when creating a deployment in the XM Cloud environment?",
@@ -3811,15 +2425,8 @@
         "D": "To identify the project to deploy"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the Sitecore CLI command `dotnet sitecore cloud environment create` do?",
@@ -3830,15 +2437,8 @@
         "D": "Lists all XM Cloud projects"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which CLI command is used to create a new project in XM Cloud?",
@@ -3849,15 +2449,8 @@
         "D": "sitecore cloud init project"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What role is required to create a new environment within a project in the XM Cloud Deploy app?",
@@ -3868,15 +2461,8 @@
         "D": "Environment Manager"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What must be configured to ensure your local XM Cloud instance connects with XM Cloud Pages?",
@@ -3887,15 +2473,8 @@
         "D": "Pages_XMCloud_Connection"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "To deploy an XM Cloud website using the Vercel connector, what step is required after publishing all sites?",
@@ -3906,15 +2485,8 @@
         "D": "Configure environment variables in Vercel"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What command is used to link an XM Cloud environment to a different branch within the same repository?",
@@ -3925,15 +2497,8 @@
         "D": "sitecore cloud branch switch"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore XM Cloud Deploy API endpoint is used to delete an automation client?",
@@ -3944,15 +2509,8 @@
         "D": "/api/environments/v1/{environmentId}"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of the POST /api/clients/v1/deploy Sitecore XM Cloud Deploy API endpoint?",
@@ -3963,15 +2521,8 @@
         "D": "Deletes an automation client"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore XM Cloud Deploy API endpoint would you use to get the number of deployments grouped by status in the organization?",
@@ -3982,15 +2533,8 @@
         "D": "/api/environments/v1/limitation"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "To update an environment, which Sitecore XM Cloud Deploy API method and endpoint should be used?",
@@ -4001,15 +2545,8 @@
         "D": "DELETE /api/environments/v1/{environmentId}"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the GET /api/environments/v1/limitation Sitecore XM Cloud Deploy API endpoint provide?",
@@ -4020,15 +2557,8 @@
         "D": "Retrieves a state code for use with CSRF prevention"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore XM Cloud Deploy API endpoint is used to create a new deployment for an environment from an existing deployment?",
@@ -4039,15 +2569,8 @@
         "D": "/api/clients/v1/cm"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of the DELETE /api/projects/v1/{projectId} Sitecore XM Cloud Deploy API endpoint?",
@@ -4058,15 +2581,8 @@
         "D": "Deletes a site definition resource record"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore XM Cloud Deploy API method and endpoint should be used to create a project for the hosting installation?",
@@ -4077,15 +2593,8 @@
         "D": "PUT /api/hosting/v1/install"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "To get a list of all organization hosts, which Sitecore XM Cloud Deploy API endpoint should be used?",
@@ -4096,15 +2605,8 @@
         "D": "/api/sourcecontrol/v1/integrations"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore XM Cloud Deploy API endpoint is used for validating that a source control integration is valid?",
@@ -4115,15 +2617,8 @@
         "D": "/api/sourcecontrol/v1/repository/validate"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore XM Cloud Deploy API endpoint retrieves the edge token for an environment?",
@@ -4134,15 +2629,8 @@
         "D": "/api/environments/v1/limitation"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of the GET /api/projects/v1/{projectId}/environments/limitation Sitecore XM Cloud Deploy API endpoint?",
@@ -4153,15 +2641,8 @@
         "D": "Deletes a project by project ID"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore XM Cloud Deploy API method and endpoint are used to create a service hook subscription in ADO for the git push event?",
@@ -4172,15 +2653,8 @@
         "D": "PUT /api/sourcecontrol/v1/hook/subscribe"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Sitecore XM Cloud Deploy API endpoint is used to get the branch for a source control repository and integration?",
@@ -4191,15 +2665,8 @@
         "D": "/api/sourcecontrol/v1/accesstoken"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What operation is not currently supported by the Sitecore XM Cloud GraphQL Authoring and Management API?",
@@ -4210,15 +2677,8 @@
         "D": "Uploading media"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is not supported by the Security API in Sitecore XM Cloud?",
@@ -4229,15 +2689,8 @@
         "D": "Uploading media"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In the Sitecore XM Cloud GraphQL API, what mutation is used to create an item?",
@@ -4248,15 +2701,8 @@
         "D": "deleteItem"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is a valid mutation for deleting an item in Sitecore XM Cloud using GraphQL?",
@@ -4267,15 +2713,8 @@
         "D": "deleteItem"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "To create a template in Sitecore XM Cloud, which GraphQL mutation is utilized?",
@@ -4286,15 +2725,8 @@
         "D": "deleteItemTemplate"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How can you upload media to Sitecore XM Cloud GraphQL?",
@@ -4305,15 +2737,8 @@
         "D": "mediaUpload"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which GraphQL query is used to fetch information about a specific site by its name in Sitecore XM Cloud?",
@@ -4324,15 +2749,8 @@
         "D": "querySite"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "For publishing an item to the edge in Sitecore XM Cloud, what GraphQL mutation do you use?",
@@ -4343,15 +2761,8 @@
         "D": "postItem"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is not a valid GraphQL type for authoring operations in Sitecore XM Cloud?",
@@ -4362,15 +2773,8 @@
         "D": "Item"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "To check the status of a publishing operation, which GraphQL query do you use in Sitecore XM Cloud?",
@@ -4381,15 +2785,8 @@
         "D": "publishItemStatus"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In Sitecore XM Cloud, what do you need to obtain and use for authorizing GraphQL IDE or HTTP requests?",
@@ -4400,15 +2797,8 @@
         "D": "API key"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which attribute in the Layout Service configuration defines the list of rendering IDs that can be present as JSON?",
@@ -4419,15 +2809,8 @@
         "D": "configurations"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the default value for the serializationMaxDepth attribute in the Layout Service configuration?",
@@ -4438,15 +2821,8 @@
         "D": "4"
       },
       "answer": "D",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which attribute in the Layout Service configuration is used to specify excluded paths?",
@@ -4457,15 +2833,8 @@
         "D": "configurations"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What does the 'AlwaysIncludeEmptyFields' setting within a configuration indicate in the Layout Service?",
@@ -4476,15 +2845,8 @@
         "D": "It ensures the JSON output is minimized by excluding metadata"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which Layout Service feature allows customizing the rendering output to include data such as the context item or data from datasource children?",
@@ -4495,15 +2857,8 @@
         "D": "GraphQL integration"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In which situation would you use the 'Context Item Resolver'?",
@@ -4514,15 +2869,8 @@
         "D": "To apply a custom GraphQL query to the rendering output"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of the 'IncludeServerUrlInMediaUrls' parameter in a custom Rendering Contents Resolver?",
@@ -4533,15 +2881,8 @@
         "D": "To resolve media URLs based on the site's configured domain"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which processor extension is used to add custom data to the context object in the Layout Service?",
@@ -4552,15 +2893,8 @@
         "D": "DynamicPlaceholdersResolver"
       },
       "answer": "A",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What advantage does using integrated GraphQL in JSS apps offer?",
@@ -4571,15 +2905,8 @@
         "D": "It encrypts the data transferred from Sitecore to the client application"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Why is it recommended to avoid adding sensitive information to the Layout Service response?",
@@ -4590,15 +2917,8 @@
         "D": "It is fully encrypted and secure, but increases the load on the Sitecore server"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following tokens is expanded by Sitecore to the system date in the format yyyyMMdd when used in a branch template?",
@@ -4609,15 +2929,8 @@
         "D": "$now"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the purpose of a command template in Sitecore XM Cloud?",
@@ -4628,15 +2941,8 @@
         "D": "To control the types of items users can insert under existing items"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the main difference between standard values and field values in branch templates?",
@@ -4647,15 +2953,8 @@
         "D": "Standard values allow token substitution, while field values do not"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "In Sitecore XM Cloud, what does a data template define?",
@@ -4666,15 +2965,8 @@
         "D": "The permissions required for data entry"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which of the following is NOT a default user account in Sitecore XM Cloud?",
@@ -4685,15 +2977,8 @@
         "D": "creator\\owner"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "What is the significance of the 'Administrator' field in the user template of XM Cloud?",
@@ -4704,15 +2989,8 @@
         "D": "It designates the user as part of the administrative domain"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "Which process does Sitecore XM Cloud use to determine effective insert options for an item?",
@@ -4723,15 +3001,8 @@
         "D": "The createNewItem process"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
     },
     {
       "question": "How does Sitecore XM Cloud define the schema of data entered into the system?",
@@ -4742,15 +3013,139 @@
         "D": "Through the security model and permissions"
       },
       "answer": "B",
-      "explanation": "This is a test explanation.",
-      "study": [
-        {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
-        }
-      ]
+      "explanation": "",
+      "study": []
+    },
+    {
+      "question": "A developer tried to exclude fields in a Sitecore Content Serialization package. Which file should they use to specify the excluded fields?",
+      "options": {
+        "A": "user.json",
+        "B": "sitecore.config",
+        "C": "sitecore.json",
+        "D": "xmcloud.build.json"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "The excluded fields feature is available from CLI 4.0 or later. This way, you can reduce the size of your Sitecore Content Serialization package and avoid unnecessary serialization of fields that are not relevant for your deployment scenario."
+    },
+    {
+      "question": "What Sitecore Content Serialization command can a developer use to ensure that they don't forget to pull changes made within a developer-managed location?",
+      "options": {
+        "A": "The watch command",
+        "B": "The sync command",
+        "C": "The connect command",
+        "D": "The package create command"
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "The Sitecore serialization plugin provides the serialization command with the short form ser. This command handles the serialization of items in and out of a Sitecore instance. You can use the watch subcommand to monitor changes to content items in a Sitecore instance and automatically serialize the changes to your file system. This way, you can ensure that you don't forget to pull changes made within a developer-managed location."
+    },
+    {
+      "question": "When deploying to XM Cloud, how are Sitecore Content Serialization (SCS) serialized items created in the Content Management (CM) instance?",
+      "options": {
+        "A": "The XM Cloud deploy process uses the SCS CLI to do a push once the CM instance is active.",
+        "B": "The XM Cloud deploy process creates an Items as Resources (IAR) file and layers this into the CM instance.",
+        "C": "A build pipeline must be created to use the SCS CLI push commands to push content after the XM Cloud Deploy app finishes.",
+        "D": "The XM Cloud deploy process uses serialized item batches through REST APIs at the XM Cloud CM to speed up serialization."
+      },
+      "answer": "D",
+      "question_type": "single",
+      "explanation": "The Sitecore Content Serialization (SCS) system serializes content items in and out of a Sitecore instance using YAML files. When deploying to XM Cloud, the XM Cloud deploy process uses serialized item batches through REST APIs at the XM Cloud CM to speed up serialization. This way, you can serialize large amounts of content items without affecting the performance of the Content Management (CM) instance."
+    },
+    {
+      "question": "What does the default scope for a serialization include if the scope parameter is not defined?",
+      "options": {
+        "A": "DescendantsOnly",
+        "B": "Singleitem",
+        "C": "ItemAndDescendants",
+        "D": "ItemAndChildren"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "The default scope for a serialization in Sitecore Content Serialization (SCS) includes all the content items under the specified path and all their descendants. You can configure what and how content items are included and excluded from serialization in a module file such as Project.module.json. You can also use rules to configure the serialization of content item trees with different scopes."
+    },
+    {
+      "question": "What is the sitecore.json file in a development solution?",
+      "options": {
+        "A": "The environment variables file for the Sitecore Docker deployment",
+        "B": "The configuration file for the Sitecore development tooling",
+        "C": "The solution integration file needed for deploying code changes to the environment",
+        "D": "A custom configuration file defining a solution for headless environments"
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "The sitecore.json file is located in the root folder of the solution and it comes with the XM Cloud Foundation Head starter kit. In here we can configure what *.module.json files should be considered for serialization configuration, the plugins with its particular versions and some general settings for the serialization."
+    },
+    {
+      "question": "A developer has set up a local XM Cloud development environment and would like to connect Sitecore Pages to their locally running XM Cloud instance. However, after following the necessary steps, they're facing issues with the connection. Of the options below, what is the most likely potential reason for this issue?",
+      "options": {
+        "A": "The value of the local storage entry 'Sitecore.Pages.LocalXmCloudUrl' should be set to https://pages.sitecorecloud.io.",
+        "B": "The browser developer tools console does not support the local storage functionality required for this connection.",
+        "C": "The value of the local storage entry 'Sitecore.PagesXmCloud' should be set to enabled.",
+        "D": "The environment variable 'SITECORE_Pages_CORS_Allowed_Origins' is not correctly configured to include pages.sitecorecloud.io."
+      },
+      "answer": "D",
+      "question_type": "single"
+    },
+    {
+      "question": "If a developer wants to limit the serialization of items under a Navigation item to just the item itself and then one step below, what property should the developer add to the includes to indicate this limitation?",
+      "options": {
+        "A": "Scope",
+        "B": "Nothing—this is the default.",
+        "C": "Limit",
+        "D": "Name"
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "The scope property is used to control the depth of the serialization tree. The scope property can have one of the following values: Self — only the item itself is serialized, not its descendants; Children — the item and its immediate children are serialized, not the grandchildren or further descendants; Subtree — the item and all its descendants are serialized, regardless of the depth."
+    },
+    {
+      "question": "A developer is using the Content Editor to set placeholder restrictions on a placeholder called headless-footer. Because these restrictions have been set on the placeholder settings within /sitecore/Layout/Placeholder Settings, which of the following statements is correct?",
+      "options": {
+        "A": "The restrictions apply for all placeholders called headless-footer within a single site in the XM Cloud Content Management instance.",
+        "B": "The restrictions apply for all placeholders called headless-footer on every page of every site that is in the XM Cloud Content Management instance.",
+        "C": "The restrictions only apply for a placeholder called headless-footer on a designated page.",
+        "D": "The restrictions only apply for subsequently created versions of a placeholder called headless-footer."
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "In the Content Editor, you can set placeholder restrictions for your layout placeholders. These restrictions are applied on all pages in the site. For example, if you add restrictions for a footer, these apply for all footers on every page of the site."
+    },
+    {
+      "question": "Users in XM Cloud Pages want to modify and add specific components at a given point on the page. What would a developer do to allow the users to accomplish this task?",
+      "options": {
+        "A": "Enable the correct placeholder settings of the components to be modified to include the page template used for the content item users are editing.",
+        "B": "Include a placeholder as part of the layout markup and create a corresponding placeholder settings item with the appropriate allowed components.",
+        "C": "Set the standard values for the page template to include component modification options and make sure the template used by the page inherits appropriately.",
+        "D": "Enable the insert options of the components to be included for the page template and set the appropriate allowed components."
+      },
+      "answer": "B",
+      "question_type": "single",
+      "explanation": "A placeholder is a named location on a page where components can be inserted. A placeholder can have one or more components assigned to it, and the content author can add, remove, or reorder the components in the XM Cloud Pages editor."
+    },
+    {
+      "question": "A developer needs to create a site for a company and must define the data structures in Sitecore to create items and content. What should the developer use to define the data structures?",
+      "options": {
+        "A": "Templates",
+        "B": "Rendering parameters",
+        "C": "Renderings",
+        "D": "Components data sources"
+      },
+      "answer": "A",
+      "question_type": "single",
+      "explanation": "Templates are the fundamental concept in Sitecore that determine the structure and behavior of content items. Templates define the fields, sections, and parameters that make up each item. Templates also enable inheritance, which allows items to share common fields and properties from their base templates."
+    },
+    {
+      "question": "A developer wants to create a new component to display content from a datasource. Of the options listed below, what are the optimal steps to do this?",
+      "options": {
+        "A": "Create or reuse a SXA Module, insert a new rendering, and use the JSS CLI to scaffold out a new component.",
+        "B": "Create the new component in the Next.js application and import it to XM Cloud.",
+        "C": "Create or reuse a SXA Module, clone an existing component that uses a data source item, and create the React component based on the original cloned component.",
+        "D": "Create or reuse a SXA Module, clone an existing component that uses a context item, and create the React component based on the original cloned component."
+      },
+      "answer": "C",
+      "question_type": "single",
+      "explanation": "A data source item is a content item that provides the content for a component. A data source item can have fields, such as text, image, or link, that can be edited by the content author in the XM Cloud Pages editor."
     }
   ]
 }
