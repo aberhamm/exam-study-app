@@ -8,3 +8,8 @@ export type NormalizedQuestion = {
   explanation?: string;
   study?: { chunkId: string; url?: string; anchor?: string; excerpt?: string }[];
 };
+
+export type ExamMetadata = {
+  examId: string;
+  examTitle: string;
+};

@@ -63,16 +63,7 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
 
       let isCorrect = false;
 
-      if (question.questionType === 'single') {
-        isCorrect = selectedIndex === correctIndex;
-      } else {
-        // For multiple select, check if arrays match exactly
-        const selectedArray = Array.isArray(selectedIndex) ? selectedIndex : [];
-        const correctArray = Array.isArray(correctIndex) ? correctIndex : [];
-
-        isCorrect = selectedArray.length === correctArray.length &&
-                   selectedArray.every(val => correctArray.includes(val as 0 | 1 | 2 | 3));
-      }
+      isCorrect = selectedIndex === correctIndex;
 
       if (isCorrect) {
         score++;
@@ -101,30 +92,33 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
     const currentQuestion = questions[quizState.currentQuestionIndex];
     const newSelectedAnswers = [...quizState.selectedAnswers];
 
-    if (currentQuestion.questionType === 'single') {
+    if (currentQuestion.questionType === 'multiple') {
+      // For multiple choice, toggle selection and don't show feedback until submit
+      const currentSelected = newSelectedAnswers[quizState.currentQuestionIndex];
+      const selectedArray = Array.isArray(currentSelected) ? currentSelected : [];
+
+      if (selectedArray.includes(answerIndex)) {
+        // Remove if already selected
+        newSelectedAnswers[quizState.currentQuestionIndex] = selectedArray.filter(idx => idx !== answerIndex);
+      } else {
+        // Add to selection
+        newSelectedAnswers[quizState.currentQuestionIndex] = [...selectedArray, answerIndex];
+      }
+
+      const newState = {
+        ...quizState,
+        selectedAnswers: newSelectedAnswers,
+        // Don't show feedback for multiple choice until submit is pressed
+      };
+      setQuizState(newState);
+    } else {
+      // For single choice, show feedback immediately
       newSelectedAnswers[quizState.currentQuestionIndex] = answerIndex;
 
       const newState = {
         ...quizState,
         selectedAnswers: newSelectedAnswers,
         showFeedback: true,
-      };
-      setQuizState(newState);
-    } else {
-      // For multiple select, toggle the selection
-      const currentSelections = newSelectedAnswers[quizState.currentQuestionIndex] as number[] || [];
-      const isSelected = currentSelections.includes(answerIndex);
-
-      if (isSelected) {
-        newSelectedAnswers[quizState.currentQuestionIndex] = currentSelections.filter(i => i !== answerIndex);
-      } else {
-        newSelectedAnswers[quizState.currentQuestionIndex] = [...currentSelections, answerIndex].sort();
-      }
-
-      const newState = {
-        ...quizState,
-        selectedAnswers: newSelectedAnswers,
-        // Don't show feedback immediately for multiple select - wait for user to submit
       };
       setQuizState(newState);
     }
@@ -182,7 +176,7 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
         e.preventDefault();
         nextQuestion();
       } else if (currentQuestion.questionType === 'multiple') {
-        // For multiple select, Enter/Space submits the current selections
+        // For multiple choice, Enter/Space should submit the answer
         e.preventDefault();
         submitMultipleAnswer();
       }
@@ -261,15 +255,8 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
                         let isCorrect = false;
                         let isSelected = false;
 
-                        if (question.questionType === 'single') {
-                          isCorrect = choiceIndex === correctIndex;
-                          isSelected = choiceIndex === selectedIndex;
-                        } else {
-                          const correctArray = Array.isArray(correctIndex) ? correctIndex : [];
-                          const selectedArray = Array.isArray(selectedIndex) ? selectedIndex : [];
-                          isCorrect = correctArray.includes(choiceIndex);
-                          isSelected = selectedArray.includes(choiceIndex);
-                        }
+                        isCorrect = choiceIndex === correctIndex;
+                        isSelected = choiceIndex === selectedIndex;
 
                         return (
                           <div
@@ -319,14 +306,7 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
 
   let isCorrect = false;
   if (currentQuestion) {
-    if (currentQuestion.questionType === 'single') {
-      isCorrect = selectedAnswerIndex === currentQuestion.answerIndex;
-    } else {
-      const selectedArray = Array.isArray(selectedAnswerIndex) ? selectedAnswerIndex : [];
-      const correctArray = Array.isArray(currentQuestion.answerIndex) ? currentQuestion.answerIndex : [];
-      isCorrect = selectedArray.length === correctArray.length &&
-                 selectedArray.every(val => correctArray.includes(val as 0 | 1 | 2 | 3));
-    }
+    isCorrect = selectedAnswerIndex === currentQuestion.answerIndex;
   }
 
   return (
@@ -432,12 +412,22 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
               if (currentQuestion.questionType === 'single') {
                 showCorrect = index === currentQuestion.answerIndex;
               } else {
+                // For multiple choice, only show green if the answer is both correct AND selected
                 const correctArray = Array.isArray(currentQuestion.answerIndex) ? currentQuestion.answerIndex : [];
-                showCorrect = correctArray.includes(index as 0 | 1 | 2 | 3);
+                const isCorrectAnswer = correctArray.includes(index as 0 | 1 | 2 | 3);
+                showCorrect = isCorrectAnswer && isSelected;
               }
             }
 
             const showIncorrect = quizState.showFeedback && isSelected && !showCorrect;
+
+            // For multiple choice, show missed correct answers in a subtle way
+            let showMissedCorrect = false;
+            if (quizState.showFeedback && currentQuestion.questionType === 'multiple') {
+              const correctArray = Array.isArray(currentQuestion.answerIndex) ? currentQuestion.answerIndex : [];
+              const isCorrectAnswer = correctArray.includes(index as 0 | 1 | 2 | 3);
+              showMissedCorrect = isCorrectAnswer && !isSelected;
+            }
 
             return (
               <button
@@ -449,6 +439,8 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
                     ? "border-green-500 bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200"
                     : showIncorrect
                     ? "border-red-500 bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200"
+                    : showMissedCorrect
+                    ? "border-green-300 bg-green-25 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-dashed"
                     : isSelected
                     ? "border-primary bg-primary/5 dark:bg-primary/10"
                     : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -485,6 +477,11 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
                 {showIncorrect && (
                   <span id={`answer-${index}-feedback`} className="ml-2 text-red-600 dark:text-red-400 font-semibold">
                     ✗ Incorrect
+                  </span>
+                )}
+                {showMissedCorrect && (
+                  <span id={`answer-${index}-feedback`} className="ml-2 text-green-600 dark:text-green-400 font-medium">
+                    ✓ Correct (not selected)
                   </span>
                 )}
               </button>

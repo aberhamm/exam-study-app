@@ -1,5 +1,5 @@
 // src/app/quiz-data.ts
-import raw from "@/data/questions.json";
+import raw from "@/data/sitecore-xmc.json";
 import { ExternalQuestionsFileZ } from "@/lib/validation";
 import { normalizeQuestions } from "@/lib/normalize";
 

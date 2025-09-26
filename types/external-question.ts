@@ -16,5 +16,7 @@ export type ExternalQuestion = {
 };
 
 export type ExternalQuestionsFile = {
+  examId?: string;
+  examTitle?: string;
   questions: ExternalQuestion[];
 };

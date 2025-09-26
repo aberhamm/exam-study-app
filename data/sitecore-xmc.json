@@ -1,4 +1,6 @@
 {
+  "examId": "sitecore-xmc",
+  "examTitle": "Sitecore XM Cloud",
   "questions": [
     {
       "question": "What architecture does Sitecore XM Cloud utilize?",

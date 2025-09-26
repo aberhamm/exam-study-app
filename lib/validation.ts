@@ -26,5 +26,7 @@ export const ExternalQuestionZ = z.object({
 });
 
 export const ExternalQuestionsFileZ = z.object({
+  examId: z.string().optional().default('sitecore-xmc'),
+  examTitle: z.string().optional().default('Sitecore XM Cloud'),
   questions: z.array(ExternalQuestionZ),
 });
