@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StudyPanel } from '@/components/StudyPanel';
-import { Header } from '@/components/Header';
+import { useHeader } from '@/contexts/HeaderContext';
 import { Timer } from '@/components/Timer';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { TestSettings } from '@/lib/test-settings';
@@ -33,6 +33,7 @@ type Props = {
 
 export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSettings }: Props) {
   const [questions, setQuestions] = useState<NormalizedQuestion[]>(preparedQuestions);
+  const { setConfig } = useHeader();
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
     selectedAnswers: [],
@@ -48,6 +49,56 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
   useEffect(() => {
     setQuestions(preparedQuestions);
   }, [preparedQuestions]);
+
+  // Configure header based on quiz state
+  useEffect(() => {
+    if (quizState.showResult) {
+      // Results page - simple header
+      setConfig({
+        variant: 'short',
+        leftContent: null,
+        rightContent: null,
+        visible: true,
+      });
+    } else if (!questions || questions.length === 0) {
+      // No questions - simple header
+      setConfig({
+        variant: 'short',
+        leftContent: null,
+        rightContent: null,
+        visible: true,
+      });
+    } else {
+      // Main quiz - complex header with settings and back button
+      setConfig({
+        variant: 'short',
+        leftContent: (
+          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="bg-muted px-2 py-1 rounded">
+              {testSettings.questionType === 'all'
+                ? 'All Types'
+                : testSettings.questionType === 'single'
+                ? 'Single Select'
+                : 'Multiple Select'}
+            </span>
+            <span>•</span>
+            <span>{testSettings.questionCount} questions</span>
+          </div>
+        ),
+        rightContent: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBackToSettings}
+            className="hidden md:flex"
+          >
+            ← Settings
+          </Button>
+        ),
+        visible: true,
+      });
+    }
+  }, [quizState.showResult, questions, testSettings, onBackToSettings, setConfig]);
 
   const currentQuestion = questions?.[quizState.currentQuestionIndex];
   const totalQuestions = questions?.length || 0;
@@ -241,21 +292,16 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
   // Early return if no questions available (should not happen with proper setup)
   if (!questions || questions.length === 0) {
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-4xl mx-auto px-6 space-y-6">
-          <Header variant="short" />
-          <div className="flex items-center justify-center py-20">
-            <Card className="p-6">
-              <div className="text-center">
-                <h2 className="text-xl font-semibold mb-2">No Questions Available</h2>
-                <p>No questions found to display.</p>
-                <Button onClick={onBackToSettings} className="mt-4">
-                  Back to Settings
-                </Button>
-              </div>
-            </Card>
+      <div className="flex items-center justify-center py-20">
+        <Card className="p-6">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">No Questions Available</h2>
+            <p>No questions found to display.</p>
+            <Button onClick={onBackToSettings} className="mt-4">
+              Back to Settings
+            </Button>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -269,12 +315,8 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
       .padStart(2, '0')}`;
 
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-4xl mx-auto px-6 space-y-6">
-          {/* Header with Theme Toggle */}
-          <Header variant="short" />
-
-          <Card className="p-6">
+      <div className="space-y-6">
+        <Card className="p-6">
             <div className="text-center space-y-4">
               <h2 className="text-2xl font-bold">Quiz Complete!</h2>
               <div className="text-4xl font-bold text-primary">
@@ -357,7 +399,6 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
               </div>
             </Card>
           )}
-        </div>
       </div>
     );
   }
@@ -370,37 +411,8 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-4xl mx-auto px-6 space-y-6">
-        {/* Header with Theme Toggle and Settings */}
-        <Header
-          variant="short"
-          leftContent={
-            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="bg-muted px-2 py-1 rounded">
-                {testSettings.questionType === 'all'
-                  ? 'All Types'
-                  : testSettings.questionType === 'single'
-                  ? 'Single Select'
-                  : 'Multiple Select'}
-              </span>
-              <span>•</span>
-              <span>{testSettings.questionCount} questions</span>
-            </div>
-          }
-          rightContent={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onBackToSettings}
-              className="hidden md:flex"
-            >
-              ← Settings
-            </Button>
-          }
-        />
-
-        {/* Mobile Settings Display */}
+    <div className="space-y-6">
+      {/* Mobile Settings Display */}
         <div className="md:hidden flex justify-between items-center text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <span className="bg-muted px-2 py-1 rounded">
@@ -619,7 +631,6 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
               : 'Use keys 1-4 to toggle selections, Enter/Space to submit'
             : 'Use keys 1-4 to select answers, Enter/Space to continue'}
         </div>
-      </div>
     </div>
   );
 }

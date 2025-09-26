@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Header } from "@/components/Header";
+import { useHeader } from "@/contexts/HeaderContext";
 import {
   TEST_SETTINGS,
   TestSettings,
@@ -25,10 +25,21 @@ type Props = {
 
 export function TestConfigPage({ questions, examTitle, onStartTest, loading, error }: Props) {
   const [settings, setSettings] = useState<TestSettings>(DEFAULT_TEST_SETTINGS);
+  const { setConfig } = useHeader();
   const [customQuestionCount, setCustomQuestionCount] = useState<string>('');
   const [useCustomCount, setUseCustomCount] = useState(false);
   const [customTimerDuration, setCustomTimerDuration] = useState<string>('');
   const [useCustomTimer, setUseCustomTimer] = useState(false);
+
+  // Configure header on mount
+  useEffect(() => {
+    setConfig({
+      variant: 'full',
+      leftContent: null,
+      rightContent: null,
+      visible: true,
+    });
+  }, [setConfig]);
 
   // Load saved settings on mount
   useEffect(() => {
@@ -197,50 +208,36 @@ export function TestConfigPage({ questions, examTitle, onStartTest, loading, err
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-4xl mx-auto px-6 space-y-6">
-          <Header variant="full" />
-          <div className="flex items-center justify-center py-20">
-            <div className="text-lg">Loading questions...</div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-lg">Loading questions...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-4xl mx-auto px-6 space-y-6">
-          <Header variant="full" />
-          <div className="flex items-center justify-center py-20">
-            <Card className="p-6">
-              <div className="text-red-600 dark:text-red-400 text-center">
-                <h2 className="text-xl font-semibold mb-2">Error Loading Questions</h2>
-                <p>{error}</p>
-              </div>
-            </Card>
+      <div className="flex items-center justify-center py-20">
+        <Card className="p-6">
+          <div className="text-red-600 dark:text-red-400 text-center">
+            <h2 className="text-xl font-semibold mb-2">Error Loading Questions</h2>
+            <p>{error}</p>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-4xl mx-auto px-6 space-y-6">
-        {/* Header */}
-        <Header variant="full" />
+    <div className="space-y-6">
+      {/* Exam Title */}
+      {examTitle && (
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-primary">{examTitle}</h2>
+        </div>
+      )}
 
-        {/* Exam Title */}
-        {examTitle && (
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-primary">{examTitle}</h2>
-          </div>
-        )}
-
-        {/* Test Configuration */}
-        <Card className="p-8">
+      {/* Test Configuration */}
+      <Card className="p-8">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2">Configure Your Test</h2>
             <p className="text-muted-foreground">
@@ -412,7 +409,6 @@ export function TestConfigPage({ questions, examTitle, onStartTest, loading, err
             )}
           </div>
         </Card>
-      </div>
     </div>
   );
 }
