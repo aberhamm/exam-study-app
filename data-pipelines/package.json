@@ -1,0 +1,21 @@
+{
+  "name": "data-pipelines",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/pipelines/markdown-to-json/index.ts",
+    "markdown-to-json": "tsx src/pipelines/markdown-to-json/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "openai": "^4.77.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.16",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
