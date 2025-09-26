@@ -7,6 +7,8 @@ import { StudyPanel } from '@/components/StudyPanel';
 import { useHeader } from '@/contexts/HeaderContext';
 import { Timer } from '@/components/Timer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { TestSettings } from '@/lib/test-settings';
 import { shuffleArray } from '@/lib/question-utils';
@@ -442,8 +444,10 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
                         <div className="font-medium text-blue-800 dark:text-blue-200 mb-1">
                           Explanation:
                         </div>
-                        <div className="text-blue-700 dark:text-blue-300">
-                          {question.explanation}
+                        <div className="text-blue-700 dark:text-blue-300 prose prose-sm prose-blue max-w-none dark:prose-invert">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {question.explanation}
+                          </ReactMarkdown>
                         </div>
                       </div>
                     )}
@@ -693,8 +697,10 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
                   <div className="font-medium text-blue-800 dark:text-blue-200 mb-2">
                     Explanation:
                   </div>
-                  <div className="text-blue-700 dark:text-blue-300">
-                    {currentQuestion.explanation}
+                  <div className="text-blue-700 dark:text-blue-300 prose prose-sm prose-blue max-w-none dark:prose-invert">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {currentQuestion.explanation}
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}

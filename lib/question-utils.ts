@@ -1,5 +1,5 @@
 import type { NormalizedQuestion } from "@/types/normalized";
-import type { TestSettings, QuestionTypeFilter } from "@/lib/test-settings";
+import type { TestSettings, QuestionTypeFilter, ExplanationFilter } from "@/lib/test-settings";
 
 /**
  * Filter questions based on question type
@@ -16,6 +16,28 @@ export function filterQuestionsByType(
 }
 
 /**
+ * Filter questions based on explanation availability
+ */
+export function filterQuestionsByExplanation(
+  questions: NormalizedQuestion[],
+  explanationFilter: ExplanationFilter
+): NormalizedQuestion[] {
+  if (explanationFilter === 'all') {
+    return questions;
+  }
+
+  if (explanationFilter === 'with-explanations') {
+    return questions.filter(question => question.explanation && question.explanation.trim().length > 0);
+  }
+
+  if (explanationFilter === 'without-explanations') {
+    return questions.filter(question => !question.explanation || question.explanation.trim().length === 0);
+  }
+
+  return questions;
+}
+
+/**
  * Limit the number of questions to the specified count
  */
 export function limitQuestions(
@@ -27,14 +49,17 @@ export function limitQuestions(
 
 /**
  * Prepare questions based on test settings
- * Filters by type, shuffles, and limits to the specified count
+ * Filters by type, explanation availability, shuffles, and limits to the specified count
  */
 export function prepareQuestionsForTest(
   questions: NormalizedQuestion[],
   settings: TestSettings
 ): NormalizedQuestion[] {
   // Filter by question type
-  const filtered = filterQuestionsByType(questions, settings.questionType);
+  let filtered = filterQuestionsByType(questions, settings.questionType);
+
+  // Filter by explanation availability
+  filtered = filterQuestionsByExplanation(filtered, settings.explanationFilter);
 
   // Shuffle the filtered questions
   const shuffled = shuffleArray(filtered);
@@ -56,13 +81,33 @@ export function shuffleArray<T>(array: T[]): T[] {
 }
 
 /**
- * Get question counts by type
+ * Get question counts by type and explanation availability
  */
 export function getQuestionCounts(questions: NormalizedQuestion[]) {
+  const withExplanations = questions.filter(q => q.explanation && q.explanation.trim().length > 0);
+  const withoutExplanations = questions.filter(q => !q.explanation || q.explanation.trim().length === 0);
+
   return {
     all: questions.length,
     single: questions.filter(q => q.questionType === 'single').length,
-    multiple: questions.filter(q => q.questionType === 'multiple').length
+    multiple: questions.filter(q => q.questionType === 'multiple').length,
+    'with-explanations': withExplanations.length,
+    'without-explanations': withoutExplanations.length
+  };
+}
+
+/**
+ * Get question counts by type for a specific explanation filter
+ */
+export function getQuestionCountsByTypeAndExplanation(
+  questions: NormalizedQuestion[],
+  explanationFilter: ExplanationFilter
+) {
+  const filtered = filterQuestionsByExplanation(questions, explanationFilter);
+  return {
+    all: filtered.length,
+    single: filtered.filter(q => q.questionType === 'single').length,
+    multiple: filtered.filter(q => q.questionType === 'multiple').length
   };
 }
 

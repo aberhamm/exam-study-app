@@ -13,21 +13,29 @@ export const TEST_SETTINGS = {
     { value: 'multiple', label: 'Multiple Select Only' }
   ],
   QUESTION_COUNT_PRESETS: [10, 25, 50, 75, 100],
+  EXPLANATION_FILTER_OPTIONS: [
+    { value: 'all', label: 'All Questions' },
+    { value: 'with-explanations', label: 'Questions with Explanations' },
+    { value: 'without-explanations', label: 'Questions without Explanations' }
+  ],
   SESSION_STORAGE_KEY: 'scxmcl-test-settings'
 } as const;
 
 export type QuestionTypeFilter = 'all' | 'single' | 'multiple';
+export type ExplanationFilter = 'all' | 'with-explanations' | 'without-explanations';
 
 export type TestSettings = {
   questionCount: number;
   questionType: QuestionTypeFilter;
   timerDuration: number; // in minutes
+  explanationFilter: ExplanationFilter;
 };
 
 export const DEFAULT_TEST_SETTINGS: TestSettings = {
   questionCount: TEST_SETTINGS.DEFAULT_QUESTION_COUNT,
   questionType: 'all',
-  timerDuration: TEST_SETTINGS.DEFAULT_TIMER_DURATION
+  timerDuration: TEST_SETTINGS.DEFAULT_TIMER_DURATION,
+  explanationFilter: 'all'
 };
 
 // Utility functions for test settings
@@ -47,7 +55,8 @@ export function validateTestSettings(settings: Partial<TestSettings>): TestSetti
         TEST_SETTINGS.MAX_TIMER_DURATION,
         settings.timerDuration || TEST_SETTINGS.DEFAULT_TIMER_DURATION
       )
-    )
+    ),
+    explanationFilter: settings.explanationFilter || 'all'
   };
 }
 

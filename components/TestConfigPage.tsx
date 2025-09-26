@@ -10,6 +10,7 @@ import {
   TEST_SETTINGS,
   TestSettings,
   QuestionTypeFilter,
+  ExplanationFilter,
   DEFAULT_TEST_SETTINGS,
   validateTestSettings,
   loadTestSettings,
@@ -99,18 +100,37 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     }
   }, [questions, settings?.questionType, useCustomCount]);
 
-  // Calculate available questions by type
+  // Calculate available questions by type and explanation filter
   const questionCounts = questions ? {
     all: questions.length,
     single: questions.filter(q => q.questionType === 'single').length,
-    multiple: questions.filter(q => q.questionType === 'multiple').length
-  } : { all: 0, single: 0, multiple: 0 };
+    multiple: questions.filter(q => q.questionType === 'multiple').length,
+    'with-explanations': questions.filter(q => q.explanation && q.explanation.trim().length > 0).length,
+    'without-explanations': questions.filter(q => !q.explanation || q.explanation.trim().length === 0).length
+  } : { all: 0, single: 0, multiple: 0, 'with-explanations': 0, 'without-explanations': 0 };
 
-  const availableQuestions = questionCounts[settings.questionType];
+  // Get filtered questions based on current explanation filter
+  const getFilteredQuestions = () => {
+    if (!questions) return [];
+    if (settings.explanationFilter === 'all') return questions;
+    if (settings.explanationFilter === 'with-explanations') {
+      return questions.filter(q => q.explanation && q.explanation.trim().length > 0);
+    }
+    return questions.filter(q => !q.explanation || q.explanation.trim().length === 0);
+  };
+
+  const filteredQuestions = getFilteredQuestions();
+  const filteredQuestionCounts = {
+    all: filteredQuestions.length,
+    single: filteredQuestions.filter(q => q.questionType === 'single').length,
+    multiple: filteredQuestions.filter(q => q.questionType === 'multiple').length
+  };
+
+  const availableQuestions = filteredQuestionCounts[settings.questionType];
   const maxAllowedQuestions = Math.min(availableQuestions, TEST_SETTINGS.MAX_QUESTION_COUNT);
 
   const handleQuestionTypeChange = (questionType: QuestionTypeFilter) => {
-    const availableForType = questionCounts[questionType];
+    const availableForType = filteredQuestionCounts[questionType];
     let newQuestionCount = settings.questionCount;
 
     // If no questions available for this type, set to minimum (will be invalid)
@@ -131,6 +151,39 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     }
 
     setSettings({ ...settings, questionType, questionCount: newQuestionCount });
+  };
+
+  const handleExplanationFilterChange = (explanationFilter: ExplanationFilter) => {
+    // Recalculate available questions for the new explanation filter
+    const newFilteredQuestions = questions ? (() => {
+      if (explanationFilter === 'all') return questions;
+      if (explanationFilter === 'with-explanations') {
+        return questions.filter(q => q.explanation && q.explanation.trim().length > 0);
+      }
+      return questions.filter(q => !q.explanation || q.explanation.trim().length === 0);
+    })() : [];
+
+    const newFilteredQuestionCounts = {
+      all: newFilteredQuestions.length,
+      single: newFilteredQuestions.filter(q => q.questionType === 'single').length,
+      multiple: newFilteredQuestions.filter(q => q.questionType === 'multiple').length
+    };
+
+    const availableForCurrentType = newFilteredQuestionCounts[settings.questionType];
+    let newQuestionCount = settings.questionCount;
+
+    // Adjust question count if necessary
+    if (availableForCurrentType === 0) {
+      newQuestionCount = TEST_SETTINGS.MIN_QUESTION_COUNT;
+      setUseCustomCount(false);
+      setCustomQuestionCount('');
+    } else if (newQuestionCount > availableForCurrentType) {
+      newQuestionCount = availableForCurrentType;
+      setUseCustomCount(false);
+      setCustomQuestionCount('');
+    }
+
+    setSettings({ ...settings, explanationFilter, questionCount: newQuestionCount });
   };
 
   const handleQuestionCountChange = (count: number) => {
@@ -285,7 +338,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
         {isValidConfiguration ? (
           <div className="space-y-3">
             <Button onClick={handleStartTest} size="lg" className="px-8 py-3 text-lg">
-              {examMetadata?.welcomeConfig?.ctaText || `Start Exam (${settings.questionCount} ${settings.questionType === 'all' ? '' : settings.questionType} questions)`}
+              {examMetadata?.welcomeConfig?.ctaText || `Start Exam (${settings.questionCount} ${settings.questionType === 'all' ? '' : settings.questionType} ${settings.explanationFilter === 'all' ? '' : settings.explanationFilter === 'with-explanations' ? 'explained ' : 'non-explained '}questions)`}
             </Button>
             <div>
               <Button
@@ -334,6 +387,29 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                     onClick={() => handleQuestionTypeChange(option.value as QuestionTypeFilter)}
                     className={`p-4 rounded-lg border-2 transition-all text-left ${
                       settings.questionType === option.value
+                        ? "border-primary bg-primary/5 dark:bg-primary/10"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    <div className="font-medium">{option.label}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {filteredQuestionCounts[option.value as keyof typeof filteredQuestionCounts]} questions available
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Explanation Filter Selection */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Explanation Filter</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleExplanationFilterChange(option.value as ExplanationFilter)}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      settings.explanationFilter === option.value
                         ? "border-primary bg-primary/5 dark:bg-primary/10"
                         : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                     }`}
@@ -461,6 +537,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               <div className="text-sm space-y-1">
                 <div>Question Type: <span className="font-medium">
                   {TEST_SETTINGS.QUESTION_TYPE_OPTIONS.find(opt => opt.value === settings.questionType)?.label}
+                </span></div>
+                <div>Explanation Filter: <span className="font-medium">
+                  {TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.find(opt => opt.value === settings.explanationFilter)?.label}
                 </span></div>
                 <div>Question Count: <span className="font-medium">{settings.questionCount}</span></div>
                 <div>Timer Duration: <span className="font-medium">{settings.timerDuration} minutes</span></div>
