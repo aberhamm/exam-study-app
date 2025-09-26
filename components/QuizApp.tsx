@@ -436,17 +436,20 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
                 disabled={quizState.showFeedback}
                 className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
                   showCorrect
-                    ? "border-green-500 bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200"
+                    ? "border-green-600 bg-green-50 dark:bg-green-950 text-green-900 dark:text-green-100"
                     : showIncorrect
-                    ? "border-red-500 bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200"
+                    ? "border-red-600 bg-red-50 dark:bg-red-950 text-red-900 dark:text-red-100"
                     : showMissedCorrect
-                    ? "border-green-300 bg-green-25 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-dashed"
+                    ? "border-green-300 bg-green-25 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-dashed"
+                    : quizState.showFeedback
+                    ? "border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                     : isSelected
                     ? "border-primary bg-primary/5 dark:bg-primary/10"
                     : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
                 } ${quizState.showFeedback ? "cursor-default" : "cursor-pointer"}`}
                 role={currentQuestion.questionType === 'multiple' ? "checkbox" : "radio"}
                 aria-checked={isSelected}
+                aria-readonly={quizState.showFeedback}
                 aria-describedby={quizState.showFeedback ? `answer-${index}-feedback` : undefined}
                 tabIndex={0}
               >
@@ -469,20 +472,15 @@ export function QuizApp({ questions: preparedQuestions, testSettings, onBackToSe
                     </div>
                   )}
                 </div>
+                {/* Screen reader only feedback */}
                 {showCorrect && (
-                  <span id={`answer-${index}-feedback`} className="ml-2 text-green-600 dark:text-green-400 font-semibold">
-                    ✓ Correct
-                  </span>
+                  <span className="sr-only">Correct answer, selected</span>
                 )}
                 {showIncorrect && (
-                  <span id={`answer-${index}-feedback`} className="ml-2 text-red-600 dark:text-red-400 font-semibold">
-                    ✗ Incorrect
-                  </span>
+                  <span className="sr-only">Incorrect answer, selected</span>
                 )}
                 {showMissedCorrect && (
-                  <span id={`answer-${index}-feedback`} className="ml-2 text-green-600 dark:text-green-400 font-medium">
-                    ✓ Correct (not selected)
-                  </span>
+                  <span className="sr-only">Correct answer, not selected</span>
                 )}
               </button>
             );
