@@ -10,14 +10,14 @@ import type { NormalizedQuestion } from "@/types/normalized";
 
 type QuizState = {
   currentQuestionIndex: number;
-  selectedAnswers: (number | null)[];
+  selectedAnswers: (number | number[] | null)[];
   showResult: boolean;
   showFeedback: boolean;
   score: number;
   incorrectAnswers: Array<{
     question: NormalizedQuestion;
-    selectedIndex: number;
-    correctIndex: number;
+    selectedIndex: number | number[];
+    correctIndex: number | number[];
   }>;
 };
 
@@ -65,13 +65,28 @@ export function QuizApp() {
 
     questions.forEach((question, index) => {
       const selectedIndex = quizState.selectedAnswers[index];
-      if (selectedIndex === question.answerIndex) {
+      const correctIndex = question.answerIndex;
+
+      let isCorrect = false;
+
+      if (question.questionType === 'single') {
+        isCorrect = selectedIndex === correctIndex;
+      } else {
+        // For multiple select, check if arrays match exactly
+        const selectedArray = Array.isArray(selectedIndex) ? selectedIndex : [];
+        const correctArray = Array.isArray(correctIndex) ? correctIndex : [];
+
+        isCorrect = selectedArray.length === correctArray.length &&
+                   selectedArray.every(val => correctArray.includes(val as 0 | 1 | 2 | 3));
+      }
+
+      if (isCorrect) {
         score++;
       } else if (selectedIndex !== null) {
         incorrectAnswers.push({
           question,
           selectedIndex,
-          correctIndex: question.answerIndex,
+          correctIndex,
         });
       }
     });
@@ -89,15 +104,45 @@ export function QuizApp() {
   const selectAnswer = useCallback((answerIndex: number) => {
     if (!questions || quizState.showFeedback) return;
 
+    const currentQuestion = questions[quizState.currentQuestionIndex];
     const newSelectedAnswers = [...quizState.selectedAnswers];
-    newSelectedAnswers[quizState.currentQuestionIndex] = answerIndex;
+
+    if (currentQuestion.questionType === 'single') {
+      newSelectedAnswers[quizState.currentQuestionIndex] = answerIndex;
+
+      const newState = {
+        ...quizState,
+        selectedAnswers: newSelectedAnswers,
+        showFeedback: true,
+      };
+      setQuizState(newState);
+    } else {
+      // For multiple select, toggle the selection
+      const currentSelections = newSelectedAnswers[quizState.currentQuestionIndex] as number[] || [];
+      const isSelected = currentSelections.includes(answerIndex);
+
+      if (isSelected) {
+        newSelectedAnswers[quizState.currentQuestionIndex] = currentSelections.filter(i => i !== answerIndex);
+      } else {
+        newSelectedAnswers[quizState.currentQuestionIndex] = [...currentSelections, answerIndex].sort();
+      }
+
+      const newState = {
+        ...quizState,
+        selectedAnswers: newSelectedAnswers,
+        // Don't show feedback immediately for multiple select - wait for user to submit
+      };
+      setQuizState(newState);
+    }
+  }, [questions, quizState]);
+
+  const submitMultipleAnswer = useCallback(() => {
+    if (!questions || quizState.showFeedback) return;
 
     const newState = {
       ...quizState,
-      selectedAnswers: newSelectedAnswers,
       showFeedback: true,
     };
-
     setQuizState(newState);
   }, [questions, quizState]);
 
@@ -144,9 +189,13 @@ export function QuizApp() {
       if (quizState.showFeedback) {
         e.preventDefault();
         nextQuestion();
+      } else if (currentQuestion.questionType === 'multiple') {
+        // For multiple select, Enter/Space submits the current selections
+        e.preventDefault();
+        submitMultipleAnswer();
       }
     }
-  }, [currentQuestion, quizState.showFeedback, quizState.showResult, selectAnswer, nextQuestion]);
+  }, [currentQuestion, quizState.showFeedback, quizState.showResult, selectAnswer, nextQuestion, submitMultipleAnswer]);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
@@ -244,29 +293,44 @@ export function QuizApp() {
                     <div className="font-medium mb-3">{question.prompt}</div>
                     
                     <div className="space-y-2 mb-4">
-                      {question.choices.map((choice, choiceIndex) => (
-                        <div
-                          key={choiceIndex}
-                          className={`p-3 rounded-lg border-2 ${
-                            choiceIndex === correctIndex
-                              ? "border-green-500 bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200"
-                              : choiceIndex === selectedIndex
-                              ? "border-red-500 bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200"
-                              : "border-gray-200 dark:border-gray-700"
-                          }`}
-                        >
-                          <span className="font-medium">
-                            {String.fromCharCode(65 + choiceIndex)}.
-                          </span>{" "}
-                          {choice}
-                          {choiceIndex === correctIndex && (
-                            <span className="ml-2 text-green-600 dark:text-green-400 font-semibold">✓ Correct</span>
-                          )}
-                          {choiceIndex === selectedIndex && choiceIndex !== correctIndex && (
-                            <span className="ml-2 text-red-600 dark:text-red-400 font-semibold">✗ Your answer</span>
-                          )}
-                        </div>
-                      ))}
+                      {question.choices.map((choice, choiceIndex) => {
+                        let isCorrect = false;
+                        let isSelected = false;
+
+                        if (question.questionType === 'single') {
+                          isCorrect = choiceIndex === correctIndex;
+                          isSelected = choiceIndex === selectedIndex;
+                        } else {
+                          const correctArray = Array.isArray(correctIndex) ? correctIndex : [];
+                          const selectedArray = Array.isArray(selectedIndex) ? selectedIndex : [];
+                          isCorrect = correctArray.includes(choiceIndex);
+                          isSelected = selectedArray.includes(choiceIndex);
+                        }
+
+                        return (
+                          <div
+                            key={choiceIndex}
+                            className={`p-3 rounded-lg border-2 ${
+                              isCorrect
+                                ? "border-green-500 bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200"
+                                : isSelected && !isCorrect
+                                ? "border-red-500 bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200"
+                                : "border-gray-200 dark:border-gray-700"
+                            }`}
+                          >
+                            <span className="font-medium">
+                              {String.fromCharCode(65 + choiceIndex)}.
+                            </span>{" "}
+                            {choice}
+                            {isCorrect && (
+                              <span className="ml-2 text-green-600 dark:text-green-400 font-semibold">✓ Correct</span>
+                            )}
+                            {isSelected && !isCorrect && (
+                              <span className="ml-2 text-red-600 dark:text-red-400 font-semibold">✗ Your answer</span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {question.explanation && (
@@ -288,7 +352,18 @@ export function QuizApp() {
   }
 
   const selectedAnswerIndex = quizState.selectedAnswers[quizState.currentQuestionIndex];
-  const isCorrect = selectedAnswerIndex === currentQuestion?.answerIndex;
+
+  let isCorrect = false;
+  if (currentQuestion) {
+    if (currentQuestion.questionType === 'single') {
+      isCorrect = selectedAnswerIndex === currentQuestion.answerIndex;
+    } else {
+      const selectedArray = Array.isArray(selectedAnswerIndex) ? selectedAnswerIndex : [];
+      const correctArray = Array.isArray(currentQuestion.answerIndex) ? currentQuestion.answerIndex : [];
+      isCorrect = selectedArray.length === correctArray.length &&
+                 selectedArray.every(val => correctArray.includes(val as 0 | 1 | 2 | 3));
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -316,20 +391,41 @@ export function QuizApp() {
 
       {/* Question */}
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-6" role="heading" aria-level={2}>
-          {currentQuestion?.prompt}
-        </h2>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-xl font-semibold" role="heading" aria-level={2}>
+            {currentQuestion?.prompt}
+          </h2>
+          <div className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
+            {currentQuestion?.questionType === 'multiple' ? 'Select all that apply' : 'Select one'}
+          </div>
+        </div>
 
-        <div 
-          className="space-y-3" 
-          role="radiogroup" 
+        <div
+          className="space-y-3"
+          role={currentQuestion?.questionType === 'multiple' ? "group" : "radiogroup"}
           aria-label="Answer choices"
           aria-required="true"
         >
           {currentQuestion?.choices.map((choice, index) => {
-            const isSelected = selectedAnswerIndex === index;
-            const showCorrect = quizState.showFeedback && index === currentQuestion.answerIndex;
-            const showIncorrect = quizState.showFeedback && isSelected && !isCorrect;
+            let isSelected = false;
+            if (currentQuestion.questionType === 'single') {
+              isSelected = selectedAnswerIndex === index;
+            } else {
+              const selectedArray = Array.isArray(selectedAnswerIndex) ? selectedAnswerIndex : [];
+              isSelected = selectedArray.includes(index);
+            }
+
+            let showCorrect = false;
+            if (quizState.showFeedback) {
+              if (currentQuestion.questionType === 'single') {
+                showCorrect = index === currentQuestion.answerIndex;
+              } else {
+                const correctArray = Array.isArray(currentQuestion.answerIndex) ? currentQuestion.answerIndex : [];
+                showCorrect = correctArray.includes(index as 0 | 1 | 2 | 3);
+              }
+            }
+
+            const showIncorrect = quizState.showFeedback && isSelected && !showCorrect;
 
             return (
               <button
@@ -345,7 +441,7 @@ export function QuizApp() {
                     ? "border-primary bg-primary/5 dark:bg-primary/10"
                     : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
                 } ${quizState.showFeedback ? "cursor-default" : "cursor-pointer"}`}
-                role="radio"
+                role={currentQuestion.questionType === 'multiple' ? "checkbox" : "radio"}
                 aria-checked={isSelected}
                 aria-describedby={quizState.showFeedback ? `answer-${index}-feedback` : undefined}
                 tabIndex={0}
@@ -368,6 +464,20 @@ export function QuizApp() {
             );
           })}
         </div>
+
+        {/* Submit button for multiple select questions */}
+        {currentQuestion?.questionType === 'multiple' && !quizState.showFeedback && (
+          <div className="mt-6">
+            <Button
+              onClick={submitMultipleAnswer}
+              size="lg"
+              className="w-full"
+              disabled={!selectedAnswerIndex || (Array.isArray(selectedAnswerIndex) && selectedAnswerIndex.length === 0)}
+            >
+              Submit Answer
+            </Button>
+          </div>
+        )}
 
         {quizState.showFeedback && (
           <div className="mt-6 space-y-4">
@@ -405,7 +515,12 @@ export function QuizApp() {
 
         {/* Keyboard Instructions */}
         <div className="text-center text-sm text-muted-foreground">
-          Use keys 1-4 to select answers, Enter/Space to continue
+          {currentQuestion?.questionType === 'multiple'
+            ? quizState.showFeedback
+              ? "Use Enter/Space to continue to next question"
+              : "Use keys 1-4 to toggle selections, Enter/Space to submit"
+            : "Use keys 1-4 to select answers, Enter/Space to continue"
+          }
         </div>
       </div>
     </div>

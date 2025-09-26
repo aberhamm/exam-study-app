@@ -28,13 +28,26 @@
         "D": "Content Delivery using Edge"
       },
       "answer": "C",
-      "explanation": "This is a test explanation.",
+      "explanation": "Manual FTP deployment is not part of the modern XM Cloud Developer Workflow.",
+      "question_type": "single"
+    },
+    {
+      "question": "Which of the following are benefits of using Sitecore XM Cloud? (Select all that apply)",
+      "options": {
+        "A": "Automatic scaling and performance optimization",
+        "B": "Reduced infrastructure management overhead",
+        "C": "Built-in security updates and patches",
+        "D": "Limited customization options"
+      },
+      "answer": ["A", "B", "C"],
+      "question_type": "multiple",
+      "explanation": "XM Cloud provides automatic scaling, reduces infrastructure management overhead, and includes built-in security updates. However, it actually offers extensive customization options, making option D incorrect.",
       "study": [
         {
-          "chunkId": "xmc-arch-1",
-          "url": "https://doc.sitecore.com/.../xm-cloud-architecture.html#architecture",
-          "anchor": "architecture",
-          "excerpt": "XM Cloud is a hybrid SaaS CMS with headless delivery via Experience Edge…"
+          "chunkId": "xmc-benefits-1",
+          "url": "https://doc.sitecore.com/.../xm-cloud-benefits.html",
+          "anchor": "benefits",
+          "excerpt": "XM Cloud delivers automatic scaling, managed infrastructure, and continuous security updates…"
         }
       ]
     },

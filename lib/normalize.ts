@@ -13,12 +13,20 @@ function hashId(input: string): string {
 
 export function normalizeQuestions(qs: ExternalQuestion[]): NormalizedQuestion[] {
   return qs.map((q) => {
-    const id = hashId(q.question + '|' + q.answer);
+    const questionType = q.question_type || 'single';
+    const answerString = Array.isArray(q.answer) ? q.answer.join('|') : q.answer;
+    const id = hashId(q.question + '|' + answerString + '|' + questionType);
+
+    const answerIndex = Array.isArray(q.answer)
+      ? q.answer.map(letter => LETTER_TO_INDEX[letter])
+      : LETTER_TO_INDEX[q.answer];
+
     return {
       id,
       prompt: q.question,
       choices: [q.options.A, q.options.B, q.options.C, q.options.D],
-      answerIndex: LETTER_TO_INDEX[q.answer],
+      answerIndex,
+      questionType,
       explanation: q.explanation,
       study: q.study,
     } as NormalizedQuestion;
