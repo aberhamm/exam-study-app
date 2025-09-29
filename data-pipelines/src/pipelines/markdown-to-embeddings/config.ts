@@ -6,16 +6,21 @@ loadDotenv();
 
 export const config = {
   // Pipeline name
-  pipelineName: 'markdown-to-json',
+  pipelineName: 'markdown-to-embeddings',
 
   // API configuration
-  defaultModel: 'anthropic/claude-3.5-sonnet',
+  defaultModel: 'text-embedding-3-small',
+  defaultEmbeddingDimensions: 1536,
 
   // Environment variables
-  apiKeyEnvVar: 'OPENROUTER_API_KEY',
+  apiKeyEnvVar: 'OPENAI_API_KEY',
 
   // File patterns
   supportedInputExtensions: ['.md', '.markdown'],
+
+  // Processing configuration
+  chunkSize: 1000, // characters per chunk
+  chunkOverlap: 200, // character overlap between chunks
 };
 
 export function getPipelinePaths(pipelineName: string = config.pipelineName) {
@@ -37,6 +42,21 @@ export function getEnvConfig() {
 
   return {
     apiKey,
-    model: process.env.OPENROUTER_MODEL || config.defaultModel,
+    model: process.env.OPENAI_EMBEDDING_MODEL || config.defaultModel,
+    dimensions: process.env.EMBEDDING_DIMENSIONS ? parseInt(process.env.EMBEDDING_DIMENSIONS, 10) : config.defaultEmbeddingDimensions,
+  };
+}
+
+export function getMongoConfig() {
+  const uri = process.env.MONGODB_URI;
+  const database = process.env.MONGODB_DATABASE;
+
+  if (!uri || !database) {
+    throw new Error('MONGODB_URI and MONGODB_DATABASE environment variables are required for MongoDB integration');
+  }
+
+  return {
+    uri,
+    database,
   };
 }

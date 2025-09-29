@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import { OpenRouterClient } from '../../shared/clients/openrouter.js';
 import { Logger } from '../../shared/utils/logger.js';
 import { readMarkdownFile, writeJsonFile, generateOutputPath, findMarkdownFiles } from '../../shared/utils/file-utils.js';
-import { config, getEnvConfig } from './config.js';
+import { config, getEnvConfig, getPipelinePaths } from './config.js';
 import type { ExternalQuestionsFile } from '../../shared/types/external-question.js';
 
 interface CliArgs {
@@ -23,10 +23,10 @@ function parseArgs(): CliArgs {
 Usage: pnpm markdown-to-json [input-path] [options]
 
 Arguments:
-  input-path              Path to markdown file or directory (default: data/input/)
+  input-path              Path to markdown file or directory (default: data/markdown-to-json/input/)
 
 Options:
-  --output-dir <dir>      Output directory for JSON files (default: data/output/)
+  --output-dir <dir>      Output directory for JSON files (default: data/markdown-to-json/output/)
   --exam-id <id>          Exam ID for the question set (single file only)
   --exam-title <title>    Exam title for the question set (single file only)
   --help, -h              Show this help message
@@ -40,13 +40,13 @@ Examples:
   pnpm markdown-to-json
 
   # Process single file
-  pnpm markdown-to-json data/input/quiz.md
+  pnpm markdown-to-json data/markdown-to-json/input/quiz.md
 
   # Process all files in specific directory
-  pnpm markdown-to-json data/input/
+  pnpm markdown-to-json data/markdown-to-json/input/
 
   # Process with custom output directory
-  pnpm markdown-to-json --output-dir data/output/
+  pnpm markdown-to-json --output-dir data/markdown-to-json/output/
 
   # Process single file with metadata
   pnpm markdown-to-json quiz.md --exam-title "Math Quiz"
@@ -137,8 +137,11 @@ async function main() {
     // Parse CLI arguments
     const args = parseArgs();
 
+    // Get pipeline-specific paths
+    const paths = getPipelinePaths();
+
     // Setup logging
-    const logFile = join(config.defaultLogsDir, `markdown-to-json-${new Date().toISOString().slice(0, 10)}.log`);
+    const logFile = join(paths.defaultLogsDir, `markdown-to-json-${new Date().toISOString().slice(0, 10)}.log`);
     const logger = new Logger(logFile);
 
     logger.info('Starting markdown-to-json pipeline', { args });
@@ -148,7 +151,7 @@ async function main() {
     logger.info('Environment configuration loaded', { model: envConfig.model });
 
     // Determine input path (use default if not provided)
-    const inputPath = args.inputPath || config.defaultInputDir;
+    const inputPath = args.inputPath || paths.defaultInputDir;
     logger.info('Input path determined', { inputPath });
 
     // Find input files
@@ -156,7 +159,7 @@ async function main() {
     logger.info('Input files discovered', { fileCount: inputFiles.length, files: inputFiles });
 
     // Determine output directory
-    const outputDir = args.outputDir || config.defaultOutputDir;
+    const outputDir = args.outputDir || paths.defaultOutputDir;
     logger.info('Output directory determined', { outputDir });
 
     // Initialize OpenRouter client
@@ -223,7 +226,8 @@ async function main() {
 
     // Try to log error if logger is available
     try {
-      const logFile = join(config.defaultLogsDir, `markdown-to-json-${new Date().toISOString().slice(0, 10)}.log`);
+      const paths = getPipelinePaths();
+      const logFile = join(paths.defaultLogsDir, `markdown-to-json-${new Date().toISOString().slice(0, 10)}.log`);
       const logger = new Logger(logFile);
       logger.error('Pipeline failed', { error: error instanceof Error ? error.message : String(error), processingTime });
     } catch (logError) {
