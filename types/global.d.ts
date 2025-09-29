@@ -1,14 +1,14 @@
 declare module '*.css' {
-  const content: any;
+  const content: Readonly<Record<string, string>>;
   export default content;
 }
 
 declare module '*.scss' {
-  const content: any;
+  const content: Readonly<Record<string, string>>;
   export default content;
 }
 
 declare module '*.sass' {
-  const content: any;
+  const content: Readonly<Record<string, string>>;
   export default content;
 }

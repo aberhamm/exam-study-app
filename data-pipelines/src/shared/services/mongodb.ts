@@ -1,5 +1,6 @@
-import { MongoClient, Db, Collection, CreateIndexesOptions, IndexSpecification } from 'mongodb';
-import type { EmbeddingDocument, EmbeddingVector } from '../types/embedding.js';
+import { MongoClient, Db } from 'mongodb';
+import type { CreateIndexesOptions, IndexSpecification } from 'mongodb';
+import type { EmbeddingDocument } from '../types/embedding.js';
 
 export interface MongoConfig {
   uri: string;
@@ -48,17 +49,17 @@ export class MongoDBService {
     const embeddingsCollection = this.db.collection('embeddings');
 
     // Create indexes for common query patterns
-    const indexes = [
-      { key: { sourceFile: 1 } as const, options: { name: 'sourceFile_1' } },
-      { key: { 'metadata.createdAt': -1 } as const, options: { name: 'createdAt_-1' } },
-      { key: { 'metadata.model': 1 } as const, options: { name: 'model_1' } },
-      { key: { 'metadata.tags': 1 } as const, options: { name: 'tags_1' } },
-      { key: { sourceFile: 1, 'metadata.createdAt': -1 } as const, options: { name: 'sourceFile_createdAt_compound' } },
+    const indexes: Array<{ key: IndexSpecification; options: CreateIndexesOptions }> = [
+      { key: { sourceFile: 1 }, options: { name: 'sourceFile_1' } },
+      { key: { 'metadata.createdAt': -1 }, options: { name: 'createdAt_-1' } },
+      { key: { 'metadata.model': 1 }, options: { name: 'model_1' } },
+      { key: { 'metadata.tags': 1 }, options: { name: 'tags_1' } },
+      { key: { sourceFile: 1, 'metadata.createdAt': -1 }, options: { name: 'sourceFile_createdAt_compound' } },
     ];
 
     for (const { key, options } of indexes) {
       try {
-        await embeddingsCollection.createIndex(key, options as CreateIndexesOptions);
+        await embeddingsCollection.createIndex(key, options);
       } catch (error) {
         // Index might already exist, continue with other indexes
         console.warn(`Failed to create index ${options.name}:`, error);

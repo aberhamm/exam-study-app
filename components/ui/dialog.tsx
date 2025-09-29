@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
 interface DialogProps {
@@ -29,6 +28,7 @@ interface DialogDescriptionProps {
 
 interface DialogFooterProps {
   children: React.ReactNode
+  className?: string
 }
 
 export function Dialog({ open, onOpenChange, children }: DialogProps) {
@@ -97,9 +97,9 @@ export function DialogDescription({ children }: DialogDescriptionProps) {
   )
 }
 
-export function DialogFooter({ children }: DialogFooterProps) {
+export function DialogFooter({ children, className = "" }: DialogFooterProps) {
   return (
-    <div className="flex justify-end gap-2 mt-6">
+    <div className={`flex justify-end gap-2 mt-6 ${className}`}>
       {children}
     </div>
   )

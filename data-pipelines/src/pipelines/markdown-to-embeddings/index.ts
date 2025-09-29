@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
 import { join } from 'path';
-import { existsSync } from 'fs';
 import { OpenAI } from 'openai';
 import { Logger } from '../../shared/utils/logger.js';
 import { readMarkdownFile, writeJsonFile, generateOutputPath, findMarkdownFiles } from '../../shared/utils/file-utils.js';
 import { config, getEnvConfig, getPipelinePaths, getMongoConfig } from './config.js';
-import { EMBEDDING_CONFIG, TEXT_PREPROCESSING, CHUNKING_CONFIG } from './prompts.js';
+import { EMBEDDING_CONFIG, TEXT_PREPROCESSING } from './prompts.js';
 import { createMongoDBService, MongoDBService } from '../../shared/services/mongodb.js';
 import type { EmbeddingDocument, TextChunk, EmbeddingVector } from '../../shared/types/embedding.js';
 
@@ -439,7 +438,7 @@ async function main() {
       try {
         await mongoService.disconnect();
       } catch (mongoError) {
-        // Ignore disconnection errors during cleanup
+        console.warn('Failed to disconnect MongoDB service during cleanup', mongoError);
       }
     }
 
@@ -450,7 +449,7 @@ async function main() {
       const logger = new Logger(logFile);
       logger.error('Pipeline failed', { error: error instanceof Error ? error.message : String(error), processingTime });
     } catch (logError) {
-      // If logging fails, just continue with console error
+      console.warn('Failed to write pipeline error log', logError);
     }
 
     process.exit(1);

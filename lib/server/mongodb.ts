@@ -22,18 +22,19 @@ function getMongoDbName(): string {
 
 let clientPromise: Promise<MongoClient>;
 
-if (globalForMongo.__mongoClientPromise) {
-  clientPromise = globalForMongo.__mongoClientPromise;
-} else {
-  const client = new MongoClient(getMongoUri());
-  clientPromise = client.connect();
-  if (process.env.NODE_ENV !== 'production') {
-    globalForMongo.__mongoClientPromise = clientPromise;
+function getMongoClientPromise(): Promise<MongoClient> {
+  if (!clientPromise) {
+    if (!globalForMongo.__mongoClientPromise) {
+      const client = new MongoClient(getMongoUri());
+      globalForMongo.__mongoClientPromise = client.connect();
+    }
+    clientPromise = globalForMongo.__mongoClientPromise;
   }
+  return clientPromise;
 }
 
 export async function getDb(): Promise<Db> {
-  const client = await clientPromise;
+  const client = await getMongoClientPromise();
   return client.db(getMongoDbName());
 }
 

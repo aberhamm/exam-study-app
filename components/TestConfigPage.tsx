@@ -75,19 +75,21 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     }
   }, []);
 
+  const { questionType, questionCount } = settings;
+
   // Validate and adjust settings when questions load
   useEffect(() => {
-    if (questions && settings) {
+    if (questions) {
       const counts = {
         all: questions.length,
         single: questions.filter(q => q.questionType === 'single').length,
         multiple: questions.filter(q => q.questionType === 'multiple').length
       };
 
-      const availableForType = counts[settings.questionType];
+      const availableForType = counts[questionType];
 
       // If saved settings are invalid for available questions, adjust them
-      if (settings.questionCount > availableForType && availableForType > 0) {
+      if (questionCount > availableForType && availableForType > 0) {
         const adjustedCount = Math.min(availableForType, TEST_SETTINGS.DEFAULT_QUESTION_COUNT);
         setSettings(prev => ({ ...prev, questionCount: adjustedCount }));
 
@@ -97,7 +99,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
         }
       }
     }
-  }, [questions, settings?.questionType, useCustomCount]);
+  }, [questions, questionType, questionCount, useCustomCount]);
 
   // Calculate available questions by type and explanation filter
   const questionCounts = questions ? {

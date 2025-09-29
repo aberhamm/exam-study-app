@@ -3,6 +3,10 @@ import { ZodError } from 'zod';
 import { ExternalQuestionUpdateZ } from '@/lib/validation';
 import { updateExamQuestion } from '@/lib/server/exams';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 interface RouteContext {
   params: Promise<{
     examId: string;
@@ -25,6 +29,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     } catch {
       return NextResponse.json(
         { error: 'Invalid JSON payload' },
+        { status: 400 }
+      );
+    }
+
+    if (!isRecord(body)) {
+      return NextResponse.json(
+        { error: 'Invalid question payload' },
         { status: 400 }
       );
     }

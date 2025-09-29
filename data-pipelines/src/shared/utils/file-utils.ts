@@ -14,7 +14,7 @@ export function readMarkdownFile(filePath: string): string {
   return content;
 }
 
-export function writeJsonFile(filePath: string, data: any): void {
+export function writeJsonFile<T>(filePath: string, data: T): void {
   // Ensure output directory exists
   const dir = dirname(filePath);
   if (!existsSync(dir)) {

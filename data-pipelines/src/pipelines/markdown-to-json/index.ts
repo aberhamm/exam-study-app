@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { join } from 'path';
-import { existsSync } from 'fs';
 import { OpenRouterClient } from '../../shared/clients/openrouter.js';
 import { Logger } from '../../shared/utils/logger.js';
 import { readMarkdownFile, writeJsonFile, generateOutputPath, findMarkdownFiles } from '../../shared/utils/file-utils.js';
@@ -231,7 +230,7 @@ async function main() {
       const logger = new Logger(logFile);
       logger.error('Pipeline failed', { error: error instanceof Error ? error.message : String(error), processingTime });
     } catch (logError) {
-      // If logging fails, just continue with console error
+      console.warn('Failed to write pipeline error log', logError);
     }
 
     process.exit(1);
