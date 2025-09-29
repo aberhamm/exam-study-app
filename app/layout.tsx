@@ -32,7 +32,7 @@ export default function RootLayout({
         <ThemeProvider>
           <HeaderProvider>
             <div className="min-h-screen bg-background">
-              <div className="max-w-4xl mx-auto px-6">
+              <div className="mx-auto w-full max-w-6xl px-6 md:px-10 lg:px-14">
                 <div className="py-8">
                   <Header />
                 </div>

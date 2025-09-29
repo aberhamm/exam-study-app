@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useHeader } from "@/contexts/HeaderContext";
 import { MarkdownContent } from '@/components/ui/markdown';
+import { History, FolderOpen } from 'lucide-react';
 import {
   TEST_SETTINGS,
   TestSettings,
@@ -122,13 +123,19 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   }, [questions, questionType, questionCount, useCustomCount]);
 
   // Calculate available questions by type and explanation filter
-  const questionCounts = questions ? {
-    all: questions.length,
-    single: questions.filter(q => q.questionType === 'single').length,
-    multiple: questions.filter(q => q.questionType === 'multiple').length,
-    'with-explanations': questions.filter(q => q.explanation && q.explanation.trim().length > 0).length,
-    'without-explanations': questions.filter(q => !q.explanation || q.explanation.trim().length === 0).length
-  } : { all: 0, single: 0, multiple: 0, 'with-explanations': 0, 'without-explanations': 0 };
+  const questionCounts = useMemo(() => {
+    if (!questions) {
+      return { all: 0, single: 0, multiple: 0, 'with-explanations': 0, 'without-explanations': 0 } as const;
+    }
+
+    return {
+      all: questions.length,
+      single: questions.filter(q => q.questionType === 'single').length,
+      multiple: questions.filter(q => q.questionType === 'multiple').length,
+      'with-explanations': questions.filter(q => q.explanation && q.explanation.trim().length > 0).length,
+      'without-explanations': questions.filter(q => !q.explanation || q.explanation.trim().length === 0).length
+    } as const;
+  }, [questions]);
 
   // Get filtered questions based on current explanation filter
   const getFilteredQuestions = () => {
@@ -141,11 +148,13 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   };
 
   const filteredQuestions = getFilteredQuestions();
-  const filteredQuestionCounts = {
-    all: filteredQuestions.length,
-    single: filteredQuestions.filter(q => q.questionType === 'single').length,
-    multiple: filteredQuestions.filter(q => q.questionType === 'multiple').length
-  };
+  const filteredQuestionCounts = useMemo(() => {
+    return {
+      all: filteredQuestions.length,
+      single: filteredQuestions.filter(q => q.questionType === 'single').length,
+      multiple: filteredQuestions.filter(q => q.questionType === 'multiple').length
+    } as const;
+  }, [filteredQuestions]);
 
   const availableQuestions = filteredQuestionCounts[settings.questionType];
   const maxAllowedQuestions = Math.min(availableQuestions, TEST_SETTINGS.MAX_QUESTION_COUNT);
@@ -330,296 +339,344 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="text-center space-y-4">
-        {examMetadata?.examTitle && (
-          <h1 className="text-4xl font-bold text-primary mb-4">{examMetadata.examTitle}</h1>
-        )}
-        <div className="max-w-2xl mx-auto">
-          {(examMetadata?.welcomeConfig?.showDefaultSubtitle ?? true) && (
-            <h2 className="text-2xl font-semibold mb-3">
-              {examMetadata?.welcomeConfig?.title || "Welcome to Your Study Session"}
-            </h2>
-          )}
-          {examMetadata?.welcomeConfig?.description ? (
-            <div className="text-lg text-muted-foreground mb-6 text-left space-y-4">
-              <MarkdownContent variant="welcome">
-                {examMetadata.welcomeConfig.description}
-              </MarkdownContent>
-            </div>
-          ) : (
-            <p className="text-lg text-muted-foreground mb-6">
-              Get ready to test your knowledge and improve your understanding.
-              Configure your exam settings below and start when you&apos;re ready.
-            </p>
-          )}
-        </div>
-
-        <div className="flex justify-center">
-          <Link
-            href="/import"
-            className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4"
-          >
-            Manage exam questions →
-          </Link>
-        </div>
-
-        <div className="max-w-2xl mx-auto w-full">
-          <Card className="bg-muted/30 border-dashed">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="text-base font-semibold">Practice missed questions</h3>
-                <p className="text-sm text-muted-foreground">
-                  {missedQuestions.length > 0
-                    ? `You have ${missedQuestions.length} question${missedQuestions.length === 1 ? '' : 's'} you missed before.`
-                    : 'No missed questions yet. We’ll track any incorrect answers for review.'}
+    <div className="space-y-10">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        {/* Welcome Section */}
+        <section className="space-y-6">
+          <div className="space-y-4 text-center lg:text-left">
+            {examMetadata?.examTitle && (
+              <h1 className="text-4xl font-bold text-primary">
+                {examMetadata.examTitle}
+              </h1>
+            )}
+            <div className="mx-auto w-full lg:mx-0 lg:max-w-3xl">
+              {(examMetadata?.welcomeConfig?.showDefaultSubtitle ?? true) && (
+                <h2 className="text-2xl font-semibold mb-2">
+                  {examMetadata?.welcomeConfig?.title || "Welcome to Your Study Session"}
+                </h2>
+              )}
+              {examMetadata?.welcomeConfig?.description ? (
+                <div className="text-lg text-muted-foreground space-y-4 text-left">
+                  <MarkdownContent variant="welcome">
+                    {examMetadata.welcomeConfig.description}
+                  </MarkdownContent>
+                </div>
+              ) : (
+                <p className="text-lg text-muted-foreground">
+                  Get ready to test your knowledge and improve your understanding.
+                  Configure your exam settings below and start when you&apos;re ready.
                 </p>
-              </div>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Start Button or Configuration Toggle */}
+          <div className="space-y-2" aria-live="polite">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
+              <Button
+                onClick={handleStartTest}
+                size="lg"
+                className="px-8 py-3 text-lg"
+                disabled={!isValidConfiguration}
+              >
+                {examMetadata?.welcomeConfig?.ctaText || `Start Exam (${settings.questionCount} ${settings.questionType === 'all' ? '' : settings.questionType} ${settings.explanationFilter === 'all' ? '' : settings.explanationFilter === 'with-explanations' ? 'explained ' : 'non-explained '}questions)`}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowConfiguration(current => !current)}
+                className="px-6"
+              >
+                {showConfiguration ? 'Hide settings' : 'Adjust settings'}
+              </Button>
+            </div>
+            {!isValidConfiguration && (
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                {validationState.message || 'Please adjust your exam settings before starting.'}
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* Quick Actions */}
+        <aside className="space-y-4 lg:pl-8">
+          <Card className="border-dashed bg-muted/30">
+            <CardHeader className="pt-4 sm:pt-5 pb-2 sm:pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <History className="size-4 text-muted-foreground" />
+                <span>Practice missed questions</span>
+              </CardTitle>
+              <CardDescription>
+                {missedQuestions.length > 0
+                  ? `You have ${missedQuestions.length} question${missedQuestions.length === 1 ? '' : 's'} you missed before.`
+                  : 'No missed questions yet. We’ll track any incorrect answers for review.'}
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
               <Button
                 type="button"
                 onClick={handleStartMissedQuestions}
                 disabled={missedQuestions.length === 0}
+                className="w-full"
               >
                 Review missed questions
               </Button>
-            </div>
+            </CardFooter>
           </Card>
-        </div>
-
-        {/* Quick Start Button or Configuration Toggle */}
-        {isValidConfiguration ? (
-          <div className="space-y-3">
-            <Button onClick={handleStartTest} size="lg" className="px-8 py-3 text-lg">
-              {examMetadata?.welcomeConfig?.ctaText || `Start Exam (${settings.questionCount} ${settings.questionType === 'all' ? '' : settings.questionType} ${settings.explanationFilter === 'all' ? '' : settings.explanationFilter === 'with-explanations' ? 'explained ' : 'non-explained '}questions)`}
-            </Button>
-            <div>
-              <Button
-                variant="ghost"
-                onClick={() => setShowConfiguration(!showConfiguration)}
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                {showConfiguration ? '▲ Hide' : '▼ Show'} Configuration
+          <Card>
+            <CardHeader className="pt-4 sm:pt-5 pb-2 sm:pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <FolderOpen className="size-4 text-muted-foreground" />
+                <span>Manage questions</span>
+              </CardTitle>
+              <CardDescription>Import new items or update existing sets.</CardDescription>
+            </CardHeader>
+            <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/import">Open question manager</Link>
               </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-amber-600 dark:text-amber-400 font-medium">
-              Please configure your exam settings below
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => setShowConfiguration(true)}
-              className="px-6"
-            >
-              Configure Exam
-            </Button>
-          </div>
-        )}
+            </CardFooter>
+          </Card>
+        </aside>
       </div>
 
       {/* Test Configuration - Collapsible */}
       {showConfiguration && (
-        <Card className="p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-2">Configure Your Test</h2>
-            <p className="text-muted-foreground">
-              Customize your quiz experience by selecting question types and count
+        <Card className="p-6 sm:p-8 space-y-10">
+          <div className="space-y-2 text-center lg:text-left">
+            <h2 className="text-2xl font-bold">Configure Your Test</h2>
+            <p className="text-sm text-muted-foreground">
+              Fine-tune the mix of questions and timing before you jump in.
             </p>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-10">
             {/* Question Type Selection */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Question Type</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {TEST_SETTINGS.QUESTION_TYPE_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handleQuestionTypeChange(option.value as QuestionTypeFilter)}
-                    className={`p-4 rounded-lg border-2 transition-all text-left ${
-                      settings.questionType === option.value
-                        ? "border-primary bg-primary/5 dark:bg-primary/10"
-                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                    }`}
-                  >
-                    <div className="font-medium">{option.label}</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {filteredQuestionCounts[option.value as keyof typeof filteredQuestionCounts]} questions available
-                    </div>
-                  </button>
-                ))}
+            <section className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold">Question Type</h3>
+                <p className="text-sm text-muted-foreground">
+                  Choose whether to see every question or focus on a specific format.
+                </p>
               </div>
-            </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {TEST_SETTINGS.QUESTION_TYPE_OPTIONS.map((option) => {
+                  const isActive = settings.questionType === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() => handleQuestionTypeChange(option.value as QuestionTypeFilter)}
+                      className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                        isActive
+                          ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                          : 'border-border hover:border-muted-foreground/40'
+                      }`}
+                    >
+                      <div className="font-medium">{option.label}</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        {filteredQuestionCounts[option.value as keyof typeof filteredQuestionCounts]} questions available
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
 
             {/* Explanation Filter Selection */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Explanation Filter</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handleExplanationFilterChange(option.value as ExplanationFilter)}
-                    className={`p-4 rounded-lg border-2 transition-all text-left ${
-                      settings.explanationFilter === option.value
-                        ? "border-primary bg-primary/5 dark:bg-primary/10"
-                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                    }`}
-                  >
-                    <div className="font-medium">{option.label}</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {questionCounts[option.value as keyof typeof questionCounts]} questions available
-                    </div>
-                  </button>
-                ))}
+            <section className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold">Explanation Filter</h3>
+                <p className="text-sm text-muted-foreground">
+                  Control whether you want to study questions with explanations, without them, or both.
+                </p>
               </div>
-            </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.map((option) => {
+                  const isActive = settings.explanationFilter === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() => handleExplanationFilterChange(option.value as ExplanationFilter)}
+                      className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                        isActive
+                          ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                          : 'border-border hover:border-muted-foreground/40'
+                      }`}
+                    >
+                      <div className="font-medium">{option.label}</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        {questionCounts[option.value as keyof typeof questionCounts]} questions available
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
 
             {/* Question Count Selection */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">
-                Number of Questions
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  (Max {maxAllowedQuestions} available)
-                </span>
-              </h3>
-
-              {/* Preset Options */}
-              <div className="mb-4">
-                <div className="text-sm font-medium mb-2">Quick Select:</div>
-                <div className="flex flex-wrap gap-2">
-                  {TEST_SETTINGS.QUESTION_COUNT_PRESETS
-                    .filter(preset => preset <= maxAllowedQuestions)
-                    .map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => handlePresetSelect(preset)}
-                      className={`px-4 py-2 rounded-lg border transition-all ${
-                        !useCustomCount && settings.questionCount === preset
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                      }`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Input */}
+            <section className="space-y-6">
               <div>
-                <div className="text-sm font-medium mb-2">Custom Amount:</div>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="number"
-                    min={1}
-                    max={maxAllowedQuestions}
-                    value={useCustomCount ? customQuestionCount : ''}
-                    onChange={(e) => {
-                      setUseCustomCount(true);
-                      handleCustomCountChange(e.target.value);
-                    }}
-                    onFocus={() => setUseCustomCount(true)}
-                    placeholder={`1 - ${maxAllowedQuestions}`}
-                    className="w-32 px-3 py-2 border rounded-lg bg-background"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Current: {settings.questionCount} questions
-                  </span>
+                <h3 className="text-lg font-semibold">Number of Questions</h3>
+                <p className="text-sm text-muted-foreground">
+                  Use a preset or enter your own count (up to {maxAllowedQuestions}).
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="mb-2 text-sm font-medium">Quick select</div>
+                  <div className="flex flex-wrap gap-2">
+                    {TEST_SETTINGS.QUESTION_COUNT_PRESETS
+                      .filter(preset => preset <= maxAllowedQuestions)
+                      .map((preset) => {
+                        const isActive = !useCustomCount && settings.questionCount === preset;
+                        return (
+                          <button
+                            key={preset}
+                            type="button"
+                            aria-pressed={isActive}
+                            onClick={() => handlePresetSelect(preset)}
+                            className={`px-4 py-2 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                              isActive
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-border hover:border-muted-foreground/40'
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                  <label className="text-sm font-medium" htmlFor="custom-question-count">
+                    Custom amount
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="custom-question-count"
+                      type="number"
+                      min={1}
+                      max={maxAllowedQuestions}
+                      value={useCustomCount ? customQuestionCount : ''}
+                      onChange={(e) => {
+                        setUseCustomCount(true);
+                        handleCustomCountChange(e.target.value);
+                      }}
+                      onFocus={() => setUseCustomCount(true)}
+                      placeholder={`1 - ${maxAllowedQuestions}`}
+                      className="w-28 rounded-lg border bg-background px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      Using {settings.questionCount} questions
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
             {/* Timer Duration Selection */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">
-                Timer Duration
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  (5 - 300 minutes)
-                </span>
-              </h3>
-
-              {/* Timer Preset Options */}
-              <div className="mb-4">
-                <div className="text-sm font-medium mb-2">Quick Select:</div>
-                <div className="flex flex-wrap gap-2">
-                  {TEST_SETTINGS.TIMER_DURATION_PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => handleTimerPresetSelect(preset)}
-                      className={`px-4 py-2 rounded-lg border transition-all ${
-                        !useCustomTimer && settings.timerDuration === preset
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                      }`}
-                    >
-                      {preset} min
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Timer Input */}
+            <section className="space-y-6">
               <div>
-                <div className="text-sm font-medium mb-2">Custom Duration:</div>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="number"
-                    min={TEST_SETTINGS.MIN_TIMER_DURATION}
-                    max={TEST_SETTINGS.MAX_TIMER_DURATION}
-                    value={useCustomTimer ? customTimerDuration : ''}
-                    onChange={(e) => {
-                      setUseCustomTimer(true);
-                      handleCustomTimerChange(e.target.value);
-                    }}
-                    onFocus={() => setUseCustomTimer(true)}
-                    placeholder={`${TEST_SETTINGS.MIN_TIMER_DURATION} - ${TEST_SETTINGS.MAX_TIMER_DURATION}`}
-                    className="w-32 px-3 py-2 border rounded-lg bg-background"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Current: {settings.timerDuration} minutes ({Math.floor(settings.timerDuration / 60)}h {settings.timerDuration % 60}m)
-                  </span>
+                <h3 className="text-lg font-semibold">Timer Duration</h3>
+                <p className="text-sm text-muted-foreground">
+                  Select a preset or enter a custom time between {TEST_SETTINGS.MIN_TIMER_DURATION} and {TEST_SETTINGS.MAX_TIMER_DURATION} minutes.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="mb-2 text-sm font-medium">Quick select</div>
+                  <div className="flex flex-wrap gap-2">
+                    {TEST_SETTINGS.TIMER_DURATION_PRESETS.map((preset) => {
+                      const isActive = !useCustomTimer && settings.timerDuration === preset;
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          aria-pressed={isActive}
+                          onClick={() => handleTimerPresetSelect(preset)}
+                          className={`px-4 py-2 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                            isActive
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border hover:border-muted-foreground/40'
+                          }`}
+                        >
+                          {preset} min
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                  <label className="text-sm font-medium" htmlFor="custom-timer-duration">
+                    Custom duration
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="custom-timer-duration"
+                      type="number"
+                      min={TEST_SETTINGS.MIN_TIMER_DURATION}
+                      max={TEST_SETTINGS.MAX_TIMER_DURATION}
+                      value={useCustomTimer ? customTimerDuration : ''}
+                      onChange={(e) => {
+                        setUseCustomTimer(true);
+                        handleCustomTimerChange(e.target.value);
+                      }}
+                      onFocus={() => setUseCustomTimer(true)}
+                      placeholder={`${TEST_SETTINGS.MIN_TIMER_DURATION} - ${TEST_SETTINGS.MAX_TIMER_DURATION}`}
+                      className="w-28 rounded-lg border bg-background px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      Using {settings.timerDuration} minutes ({Math.floor(settings.timerDuration / 60)}h {settings.timerDuration % 60}m)
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
             {/* Configuration Summary */}
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-medium mb-2">Test Summary</h4>
-              <div className="text-sm space-y-1">
-                <div>Question Type: <span className="font-medium">
-                  {TEST_SETTINGS.QUESTION_TYPE_OPTIONS.find(opt => opt.value === settings.questionType)?.label}
-                </span></div>
-                <div>Explanation Filter: <span className="font-medium">
-                  {TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.find(opt => opt.value === settings.explanationFilter)?.label}
-                </span></div>
-                <div>Question Count: <span className="font-medium">{settings.questionCount}</span></div>
-                <div>Timer Duration: <span className="font-medium">{settings.timerDuration} minutes</span></div>
-                <div>Available Questions: <span className="font-medium">{availableQuestions}</span></div>
+            <section className="space-y-4">
+              <div className="rounded-lg bg-muted p-4">
+                <h4 className="font-medium">Current summary</h4>
+                <div className="mt-2 space-y-1 text-sm">
+                  <div>Question type: <span className="font-medium">
+                    {TEST_SETTINGS.QUESTION_TYPE_OPTIONS.find(opt => opt.value === settings.questionType)?.label}
+                  </span></div>
+                  <div>Explanation filter: <span className="font-medium">
+                    {TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.find(opt => opt.value === settings.explanationFilter)?.label}
+                  </span></div>
+                  <div>Question count: <span className="font-medium">{settings.questionCount}</span></div>
+                  <div>Timer duration: <span className="font-medium">{settings.timerDuration} minutes</span></div>
+                  <div>Available questions: <span className="font-medium">{availableQuestions}</span></div>
+                </div>
               </div>
-            </div>
 
-            {/* Start Test Button */}
-            <div className="flex justify-center pt-4">
-              <Button
-                onClick={handleStartTest}
-                disabled={!isValidConfiguration}
-                size="lg"
-                className="px-8"
-              >
-                {isValidConfiguration ? 'Start Test' : 'Invalid Configuration'}
-              </Button>
-            </div>
-
-            {!isValidConfiguration && validationState.message && (
-              <div className="text-center text-sm text-red-600 dark:text-red-400">
-                {validationState.message}
+              <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                {!isValidConfiguration && validationState.message && (
+                  <span className="text-sm text-amber-600 dark:text-amber-400">
+                    {validationState.message}
+                  </span>
+                )}
+                <Button
+                  onClick={handleStartTest}
+                  disabled={!isValidConfiguration}
+                  size="lg"
+                  className="px-8"
+                >
+                  {isValidConfiguration ? 'Start with these settings' : 'Check configuration'}
+                </Button>
               </div>
-            )}
+            </section>
           </div>
         </Card>
       )}
+
     </div>
   );
 }
