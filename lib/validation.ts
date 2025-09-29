@@ -9,6 +9,7 @@ export const StudyLinkZ = z.object({
 });
 
 export const ExternalQuestionZ = z.object({
+  id: z.string().min(1).optional(),
   question: z.string().min(1),
   options: z.object({
     A: z.string().min(1),

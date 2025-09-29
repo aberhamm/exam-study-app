@@ -11,11 +11,19 @@ function hashId(input: string): string {
   return 'q-' + (h >>> 0).toString(36);
 }
 
+export function generateQuestionId(question: ExternalQuestion): string {
+  if (question.id && question.id.trim().length > 0) {
+    return question.id;
+  }
+  const questionType = question.question_type || 'single';
+  const answerString = Array.isArray(question.answer) ? question.answer.join('|') : question.answer;
+  return hashId(question.question + '|' + answerString + '|' + questionType);
+}
+
 export function normalizeQuestions(qs: ExternalQuestion[]): NormalizedQuestion[] {
   return qs.map((q) => {
     const questionType = q.question_type || 'single';
-    const answerString = Array.isArray(q.answer) ? q.answer.join('|') : q.answer;
-    const id = hashId(q.question + '|' + answerString + '|' + questionType);
+    const id = generateQuestionId(q);
 
     const answerIndex = Array.isArray(q.answer)
       ? q.answer.map(letter => LETTER_TO_INDEX[letter])

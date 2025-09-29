@@ -1,4 +1,6 @@
 // src/types/external-question.ts
+import type { WelcomeConfig } from './normalized';
+
 export type StudyLink = {
   chunkId: string;
   url?: string;
@@ -7,6 +9,7 @@ export type StudyLink = {
 };
 
 export type ExternalQuestion = {
+  id?: string;
   question: string;
   options: { A: string; B: string; C: string; D: string; E?: string };
   answer: 'A' | 'B' | 'C' | 'D' | 'E' | ('A' | 'B' | 'C' | 'D' | 'E')[];
@@ -18,5 +21,6 @@ export type ExternalQuestion = {
 export type ExternalQuestionsFile = {
   examId?: string;
   examTitle?: string;
+  welcomeConfig?: WelcomeConfig;
   questions: ExternalQuestion[];
 };

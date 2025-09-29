@@ -71,6 +71,28 @@ npm start         # Start production server
 npm run lint      # Run ESLint
 ```
 
+### Environment Variables
+
+Copy `.env.example` to `.env.local` (or update your preferred dotenv file) and set the MongoDB connection details used by the API routes and seeding scripts:
+
+```
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB=scxmcl-study-util
+MONGODB_EXAMS_COLLECTION=exams
+```
+
+When running against MongoDB Atlas, supply the SRV connection string (e.g. `mongodb+srv://user:pass@cluster.mongodb.net`) and ensure your IP is allow-listed.
+
+### Seeding Exam Data
+
+Populate your MongoDB collection with the bundled JSON exams using:
+
+```bash
+pnpm seed:exams
+```
+
+The seeder loads JSON files from `data/exams/`, validates them with the shared Zod schema, and upserts documents keyed by `examId`. Ensure your environment variables point at the desired database/collection before running.
+
 ## Project Structure
 
 ```
