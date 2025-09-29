@@ -44,3 +44,7 @@ export const ExternalQuestionsFileZ = z.object({
   welcomeConfig: WelcomeConfigZ.optional(),
   questions: z.array(ExternalQuestionZ),
 });
+
+export const ExternalQuestionsImportZ = z.object({
+  questions: z.array(ExternalQuestionZ).min(1, 'questions array must include at least one question'),
+});

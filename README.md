@@ -93,6 +93,35 @@ pnpm seed:exams
 
 The seeder loads JSON files from `data/exams/`, validates them with the shared Zod schema, and upserts documents keyed by `examId`. Ensure your environment variables point at the desired database/collection before running.
 
+### Importing Additional Questions
+
+You can use the in-app importer at [`/import`](http://localhost:3000/import) to paste question JSON, preview validation, and submit it to a selected exam.
+
+Alternatively, call the authenticated API (or run locally) to append multiple questions to an existing exam in one request:
+
+```bash
+curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/questions/import" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "questions": [
+      {
+        "question": "Sample prompt?",
+        "options": {
+          "A": "Option A",
+          "B": "Option B",
+          "C": "Option C",
+          "D": "Option D"
+        },
+        "answer": "A",
+        "explanation": "Optional explanation.",
+        "question_type": "single"
+      }
+    ]
+  }'
+```
+
+The endpoint validates each question, generates stable `id` values, and returns the inserted records. If a generated `id` collides with an existing question, the API responds with HTTP 409 and a list of duplicate IDs so you can adjust the payload.
+
 ## Project Structure
 
 ```

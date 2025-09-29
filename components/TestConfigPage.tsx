@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -320,6 +321,15 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               Configure your exam settings below and start when you&apos;re ready.
             </p>
           )}
+        </div>
+
+        <div className="flex justify-center">
+          <Link
+            href="/import"
+            className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4"
+          >
+            Manage exam questions →
+          </Link>
         </div>
 
         {/* Quick Start Button or Configuration Toggle */}
