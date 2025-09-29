@@ -1,5 +1,5 @@
 import type { Collection } from 'mongodb';
-import type { ExternalQuestionsFile } from '@/types/external-question';
+import type { ExternalQuestion, ExternalQuestionsFile } from '@/types/external-question';
 import type { ExamSummary } from '@/types/api';
 import { getDb, getExamsCollectionName } from './mongodb';
 
@@ -7,6 +7,8 @@ type ExamDocument = ExternalQuestionsFile & {
   _id?: unknown;
   examId: string;
 };
+
+type QuestionWithId = ExternalQuestion & { id: string };
 
 function mapExamDocument(doc: ExamDocument): ExternalQuestionsFile {
   const { _id: _ignored, ...rest } = doc;
@@ -36,4 +38,26 @@ export async function listExamSummaries(): Promise<ExamSummary[]> {
     results.push({ examId: doc.examId, examTitle: doc.examTitle });
   }
   return results;
+}
+
+export async function updateExamQuestion(
+  examId: string,
+  question: QuestionWithId
+): Promise<QuestionWithId | null> {
+  const collection = await getExamsCollection();
+  const result = await collection.updateOne(
+    { examId, 'questions.id': question.id },
+    {
+      $set: {
+        'questions.$': question,
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  if (result.matchedCount === 0) {
+    return null;
+  }
+
+  return question;
 }

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StudyPanel } from '@/components/StudyPanel';
 import { useHeader } from '@/contexts/HeaderContext';
 import { Timer } from '@/components/Timer';
+import { QuestionEditorDialog } from '@/components/QuestionEditorDialog';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import { MarkdownContent } from '@/components/ui/markdown';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { TestSettings } from '@/lib/test-settings';
 import { shuffleArray } from '@/lib/question-utils';
+import { denormalizeQuestion, normalizeQuestions } from '@/lib/normalize';
 import {
   saveExamState,
   clearExamState,
@@ -46,6 +48,7 @@ type Props = {
   testSettings: TestSettings;
   onBackToSettings: () => void;
   initialExamState?: ExamState | null;
+  examId: string;
 };
 
 export function QuizApp({
@@ -53,12 +56,19 @@ export function QuizApp({
   testSettings,
   onBackToSettings,
   initialExamState,
+  examId,
 }: Props) {
   const [questions, setQuestions] = useState<NormalizedQuestion[]>(
     initialExamState?.questions || preparedQuestions
   );
   const { setConfig } = useHeader();
   const [showRestartDialog, setShowRestartDialog] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<NormalizedQuestion | null>(null);
+  const [isSavingQuestion, setIsSavingQuestion] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const successTimeoutRef = useRef<number | null>(null);
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: initialExamState?.currentQuestionIndex || 0,
     selectedAnswers: initialExamState?.selectedAnswers || [],
@@ -309,6 +319,76 @@ export function QuizApp({
     [testSettings.timerDuration]
   );
 
+  const openQuestionEditor = () => {
+    if (!currentQuestion) return;
+    setEditingQuestion(currentQuestion);
+    setEditError(null);
+    setEditDialogOpen(true);
+  };
+
+  const handleQuestionSave = async (updatedQuestion: NormalizedQuestion) => {
+    if (!examId) {
+      const message = 'Exam ID is required to save edits.';
+      setEditError(message);
+      throw new Error(message);
+    }
+
+    setIsSavingQuestion(true);
+    setEditError(null);
+    if (successTimeoutRef.current) {
+      window.clearTimeout(successTimeoutRef.current);
+      successTimeoutRef.current = null;
+    }
+
+    try {
+      const payload = denormalizeQuestion(updatedQuestion);
+      const response = await fetch(`/api/exams/${examId}/questions/${payload.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const details = await response.json().catch(() => ({}));
+        const message = typeof details?.error === 'string'
+          ? details.error
+          : `Failed to save question (HTTP ${response.status})`;
+        throw new Error(message);
+      }
+
+      const json = await response.json();
+      const [normalized] = normalizeQuestions([json]);
+
+      setQuestions((prev) =>
+        prev.map((question) => (question.id === normalized.id ? normalized : question))
+      );
+
+      setQuizState((prev) => ({
+        ...prev,
+        incorrectAnswers: prev.incorrectAnswers.map((entry) =>
+          entry.question.id === normalized.id
+            ? { ...entry, question: normalized }
+            : entry
+        ),
+      }));
+
+      setEditingQuestion(normalized);
+      setEditDialogOpen(false);
+      setEditSuccess('Question updated successfully.');
+      successTimeoutRef.current = window.setTimeout(() => {
+        setEditSuccess(null);
+        successTimeoutRef.current = null;
+      }, 4000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save question.';
+      setEditError(message);
+      throw new Error(message);
+    } finally {
+      setIsSavingQuestion(false);
+    }
+  };
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!currentQuestion || quizState.showResult) return;
@@ -358,6 +438,14 @@ export function QuizApp({
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [quizState.showResult]);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        window.clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Early return if no questions available (should not happen with proper setup)
   if (!questions || questions.length === 0) {
@@ -576,39 +664,61 @@ export function QuizApp({
       </div>
 
       {/* Question */}
+      {editError && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {editError}
+        </div>
+      )}
+
+      {editSuccess && (
+        <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-900/40 dark:text-green-200">
+          {editSuccess}
+        </div>
+      )}
+
       <Card className="p-6">
         <div>
           <div className="flex items-start justify-between gap-4 mb-4">
             <h2 className="text-xl font-semibold flex-1" role="heading" aria-level={2}>
               {currentQuestion?.prompt}
             </h2>
-            {quizState.showFeedback && (
-              <div className="flex-shrink-0 mt-1">
-                {isCurrentAnswerCorrect ? (
-                  <div className="flex items-center text-green-600 dark:text-green-400">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="sr-only">Correct answer</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center text-red-600 dark:text-red-400">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="sr-only">Incorrect answer</span>
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="flex flex-col items-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openQuestionEditor}
+                disabled={!currentQuestion || isSavingQuestion}
+              >
+                Edit Question
+              </Button>
+              {quizState.showFeedback && (
+                <div className="flex-shrink-0 mt-1">
+                  {isCurrentAnswerCorrect ? (
+                    <div className="flex items-center text-green-600 dark:text-green-400">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="sr-only">Correct answer</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-red-600 dark:text-red-400">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="sr-only">Incorrect answer</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div className="text-base font-medium text-foreground">
             {currentQuestion?.questionType === 'multiple'
@@ -782,6 +892,20 @@ export function QuizApp({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <QuestionEditorDialog
+        open={editDialogOpen}
+        question={editingQuestion}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            setEditingQuestion(null);
+            setEditError(null);
+          }
+        }}
+        onSave={handleQuestionSave}
+        saving={isSavingQuestion}
+      />
     </div>
   );
 }

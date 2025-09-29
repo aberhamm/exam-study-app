@@ -16,6 +16,7 @@ export const ExternalQuestionZ = z.object({
     B: z.string().min(1),
     C: z.string().min(1),
     D: z.string().min(1),
+    E: z.string().min(1).optional(),
   }),
   answer: z.union([
     z.enum(['A', 'B', 'C', 'D', 'E']),
@@ -24,6 +25,10 @@ export const ExternalQuestionZ = z.object({
   question_type: z.enum(['single', 'multiple']).optional().default('single'),
   explanation: z.string().optional(),
   study: z.array(StudyLinkZ).optional(),
+});
+
+export const ExternalQuestionUpdateZ = ExternalQuestionZ.extend({
+  id: z.string().min(1),
 });
 
 export const WelcomeConfigZ = z.object({
