@@ -40,7 +40,7 @@ App Layout (layout.tsx)
 ```typescript
 type Props = {
   questions: NormalizedQuestion[] | null;
-  onStartTest: (settings: TestSettings) => void;
+  onStartTest: (settings: TestSettings, options?: { overrideQuestions?: NormalizedQuestion[] }) => void;
   loading: boolean;
   error: string | null;
 };
@@ -59,6 +59,7 @@ type Props = {
 - Smart validation preventing invalid configurations
 - Responsive design with mobile-specific layouts
 - Session persistence for user preferences
+- Missed-question shortcut to launch a quiz composed only of previously incorrect items
 
 **Test Configuration Flow**:
 1. Load saved settings from session storage

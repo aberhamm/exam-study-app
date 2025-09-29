@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useHeader } from "@/contexts/HeaderContext";
@@ -17,11 +17,16 @@ import {
   saveTestSettings
 } from "@/lib/test-settings";
 import type { NormalizedQuestion, ExamMetadata } from "@/types/normalized";
+import { getMissedQuestionIds } from "@/lib/question-metrics";
+
+type StartTestOptions = {
+  overrideQuestions?: NormalizedQuestion[];
+};
 
 type Props = {
   questions: NormalizedQuestion[] | null;
   examMetadata?: ExamMetadata | null;
-  onStartTest: (settings: TestSettings) => void;
+  onStartTest: (settings: TestSettings, options?: StartTestOptions) => void;
   loading: boolean;
   error: string | null;
 };
@@ -34,6 +39,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [customTimerDuration, setCustomTimerDuration] = useState<string>('');
   const [useCustomTimer, setUseCustomTimer] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
+  const [missedQuestionIds, setMissedQuestionIds] = useState<string[]>([]);
 
   // Configure header on mount
   useEffect(() => {
@@ -77,6 +83,19 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   }, []);
 
   const { questionType, questionCount } = settings;
+
+  useEffect(() => {
+    const ids = getMissedQuestionIds();
+    setMissedQuestionIds(ids);
+  }, [questions]);
+
+  const missedQuestions = useMemo(() => {
+    if (!questions || missedQuestionIds.length === 0) {
+      return [] as NormalizedQuestion[];
+    }
+    const missedSet = new Set(missedQuestionIds);
+    return questions.filter((question) => missedSet.has(question.id));
+  }, [questions, missedQuestionIds]);
 
   // Validate and adjust settings when questions load
   useEffect(() => {
@@ -239,6 +258,20 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     onStartTest(finalSettings);
   };
 
+  const handleStartMissedQuestions = () => {
+    if (!questions) return;
+    if (missedQuestions.length === 0) return;
+
+    const practiceSettings: TestSettings = {
+      ...settings,
+      questionType: 'all',
+      explanationFilter: 'all',
+      questionCount: missedQuestions.length,
+    };
+
+    onStartTest(practiceSettings, { overrideQuestions: missedQuestions });
+  };
+
   const getValidationState = () => {
     if (availableQuestions === 0) {
       return {
@@ -330,6 +363,28 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
           >
             Manage exam questions →
           </Link>
+        </div>
+
+        <div className="max-w-2xl mx-auto w-full">
+          <Card className="bg-muted/30 border-dashed">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="text-base font-semibold">Practice missed questions</h3>
+                <p className="text-sm text-muted-foreground">
+                  {missedQuestions.length > 0
+                    ? `You have ${missedQuestions.length} question${missedQuestions.length === 1 ? '' : 's'} you missed before.`
+                    : 'No missed questions yet. We’ll track any incorrect answers for review.'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={handleStartMissedQuestions}
+                disabled={missedQuestions.length === 0}
+              >
+                Review missed questions
+              </Button>
+            </div>
+          </Card>
         </div>
 
         {/* Quick Start Button or Configuration Toggle */}

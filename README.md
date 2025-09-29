@@ -29,6 +29,8 @@ An interactive quiz application built with Next.js for studying Sitecore XM Clou
 - **Detailed Explanations**: Comprehensive answer explanations
 - **Review Incorrect**: Review wrong answers with visual feedback after completion
 - **Question Type Training**: Focus practice on specific question formats
+- **Local Question Metrics**: Client-side tracking records how often each question is seen, answered correctly, or missed without hitting the server
+- **Missed Question Practice**: Launch focused quizzes that contain only the questions you previously answered incorrectly
 
 ## Tech Stack
 
@@ -121,6 +123,12 @@ curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/questions/import" \
 ```
 
 The endpoint validates each question, generates stable `id` values, and returns the inserted records. If a generated `id` collides with an existing question, the API responds with HTTP 409 and a list of duplicate IDs so you can adjust the payload.
+
+### Question Metrics Storage
+
+Every time you run a quiz, the client records per-question metrics (seen, correct, incorrect) in `localStorage` under `scxmcl-question-metrics`. This avoids extra database load and keeps progress tracking lightweight and local. Resetting the browser storage clears these counters.
+
+On the main configuration page you can use these metrics to spin up a “Review missed questions” session, which builds a quiz from just the questions with one or more incorrect attempts.
 
 ## Project Structure
 

@@ -1,7 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { NormalizedQuestion } from '@/types/normalized';
 
@@ -26,7 +33,13 @@ type FormState = {
 
 const DEFAULT_CHOICES = ['', '', '', '', ''];
 
-export function QuestionEditorDialog({ open, question, onOpenChange, onSave, saving = false }: Props) {
+export function QuestionEditorDialog({
+  open,
+  question,
+  onOpenChange,
+  onSave,
+  saving = false,
+}: Props) {
   const [formState, setFormState] = useState<FormState>(() => ({
     prompt: '',
     choices: [...DEFAULT_CHOICES],
@@ -63,10 +76,14 @@ export function QuestionEditorDialog({ open, question, onOpenChange, onSave, sav
       singleAnswer:
         question.questionType === 'single'
           ? (question.answerIndex as number)
-          : (Array.isArray(question.answerIndex) ? (question.answerIndex[0] ?? null) : null),
+          : Array.isArray(question.answerIndex)
+          ? question.answerIndex[0] ?? null
+          : null,
       multiAnswers:
         question.questionType === 'multiple'
-          ? (Array.isArray(question.answerIndex) ? [...question.answerIndex] : [])
+          ? Array.isArray(question.answerIndex)
+            ? [...question.answerIndex]
+            : []
           : [],
       explanation: question.explanation ?? '',
     });
@@ -132,20 +149,21 @@ export function QuestionEditorDialog({ open, question, onOpenChange, onSave, sav
     const updatedQuestion: NormalizedQuestion = {
       ...question,
       prompt: trimmedPrompt,
-      choices: normalizedChoices.length === 5
-        ? [
-            normalizedChoices[0],
-            normalizedChoices[1],
-            normalizedChoices[2],
-            normalizedChoices[3],
-            normalizedChoices[4],
-          ]
-        : [
-            normalizedChoices[0],
-            normalizedChoices[1],
-            normalizedChoices[2],
-            normalizedChoices[3],
-          ],
+      choices:
+        normalizedChoices.length === 5
+          ? [
+              normalizedChoices[0],
+              normalizedChoices[1],
+              normalizedChoices[2],
+              normalizedChoices[3],
+              normalizedChoices[4],
+            ]
+          : [
+              normalizedChoices[0],
+              normalizedChoices[1],
+              normalizedChoices[2],
+              normalizedChoices[3],
+            ],
       questionType: formState.questionType,
       answerIndex:
         formState.questionType === 'single'
@@ -165,11 +183,12 @@ export function QuestionEditorDialog({ open, question, onOpenChange, onSave, sav
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl md:max-h-[85vh] overflow-y-auto">
+      <DialogContent className="overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Question</DialogTitle>
           <DialogDescription>
-            Update the prompt, options, and correct answers. Changes are saved to the shared exam bank.
+            Update the prompt, options, and correct answers. Changes are saved to the shared exam
+            bank.
           </DialogDescription>
         </DialogHeader>
 
@@ -196,10 +215,7 @@ export function QuestionEditorDialog({ open, question, onOpenChange, onSave, sav
                 <span className="text-sm font-medium">Answer Options</span>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {ANSWER_LABELS.map((label, index) => (
-                    <div
-                      key={label}
-                      className={`space-y-1 ${index >= 4 ? 'sm:col-span-2' : ''}`}
-                    >
+                    <div key={label} className={`space-y-1 ${index >= 4 ? 'sm:col-span-2' : ''}`}>
                       <div className="flex items-center justify-between text-sm font-medium">
                         <label htmlFor={`option-${label}`}>Option {label}</label>
                         {index >= 4 && formState.choices[index]?.trim() && (

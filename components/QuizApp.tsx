@@ -27,6 +27,10 @@ import {
   updateExamState,
   type ExamState,
 } from '@/lib/exam-state';
+import {
+  recordQuestionSeen,
+  recordQuestionResult,
+} from '@/lib/question-metrics';
 
 type QuizState = {
   currentQuestionIndex: number;
@@ -79,6 +83,43 @@ export function QuizApp({
     timerRunning: initialExamState?.timerRunning ?? true,
     timeElapsed: initialExamState?.timeElapsed || 0,
   });
+  const seenQuestionsRef = useRef<Set<string>>(new Set());
+  const scoredQuestionsRef = useRef<Set<string>>(new Set());
+
+  const evaluateAnswer = useCallback(
+    (question: NormalizedQuestion, selected: number | number[] | null): 'correct' | 'incorrect' | 'unanswered' => {
+      if (selected === null || (Array.isArray(selected) && selected.length === 0)) {
+        return 'unanswered';
+      }
+
+      const correctIndex = question.answerIndex;
+
+      if (Array.isArray(correctIndex)) {
+        if (!Array.isArray(selected)) {
+          return 'incorrect';
+        }
+        if (correctIndex.length !== selected.length) {
+          return 'incorrect';
+        }
+
+        const sortedCorrect = [...correctIndex].sort();
+        const sortedSelected = [...selected].sort();
+        for (let i = 0; i < sortedCorrect.length; i++) {
+          if (sortedCorrect[i] !== sortedSelected[i]) {
+            return 'incorrect';
+          }
+        }
+        return 'correct';
+      }
+
+      if (Array.isArray(selected)) {
+        return 'incorrect';
+      }
+
+      return selected === correctIndex ? 'correct' : 'incorrect';
+    },
+    []
+  );
 
   // Ensure questions are set when component mounts or props change
   useEffect(() => {
@@ -172,6 +213,31 @@ export function QuizApp({
   const totalQuestions = questions?.length || 0;
   const isLastQuestion = quizState.currentQuestionIndex === totalQuestions - 1;
 
+  useEffect(() => {
+    if (!currentQuestion) return;
+    if (!seenQuestionsRef.current.has(currentQuestion.id)) {
+      recordQuestionSeen(currentQuestion.id);
+      seenQuestionsRef.current.add(currentQuestion.id);
+    }
+  }, [currentQuestion]);
+
+  useEffect(() => {
+    if (!currentQuestion || !quizState.showFeedback) {
+      return;
+    }
+
+    if (scoredQuestionsRef.current.has(currentQuestion.id)) {
+      return;
+    }
+
+    const selected = quizState.selectedAnswers[quizState.currentQuestionIndex] ?? null;
+    const outcome = evaluateAnswer(currentQuestion, selected);
+    if (outcome === 'correct' || outcome === 'incorrect') {
+      recordQuestionResult(currentQuestion.id, outcome);
+      scoredQuestionsRef.current.add(currentQuestion.id);
+    }
+  }, [currentQuestion, quizState.showFeedback, quizState.selectedAnswers, quizState.currentQuestionIndex, evaluateAnswer]);
+
   // Note: Disabled localStorage persistence since questions are randomized
   // Loading a saved state wouldn't match the current question order
 
@@ -182,21 +248,23 @@ export function QuizApp({
     const incorrectAnswers: QuizState['incorrectAnswers'] = [];
 
     questions.forEach((question, index) => {
-      const selectedIndex = quizState.selectedAnswers[index];
+      const selected = quizState.selectedAnswers[index] ?? null;
       const correctIndex = question.answerIndex;
+      const outcome = evaluateAnswer(question, selected);
 
-      let isCorrect = false;
-
-      isCorrect = selectedIndex === correctIndex;
-
-      if (isCorrect) {
+      if (outcome === 'correct') {
         score++;
-      } else if (selectedIndex !== null) {
+      } else if (outcome === 'incorrect' && selected !== null) {
         incorrectAnswers.push({
           question,
-          selectedIndex,
+          selectedIndex: selected,
           correctIndex,
         });
+      }
+
+      if ((outcome === 'correct' || outcome === 'incorrect') && !scoredQuestionsRef.current.has(question.id)) {
+        recordQuestionResult(question.id, outcome);
+        scoredQuestionsRef.current.add(question.id);
       }
     });
 
@@ -208,7 +276,7 @@ export function QuizApp({
     };
 
     setQuizState(finalState);
-  }, [questions, quizState]);
+  }, [questions, quizState, evaluateAnswer]);
 
   const selectAnswer = useCallback(
     (answerIndex: number) => {
@@ -282,6 +350,8 @@ export function QuizApp({
 
     // Randomize questions again on reset
     setQuestions(shuffleArray(preparedQuestions));
+    seenQuestionsRef.current = new Set();
+    scoredQuestionsRef.current = new Set();
 
     const resetState = {
       currentQuestionIndex: 0,
