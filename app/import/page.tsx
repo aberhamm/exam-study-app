@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
 import { ExternalQuestionsImportZ } from '@/lib/validation';
+import { APP_CONFIG } from '@/lib/app-config';
 import type { ExamSummary } from '@/types/api';
 
 const jsonBeautify = (value: unknown): string => {
@@ -30,6 +31,7 @@ type ImportError = {
 };
 
 export default function ImportQuestionsPage() {
+  const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
   const { setConfig, resetConfig } = useHeader();
   const [exams, setExams] = useState<ExamSummary[]>([]);
   const [examsLoading, setExamsLoading] = useState(true);
@@ -42,6 +44,8 @@ export default function ImportQuestionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<ImportSuccess | null>(null);
   const [submitError, setSubmitError] = useState<ImportError | null>(null);
+  const [embedAfterImport, setEmbedAfterImport] = useState(true);
+  const [embeddingStatus, setEmbeddingStatus] = useState<{ running: boolean; message?: string; error?: string } | null>(null);
 
   useEffect(() => {
     setConfig({
@@ -59,6 +63,7 @@ export default function ImportQuestionsPage() {
   }, [resetConfig, setConfig]);
 
   useEffect(() => {
+    if (!DEV) return;
     const loadExams = async () => {
       setExamsLoading(true);
       setExamsError(null);
@@ -78,7 +83,7 @@ export default function ImportQuestionsPage() {
     };
 
     loadExams();
-  }, []);
+  }, [DEV]);
 
   useEffect(() => {
     if (!rawInput.trim()) {
@@ -152,12 +157,34 @@ export default function ImportQuestionsPage() {
       }
 
       const inserted = Array.isArray(json?.questions) ? (json.questions as Array<{ id: string; question: string }>) : [];
-      setSuccess({
+      const result: ImportSuccess = {
         examId: json?.examId ?? selectedExamId,
         insertedCount: Number(json?.insertedCount) || inserted.length,
         questions: inserted.map((q) => ({ id: q.id, question: q.question })),
-      });
+      };
+      setSuccess(result);
       setRawInput('');
+
+      if (embedAfterImport && result.insertedCount > 0) {
+        try {
+          setEmbeddingStatus({ running: true, message: 'Generating embeddings for inserted questions…' });
+          const resp = await fetch(`/api/exams/${encodeURIComponent(result.examId)}/questions/embed`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: result.questions.map(q => q.id) }),
+          });
+          const embedJson = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            const msg = typeof embedJson?.error === 'string' ? embedJson.error : 'Embedding failed';
+            setEmbeddingStatus({ running: false, error: msg });
+          } else {
+            const embedded = Number(embedJson?.embedded) || 0;
+            setEmbeddingStatus({ running: false, message: `Embeddings complete for ${embedded} question(s).` });
+          }
+        } catch (err) {
+          setEmbeddingStatus({ running: false, error: err instanceof Error ? err.message : 'Embedding failed' });
+        }
+      }
     } catch (error) {
       setSubmitError({
         message: error instanceof Error ? error.message : 'Failed to import questions',
@@ -166,6 +193,17 @@ export default function ImportQuestionsPage() {
       setSubmitting(false);
     }
   };
+
+  if (!DEV) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-6">
+          <h2 className="text-2xl font-semibold mb-2">Import Disabled</h2>
+          <p className="text-sm text-muted-foreground">This tool is available only in development.</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -224,6 +262,17 @@ export default function ImportQuestionsPage() {
             </details>
           )}
 
+          <div className="flex items-center gap-2">
+            <input
+              id="embed-after"
+              type="checkbox"
+              className="h-4 w-4"
+              checked={embedAfterImport}
+              onChange={(e) => setEmbedAfterImport(e.target.checked)}
+            />
+            <label htmlFor="embed-after" className="text-sm">Embed questions after import (dev)</label>
+          </div>
+
           {submitError && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
               <p className="font-medium">{submitError.message}</p>
@@ -248,6 +297,11 @@ export default function ImportQuestionsPage() {
                     ))}
                   </ul>
                 </details>
+              )}
+              {embeddingStatus && (
+                <div className={`mt-2 ${embeddingStatus.error ? 'text-red-600' : 'text-emerald-700'}`}>
+                  {embeddingStatus.running ? 'Embedding…' : embeddingStatus.error || embeddingStatus.message}
+                </div>
               )}
             </div>
           )}

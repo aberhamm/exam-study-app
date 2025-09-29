@@ -81,6 +81,13 @@ Copy `.env.example` to `.env.local` (or update your preferred dotenv file) and s
 MONGODB_URI=mongodb://localhost:27017
 MONGODB_DB=scxmcl-study-util
 MONGODB_EXAMS_COLLECTION=exams
+MONGODB_QUESTIONS_COLLECTION=questions
+
+# For embeddings (optional)
+OPENAI_API_KEY=your-openai-key
+QUESTIONS_EMBEDDING_MODEL=text-embedding-3-small
+# QUESTIONS_EMBEDDING_DIMENSIONS=1536
+MONGODB_QUESTION_EMBEDDINGS_COLLECTION=question_embeddings
 ```
 
 When running against MongoDB Atlas, supply the SRV connection string (e.g. `mongodb+srv://user:pass@cluster.mongodb.net`) and ensure your IP is allow-listed.
@@ -94,6 +101,54 @@ pnpm seed:exams
 ```
 
 The seeder loads JSON files from `data/exams/`, validates them with the shared Zod schema, and upserts documents keyed by `examId`. Ensure your environment variables point at the desired database/collection before running.
+
+### Migrating Questions to Their Own Collection
+
+To move embedded questions from each exam document into a dedicated `questions` collection while keeping backward compatibility:
+
+```bash
+pnpm migrate:questions
+```
+
+This script iterates all exams, upserts each embedded question into `MONGODB_QUESTIONS_COLLECTION` with a stable `id`, and marks the exam with `legacyQuestionsMigrated: true`. The API now prefers reading from the `questions` collection but falls back to the embedded array if none are present. Writes mirror to the legacy array to ease transition.
+
+### Generating Question Embeddings
+
+Embed each question (with its answer and optional explanation) into a vector for semantic search or retrieval workflows:
+
+```bash
+# Embed all questions to `question_embeddings`
+pnpm embed:questions
+
+# Target a single exam and recompute existing embeddings
+pnpm embed:questions --exam sitecore-xmc --recompute
+
+# Limit and batch-size (defaults: limit = all, batch = 16)
+pnpm embed:questions --limit 100 --batch 32
+```
+
+Environment:
+
+- `OPENAI_API_KEY` – API key for embeddings
+- `QUESTIONS_EMBEDDING_MODEL` – defaults to `text-embedding-3-small`
+- `QUESTIONS_EMBEDDING_DIMENSIONS` – optional; set to model dims (e.g., 1536)
+
+MongoDB Atlas Vector Search (optional): create a vector index on `question_embeddings.embedding` with cosine similarity and the chosen dimensions. Name it via `MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX`.
+
+### Semantic Search (optional)
+
+A development search endpoint is available to retrieve similar questions by semantic meaning:
+
+```bash
+curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/search" \
+  -H "Content-Type: application/json" \
+  -d '{ "query": "experience edge publishing" , "topK": 5 }'
+```
+
+Requirements:
+- Populate `question_embeddings` (see Embeddings above)
+- Create a MongoDB Atlas Vector Search index on `question_embeddings.embedding`
+- Set `OPENAI_API_KEY` and `MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX`
 
 ### Importing Additional Questions
 

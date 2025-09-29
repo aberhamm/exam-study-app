@@ -5,6 +5,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Card, CardHeader, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useHeader } from "@/contexts/HeaderContext";
+import { APP_CONFIG } from "@/lib/app-config";
 import { MarkdownContent } from '@/components/ui/markdown';
 import { History, FolderOpen } from 'lucide-react';
 import {
@@ -47,7 +48,20 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     setConfig({
       variant: 'full',
       leftContent: null,
-      rightContent: null,
+      rightContent: APP_CONFIG.DEV_FEATURES_ENABLED ? (
+        <div className="hidden md:flex items-center gap-3">
+          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border border-amber-300/50">Dev</span>
+          <Link href="/import" className="text-sm text-muted-foreground hover:text-foreground">
+            Import
+          </Link>
+          <Link href="/dev/search" className="text-sm text-muted-foreground hover:text-foreground">
+            Search
+          </Link>
+          <Link href="/dev/embeddings" className="text-sm text-muted-foreground hover:text-foreground">
+            Embeddings
+          </Link>
+        </div>
+      ) : null,
       visible: true,
     });
   }, [setConfig]);

@@ -5,7 +5,7 @@
 The application follows an enhanced data flow pattern for loading, configuring, and processing quiz questions:
 
 ```
-JSON File → Fetch → Validation → Normalization → Test Configuration → Question Preparation → Component State
+MongoDB (exams + questions) → Fetch → Validation → Normalization → Test Configuration → Question Preparation → Component State
 ```
 
 ### Test Configuration Layer
@@ -20,7 +20,7 @@ User Settings → Question Filtering → Question Limiting → Shuffling → Qui
 
 ### Question JSON Structure
 
-Questions are stored in JSON files that follow a specific schema. The main file is located at `/public/questions.json`.
+Questions are persisted in MongoDB. The API composes responses from an `exams` metadata document and a separate `questions` collection keyed by `{ examId, id }`. The external wire format remains the same for backward compatibility.
 
 ```json
 {
@@ -212,14 +212,14 @@ export function normalizeQuestions(qs: ExternalQuestion[]): NormalizedQuestion[]
 Custom hook that handles the entire data loading pipeline:
 
 ```typescript
-export function useQuestions() {
+export function useQuestions(examId: string = 'sitecore-xmc') {
   const [data, setData] = useState<NormalizedQuestion[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/questions.json", { cache: "no-store" });
+        const res = await fetch(`/api/exams/${examId}`, { cache: "no-store" });
         const json = await res.json();
         const parsed = ExternalQuestionsFileZ.parse(json);
         setData(normalizeQuestions(parsed.questions));
@@ -228,7 +228,7 @@ export function useQuestions() {
         console.error(e);
       }
     })();
-  }, []);
+  }, [examId]);
 
   return { data, error, loading: !data && !error };
 }

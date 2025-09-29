@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { ExternalQuestionsImportZ } from '@/lib/validation';
-import {
-  addExamQuestions,
-  DuplicateQuestionIdsError,
-  ExamNotFoundError,
-} from '@/lib/server/exams';
+import { addExamQuestions } from '@/lib/server/questions';
+import { DuplicateQuestionIdsError, ExamNotFoundError } from '@/lib/server/exams';
 
 interface RouteContext {
   params: Promise<{
@@ -14,6 +11,9 @@ interface RouteContext {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+  }
   let examId = 'unknown';
 
   try {

@@ -45,3 +45,19 @@ export function getExamsCollectionName(): string {
   }
   return collection;
 }
+
+export function getQuestionsCollectionName(): string {
+  const collection = process.env.MONGODB_QUESTIONS_COLLECTION;
+  if (!collection) {
+    throw new Error('Missing MONGODB_QUESTIONS_COLLECTION environment variable');
+  }
+  return collection;
+}
+
+export function getQuestionEmbeddingsCollectionName(): string {
+  const collection = process.env.MONGODB_QUESTION_EMBEDDINGS_COLLECTION;
+  if (!collection) {
+    throw new Error('Missing MONGODB_QUESTION_EMBEDDINGS_COLLECTION environment variable');
+  }
+  return collection;
+}

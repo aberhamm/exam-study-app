@@ -17,6 +17,11 @@ export function Header() {
     <div className="flex justify-between items-center">
       <div className="flex items-center gap-4">
         <h1 className="text-xl font-semibold">{appName}</h1>
+        {APP_CONFIG.DEV_FEATURES_ENABLED && (
+          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border border-amber-300/50 select-none opacity-80">
+            DEV
+          </span>
+        )}
         {config.leftContent}
       </div>
       <div className="flex items-center gap-3">

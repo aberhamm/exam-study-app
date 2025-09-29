@@ -19,6 +19,7 @@ import { MarkdownContent } from '@/components/ui/markdown';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { TestSettings } from '@/lib/test-settings';
 import { shuffleArray } from '@/lib/question-utils';
+import { APP_CONFIG } from '@/lib/app-config';
 import { denormalizeQuestion, normalizeQuestions } from '@/lib/normalize';
 import {
   saveExamState,
@@ -462,6 +463,8 @@ export function QuizApp({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!currentQuestion || quizState.showResult) return;
+      // Disable global shortcuts while any dialog is open
+      if (editDialogOpen || showRestartDialog) return;
 
       if (e.key >= '1' && e.key <= '5') {
         const answerIndex = parseInt(e.key) - 1;
@@ -483,6 +486,8 @@ export function QuizApp({
       currentQuestion,
       quizState.showFeedback,
       quizState.showResult,
+      editDialogOpen,
+      showRestartDialog,
       selectAnswer,
       nextQuestion,
       submitMultipleAnswer,
@@ -753,6 +758,7 @@ export function QuizApp({
               {currentQuestion?.prompt}
             </h2>
             <div className="flex flex-col items-end gap-2">
+              {APP_CONFIG.DEV_FEATURES_ENABLED && (
               <Button
                 variant="outline"
                 size="sm"
@@ -761,6 +767,7 @@ export function QuizApp({
               >
                 Edit Question
               </Button>
+              )}
               {quizState.showFeedback && (
                 <div className="flex-shrink-0 mt-1">
                   {isCurrentAnswerCorrect ? (
