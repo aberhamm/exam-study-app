@@ -75,54 +75,27 @@ export default function HomeClient({ examMetadata, stats }: Props) {
   const handleStartTest = async (settings: TestSettings, options?: { overrideQuestions?: NormalizedQuestion[] }) => {
     setTestSettings(settings);
     if (!options?.overrideQuestions) {
+      // Persist chosen settings so the exam page can pick them up immediately
       saveTestSettings(settings);
     }
-    setResumeExamState(null); // Clear any existing exam state for new exam
+    // Clear any existing exam state for a fresh start
+    setResumeExamState(null);
+
+    // If starting a targeted session (e.g., missed questions), pre-seed local state
     if (options?.overrideQuestions && options.overrideQuestions.length > 0) {
-      setOverrideQuestions(shuffleArray(options.overrideQuestions));
-    } else {
-      setOverrideQuestions(null);
-    }
-    // Load questions on-demand at start and persist state for the /exam route
-    try {
-      let prepared: NormalizedQuestion[] = [];
-      if (options?.overrideQuestions && options.overrideQuestions.length > 0) {
-        prepared = shuffleArray(options.overrideQuestions);
-      } else {
-        const targetExamId = examMetadata?.examId ?? 'sitecore-xmc';
-        const body = JSON.stringify({
-          questionType: settings.questionType,
-          explanationFilter: settings.explanationFilter,
-          questionCount: settings.questionCount,
-        });
-        const res = await fetch(`/api/exams/${encodeURIComponent(targetExamId)}/questions/prepare`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body,
-          cache: 'no-store',
-        });
-        if (!res.ok) {
-          const details: unknown = await res.json().catch(() => ({}));
-          let message = `HTTP ${res.status}: ${res.statusText}`;
-          if (details && typeof details === 'object' && 'error' in details) {
-            const errVal = (details as { error?: unknown }).error;
-            if (typeof errVal === 'string') {
-              message = errVal;
-            }
-          }
-          throw new Error(message);
-        }
-        const json = (await res.json()) as { questions: NormalizedQuestion[] };
-        prepared = shuffleArray(json.questions);
-      }
+      const prepared = shuffleArray(options.overrideQuestions);
       const targetExamId = examMetadata?.examId ?? 'sitecore-xmc';
       const state = createExamState(prepared, settings, targetExamId, examMetadata?.examTitle);
       saveExamState(state);
-    } catch {}
+      setOverrideQuestions(prepared);
+    } else {
+      setOverrideQuestions(null);
+      // Do not fetch questions here; navigate immediately and let the exam route load data
+    }
 
+    // Update view state and navigate right away
     setCurrentView('quiz');
     setRedirectingToExam(true);
-    // Navigate to the dedicated exam route
     try {
       const targetExamId = examMetadata?.examId ?? 'sitecore-xmc';
       router.push(`/exam/${encodeURIComponent(targetExamId)}`);

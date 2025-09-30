@@ -67,8 +67,8 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ### Data Flow (Exam)
 
 - Home (server-rendered): server loads exam metadata and stats via `fetchExamById()` and `computeExamStats()` and passes them to the client UI. No full questions are fetched on load.
-- Start Exam: the client fetches full questions once via `/api/exams/:examId`, prepares them per settings, saves `ExamState` (including `examTitle`), then navigates to `/exam/:examId`.
-- Exam Page: server sets metadata (title) from `fetchExamById()`. The client resumes from saved state without fetching; if there’s no saved state, it fetches questions once.
+- Start Exam: navigation to `/exam/:examId` happens immediately. The exam route displays skeleton UI while it loads questions and prepares them per the saved settings. For targeted sessions (e.g., missed questions), Home pre-seeds `ExamState` and navigation is still immediate.
+- Exam Page: server sets metadata (title) from `fetchExamById()`. The client resumes from a saved state when present (no fetch). If there’s no saved state, it fetches once and begins when ready, with skeletons shown until then.
 - Quit → Home: clearing `ExamState` prevents auto-resume; Home remains on the config view and only shows stats.
 
 ### Scripts

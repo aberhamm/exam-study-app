@@ -6,6 +6,7 @@ import { useQuestions } from "@/app/useQuestions";
 import { prepareQuestionsForTest } from "@/lib/question-utils";
 import { loadExamState, isExamStateValid, type ExamState } from "@/lib/exam-state";
 import { loadTestSettings, type TestSettings } from "@/lib/test-settings";
+import ExamSkeleton from "@/components/ExamSkeleton";
 
 type Props = {
   examId: string;
@@ -15,7 +16,7 @@ type Props = {
 export default function ExamClient({ examId, examTitle }: Props) {
   const router = useRouter();
   const [enabledFetch, setEnabledFetch] = useState<boolean>(false);
-  const { data: allQuestions, examMetadata: fetchedMetadata, error } = useQuestions(examId, { enabled: enabledFetch });
+  const { data: allQuestions, examMetadata: fetchedMetadata, error, loading } = useQuestions(examId, { enabled: enabledFetch });
   const [initialExamState, setInitialExamState] = useState<ExamState | null>(() => {
     const existingExamState = loadExamState();
     if (
@@ -71,15 +72,28 @@ export default function ExamClient({ examId, examTitle }: Props) {
     } catch {}
   };
 
-  if (!testSettings && !initialExamState) {
-    return null;
+  // Show skeleton while initializing settings or loading questions for a fresh session
+  if (!initialExamState && (!testSettings || loading)) {
+    return <ExamSkeleton examTitle={examTitle ?? fetchedMetadata?.examTitle} />;
   }
   if (error) {
-    return null;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center text-red-600 dark:text-red-400">
+          <h2 className="text-xl font-semibold mb-2">Error loading exam</h2>
+          <p className="text-sm opacity-90">{String(error)}</p>
+        </div>
+      </div>
+    );
   }
 
   const effectiveExamId = (fetchedMetadata?.examId ?? initialExamState?.examId) || examId;
   const effectiveExamTitle = initialExamState?.examTitle ?? fetchedMetadata?.examTitle ?? examTitle;
+
+  // If we still don't have questions prepared for a fresh session, keep showing skeleton
+  if (!initialExamState && (!preparedQuestions || preparedQuestions.length === 0)) {
+    return <ExamSkeleton examTitle={examTitle ?? fetchedMetadata?.examTitle} />;
+  }
 
   return (
     <QuizApp
@@ -92,4 +106,3 @@ export default function ExamClient({ examId, examTitle }: Props) {
     />
   );
 }
-
