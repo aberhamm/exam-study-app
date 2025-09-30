@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useMemo, useState, useEffect } from "react";
-import { Card, CardHeader, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useHeader } from "@/contexts/HeaderContext";
-import { APP_CONFIG } from "@/lib/app-config";
+import Link from 'next/link';
+import { useMemo, useState, useEffect } from 'react';
+import { Card, CardHeader, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useHeader } from '@/contexts/HeaderContext';
+import { APP_CONFIG } from '@/lib/app-config';
 import { MarkdownContent } from '@/components/ui/markdown';
-import { History, FolderOpen } from 'lucide-react';
+import { History } from 'lucide-react';
 import {
   TEST_SETTINGS,
   TestSettings,
@@ -16,10 +16,10 @@ import {
   DEFAULT_TEST_SETTINGS,
   validateTestSettings,
   loadTestSettings,
-  saveTestSettings
-} from "@/lib/test-settings";
-import type { NormalizedQuestion, ExamMetadata } from "@/types/normalized";
-import { getMissedQuestionIds } from "@/lib/question-metrics";
+  saveTestSettings,
+} from '@/lib/test-settings';
+import type { NormalizedQuestion, ExamMetadata } from '@/types/normalized';
+import { getMissedQuestionIds } from '@/lib/question-metrics';
 
 type StartTestOptions = {
   overrideQuestions?: NormalizedQuestion[];
@@ -43,35 +43,44 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [missedQuestionIds, setMissedQuestionIds] = useState<string[]>([]);
 
-  // Configure header on mount
+  // Configure header on mount and when exam title loads
   useEffect(() => {
     setConfig({
       variant: 'full',
+      title: examMetadata?.examTitle || APP_CONFIG.APP_NAME,
       leftContent: null,
       rightContent: APP_CONFIG.DEV_FEATURES_ENABLED ? (
         <div className="hidden md:flex items-center gap-3">
-          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border border-amber-300/50">Dev</span>
+          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border border-amber-300/50">
+            Dev
+          </span>
           <Link href="/import" className="text-sm text-muted-foreground hover:text-foreground">
             Import
           </Link>
           <Link href="/dev/search" className="text-sm text-muted-foreground hover:text-foreground">
             Search
           </Link>
-          <Link href="/dev/embeddings" className="text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            href="/dev/embeddings"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
             Embeddings
           </Link>
         </div>
       ) : null,
       visible: true,
     });
-  }, [setConfig]);
+  }, [setConfig, examMetadata]);
 
   // Load saved settings on mount
   useEffect(() => {
     const savedSettings = loadTestSettings();
     // Ensure the question count is at least the default if no valid saved settings
     if (savedSettings.questionCount < TEST_SETTINGS.DEFAULT_QUESTION_COUNT) {
-      const correctedSettings = { ...savedSettings, questionCount: TEST_SETTINGS.DEFAULT_QUESTION_COUNT };
+      const correctedSettings = {
+        ...savedSettings,
+        questionCount: TEST_SETTINGS.DEFAULT_QUESTION_COUNT,
+      };
       setSettings(correctedSettings);
       saveTestSettings(correctedSettings);
     } else {
@@ -79,18 +88,24 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     }
 
     // Use the final settings for preset checking
-    const finalSettings = savedSettings.questionCount < TEST_SETTINGS.DEFAULT_QUESTION_COUNT ?
-      { ...savedSettings, questionCount: TEST_SETTINGS.DEFAULT_QUESTION_COUNT } : savedSettings;
+    const finalSettings =
+      savedSettings.questionCount < TEST_SETTINGS.DEFAULT_QUESTION_COUNT
+        ? { ...savedSettings, questionCount: TEST_SETTINGS.DEFAULT_QUESTION_COUNT }
+        : savedSettings;
 
     // Check if final count is a preset or custom
-    const isPreset = (TEST_SETTINGS.QUESTION_COUNT_PRESETS as readonly number[]).includes(finalSettings.questionCount);
+    const isPreset = (TEST_SETTINGS.QUESTION_COUNT_PRESETS as readonly number[]).includes(
+      finalSettings.questionCount
+    );
     if (!isPreset) {
       setUseCustomCount(true);
       setCustomQuestionCount(finalSettings.questionCount.toString());
     }
 
     // Check if saved timer is a preset or custom
-    const isTimerPreset = (TEST_SETTINGS.TIMER_DURATION_PRESETS as readonly number[]).includes(finalSettings.timerDuration);
+    const isTimerPreset = (TEST_SETTINGS.TIMER_DURATION_PRESETS as readonly number[]).includes(
+      finalSettings.timerDuration
+    );
     if (!isTimerPreset) {
       setUseCustomTimer(true);
       setCustomTimerDuration(finalSettings.timerDuration.toString());
@@ -117,8 +132,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     if (questions) {
       const counts = {
         all: questions.length,
-        single: questions.filter(q => q.questionType === 'single').length,
-        multiple: questions.filter(q => q.questionType === 'multiple').length
+        single: questions.filter((q) => q.questionType === 'single').length,
+        multiple: questions.filter((q) => q.questionType === 'multiple').length,
       };
 
       const availableForType = counts[questionType];
@@ -126,7 +141,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
       // If saved settings are invalid for available questions, adjust them
       if (questionCount > availableForType && availableForType > 0) {
         const adjustedCount = Math.min(availableForType, TEST_SETTINGS.DEFAULT_QUESTION_COUNT);
-        setSettings(prev => ({ ...prev, questionCount: adjustedCount }));
+        setSettings((prev) => ({ ...prev, questionCount: adjustedCount }));
 
         // Update UI state if it was a custom count
         if (useCustomCount) {
@@ -139,15 +154,24 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   // Calculate available questions by type and explanation filter
   const questionCounts = useMemo(() => {
     if (!questions) {
-      return { all: 0, single: 0, multiple: 0, 'with-explanations': 0, 'without-explanations': 0 } as const;
+      return {
+        all: 0,
+        single: 0,
+        multiple: 0,
+        'with-explanations': 0,
+        'without-explanations': 0,
+      } as const;
     }
 
     return {
       all: questions.length,
-      single: questions.filter(q => q.questionType === 'single').length,
-      multiple: questions.filter(q => q.questionType === 'multiple').length,
-      'with-explanations': questions.filter(q => q.explanation && q.explanation.trim().length > 0).length,
-      'without-explanations': questions.filter(q => !q.explanation || q.explanation.trim().length === 0).length
+      single: questions.filter((q) => q.questionType === 'single').length,
+      multiple: questions.filter((q) => q.questionType === 'multiple').length,
+      'with-explanations': questions.filter((q) => q.explanation && q.explanation.trim().length > 0)
+        .length,
+      'without-explanations': questions.filter(
+        (q) => !q.explanation || q.explanation.trim().length === 0
+      ).length,
     } as const;
   }, [questions]);
 
@@ -156,17 +180,17 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     if (!questions) return [];
     if (settings.explanationFilter === 'all') return questions;
     if (settings.explanationFilter === 'with-explanations') {
-      return questions.filter(q => q.explanation && q.explanation.trim().length > 0);
+      return questions.filter((q) => q.explanation && q.explanation.trim().length > 0);
     }
-    return questions.filter(q => !q.explanation || q.explanation.trim().length === 0);
+    return questions.filter((q) => !q.explanation || q.explanation.trim().length === 0);
   };
 
   const filteredQuestions = getFilteredQuestions();
   const filteredQuestionCounts = useMemo(() => {
     return {
       all: filteredQuestions.length,
-      single: filteredQuestions.filter(q => q.questionType === 'single').length,
-      multiple: filteredQuestions.filter(q => q.questionType === 'multiple').length
+      single: filteredQuestions.filter((q) => q.questionType === 'single').length,
+      multiple: filteredQuestions.filter((q) => q.questionType === 'multiple').length,
     } as const;
   }, [filteredQuestions]);
 
@@ -199,18 +223,20 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
   const handleExplanationFilterChange = (explanationFilter: ExplanationFilter) => {
     // Recalculate available questions for the new explanation filter
-    const newFilteredQuestions = questions ? (() => {
-      if (explanationFilter === 'all') return questions;
-      if (explanationFilter === 'with-explanations') {
-        return questions.filter(q => q.explanation && q.explanation.trim().length > 0);
-      }
-      return questions.filter(q => !q.explanation || q.explanation.trim().length === 0);
-    })() : [];
+    const newFilteredQuestions = questions
+      ? (() => {
+          if (explanationFilter === 'all') return questions;
+          if (explanationFilter === 'with-explanations') {
+            return questions.filter((q) => q.explanation && q.explanation.trim().length > 0);
+          }
+          return questions.filter((q) => !q.explanation || q.explanation.trim().length === 0);
+        })()
+      : [];
 
     const newFilteredQuestionCounts = {
       all: newFilteredQuestions.length,
-      single: newFilteredQuestions.filter(q => q.questionType === 'single').length,
-      multiple: newFilteredQuestions.filter(q => q.questionType === 'multiple').length
+      single: newFilteredQuestions.filter((q) => q.questionType === 'single').length,
+      multiple: newFilteredQuestions.filter((q) => q.questionType === 'multiple').length,
     };
 
     const availableForCurrentType = newFilteredQuestionCounts[settings.questionType];
@@ -232,10 +258,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
   const handleQuestionCountChange = (count: number) => {
     // Allow any count from 1 to the maximum available, but clamp to available range
-    const validatedCount = Math.max(
-      1,
-      Math.min(maxAllowedQuestions, count)
-    );
+    const validatedCount = Math.max(1, Math.min(maxAllowedQuestions, count));
     setSettings({ ...settings, questionCount: validatedCount });
   };
 
@@ -299,29 +322,34 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     if (availableQuestions === 0) {
       return {
         valid: false,
-        message: `No questions available for ${settings.questionType === 'all' ? 'any' : settings.questionType} question type`
+        message: `No questions available for ${
+          settings.questionType === 'all' ? 'any' : settings.questionType
+        } question type`,
       };
     }
 
     if (settings.questionCount > maxAllowedQuestions) {
       return {
         valid: false,
-        message: `Only ${maxAllowedQuestions} questions available for this type`
+        message: `Only ${maxAllowedQuestions} questions available for this type`,
       };
     }
 
     if (settings.questionCount < 1) {
       return {
         valid: false,
-        message: `At least 1 question is required`
+        message: `At least 1 question is required`,
       };
     }
 
     // Allow configurations with fewer than the ideal minimum if that's all that's available
-    if (availableQuestions < TEST_SETTINGS.MIN_QUESTION_COUNT && settings.questionCount > availableQuestions) {
+    if (
+      availableQuestions < TEST_SETTINGS.MIN_QUESTION_COUNT &&
+      settings.questionCount > availableQuestions
+    ) {
       return {
         valid: false,
-        message: `Only ${availableQuestions} questions available for this type`
+        message: `Only ${availableQuestions} questions available for this type`,
       };
     }
 
@@ -354,19 +382,21 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
   return (
     <div className="space-y-10">
+      {/* Page Header - Exam Title */}
+      {examMetadata?.examTitle && (
+        <div className="text-center lg:text-left">
+          <h1 className="text-4xl font-bold text-primary">{examMetadata.examTitle}</h1>
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* Welcome Section */}
         <section className="space-y-6">
           <div className="space-y-4 text-center lg:text-left">
-            {examMetadata?.examTitle && (
-              <h1 className="text-4xl font-bold text-primary">
-                {examMetadata.examTitle}
-              </h1>
-            )}
             <div className="mx-auto w-full lg:mx-0 lg:max-w-3xl">
               {(examMetadata?.welcomeConfig?.showDefaultSubtitle ?? true) && (
                 <h2 className="text-2xl font-semibold mb-2">
-                  {examMetadata?.welcomeConfig?.title || "Welcome to Your Study Session"}
+                  {examMetadata?.welcomeConfig?.title || 'Welcome to Your Study Session'}
                 </h2>
               )}
               {examMetadata?.welcomeConfig?.description ? (
@@ -377,8 +407,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 </div>
               ) : (
                 <p className="text-lg text-muted-foreground">
-                  Get ready to test your knowledge and improve your understanding.
-                  Configure your exam settings below and start when you&apos;re ready.
+                  Get ready to test your knowledge and improve your understanding. Configure your
+                  exam settings below and start when you&apos;re ready.
                 </p>
               )}
             </div>
@@ -393,11 +423,20 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 className="px-8 py-3 text-lg"
                 disabled={!isValidConfiguration}
               >
-                {examMetadata?.welcomeConfig?.ctaText || `Start Exam (${settings.questionCount} ${settings.questionType === 'all' ? '' : settings.questionType} ${settings.explanationFilter === 'all' ? '' : settings.explanationFilter === 'with-explanations' ? 'explained ' : 'non-explained '}questions)`}
+                {examMetadata?.welcomeConfig?.ctaText ||
+                  `Start Exam (${settings.questionCount} ${
+                    settings.questionType === 'all' ? '' : settings.questionType
+                  } ${
+                    settings.explanationFilter === 'all'
+                      ? ''
+                      : settings.explanationFilter === 'with-explanations'
+                      ? 'explained '
+                      : 'non-explained '
+                  }questions)`}
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setShowConfiguration(current => !current)}
+                onClick={() => setShowConfiguration((current) => !current)}
                 className="px-6"
               >
                 {showConfiguration ? 'Hide settings' : 'Adjust settings'}
@@ -421,7 +460,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               </CardTitle>
               <CardDescription>
                 {missedQuestions.length > 0
-                  ? `You have ${missedQuestions.length} question${missedQuestions.length === 1 ? '' : 's'} you missed before.`
+                  ? `You have ${missedQuestions.length} question${
+                      missedQuestions.length === 1 ? '' : 's'
+                    } you missed before.`
                   : 'No missed questions yet. We’ll track any incorrect answers for review.'}
               </CardDescription>
             </CardHeader>
@@ -433,20 +474,6 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 className="w-full"
               >
                 Review missed questions
-              </Button>
-            </CardFooter>
-          </Card>
-          <Card>
-            <CardHeader className="pt-4 sm:pt-5 pb-2 sm:pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <FolderOpen className="size-4 text-muted-foreground" />
-                <span>Manage questions</span>
-              </CardTitle>
-              <CardDescription>Import new items or update existing sets.</CardDescription>
-            </CardHeader>
-            <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/import">Open question manager</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -489,7 +516,12 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                     >
                       <div className="font-medium">{option.label}</div>
                       <div className="mt-1 text-sm text-muted-foreground">
-                        {filteredQuestionCounts[option.value as keyof typeof filteredQuestionCounts]} questions available
+                        {
+                          filteredQuestionCounts[
+                            option.value as keyof typeof filteredQuestionCounts
+                          ]
+                        }{' '}
+                        questions available
                       </div>
                     </button>
                   );
@@ -502,7 +534,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               <div>
                 <h3 className="text-lg font-semibold">Explanation Filter</h3>
                 <p className="text-sm text-muted-foreground">
-                  Control whether you want to study questions with explanations, without them, or both.
+                  Control whether you want to study questions with explanations, without them, or
+                  both.
                 </p>
               </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -513,7 +546,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                       key={option.value}
                       type="button"
                       aria-pressed={isActive}
-                      onClick={() => handleExplanationFilterChange(option.value as ExplanationFilter)}
+                      onClick={() =>
+                        handleExplanationFilterChange(option.value as ExplanationFilter)
+                      }
                       className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                         isActive
                           ? 'border-primary bg-primary/5 dark:bg-primary/10'
@@ -522,7 +557,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                     >
                       <div className="font-medium">{option.label}</div>
                       <div className="mt-1 text-sm text-muted-foreground">
-                        {questionCounts[option.value as keyof typeof questionCounts]} questions available
+                        {questionCounts[option.value as keyof typeof questionCounts]} questions
+                        available
                       </div>
                     </button>
                   );
@@ -543,26 +579,26 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 <div>
                   <div className="mb-2 text-sm font-medium">Quick select</div>
                   <div className="flex flex-wrap gap-2">
-                    {TEST_SETTINGS.QUESTION_COUNT_PRESETS
-                      .filter(preset => preset <= maxAllowedQuestions)
-                      .map((preset) => {
-                        const isActive = !useCustomCount && settings.questionCount === preset;
-                        return (
-                          <button
-                            key={preset}
-                            type="button"
-                            aria-pressed={isActive}
-                            onClick={() => handlePresetSelect(preset)}
-                            className={`px-4 py-2 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-                              isActive
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : 'border-border hover:border-muted-foreground/40'
-                            }`}
-                          >
-                            {preset}
-                          </button>
-                        );
-                      })}
+                    {TEST_SETTINGS.QUESTION_COUNT_PRESETS.filter(
+                      (preset) => preset <= maxAllowedQuestions
+                    ).map((preset) => {
+                      const isActive = !useCustomCount && settings.questionCount === preset;
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          aria-pressed={isActive}
+                          onClick={() => handlePresetSelect(preset)}
+                          className={`px-4 py-2 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                            isActive
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border hover:border-muted-foreground/40'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -598,7 +634,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               <div>
                 <h3 className="text-lg font-semibold">Timer Duration</h3>
                 <p className="text-sm text-muted-foreground">
-                  Select a preset or enter a custom time between {TEST_SETTINGS.MIN_TIMER_DURATION} and {TEST_SETTINGS.MAX_TIMER_DURATION} minutes.
+                  Select a preset or enter a custom time between {TEST_SETTINGS.MIN_TIMER_DURATION}{' '}
+                  and {TEST_SETTINGS.MAX_TIMER_DURATION} minutes.
                 </p>
               </div>
 
@@ -647,7 +684,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                       className="w-28 rounded-lg border bg-background px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     />
                     <span className="text-sm text-muted-foreground">
-                      Using {settings.timerDuration} minutes ({Math.floor(settings.timerDuration / 60)}h {settings.timerDuration % 60}m)
+                      Using {settings.timerDuration} minutes (
+                      {Math.floor(settings.timerDuration / 60)}h {settings.timerDuration % 60}m)
                     </span>
                   </div>
                 </div>
@@ -659,15 +697,36 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               <div className="rounded-lg bg-muted p-4">
                 <h4 className="font-medium">Current summary</h4>
                 <div className="mt-2 space-y-1 text-sm">
-                  <div>Question type: <span className="font-medium">
-                    {TEST_SETTINGS.QUESTION_TYPE_OPTIONS.find(opt => opt.value === settings.questionType)?.label}
-                  </span></div>
-                  <div>Explanation filter: <span className="font-medium">
-                    {TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.find(opt => opt.value === settings.explanationFilter)?.label}
-                  </span></div>
-                  <div>Question count: <span className="font-medium">{settings.questionCount}</span></div>
-                  <div>Timer duration: <span className="font-medium">{settings.timerDuration} minutes</span></div>
-                  <div>Available questions: <span className="font-medium">{availableQuestions}</span></div>
+                  <div>
+                    Question type:{' '}
+                    <span className="font-medium">
+                      {
+                        TEST_SETTINGS.QUESTION_TYPE_OPTIONS.find(
+                          (opt) => opt.value === settings.questionType
+                        )?.label
+                      }
+                    </span>
+                  </div>
+                  <div>
+                    Explanation filter:{' '}
+                    <span className="font-medium">
+                      {
+                        TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.find(
+                          (opt) => opt.value === settings.explanationFilter
+                        )?.label
+                      }
+                    </span>
+                  </div>
+                  <div>
+                    Question count: <span className="font-medium">{settings.questionCount}</span>
+                  </div>
+                  <div>
+                    Timer duration:{' '}
+                    <span className="font-medium">{settings.timerDuration} minutes</span>
+                  </div>
+                  <div>
+                    Available questions: <span className="font-medium">{availableQuestions}</span>
+                  </div>
                 </div>
               </div>
 
@@ -690,7 +749,6 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
           </div>
         </Card>
       )}
-
     </div>
   );
 }

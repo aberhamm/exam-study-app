@@ -82,6 +82,7 @@ export default function Home() {
       onBackToSettings={handleBackToSettings}
       initialExamState={resumeExamState}
       examId={examMetadata?.examId ?? 'sitecore-xmc'}
+      examTitle={examMetadata?.examTitle}
     />
   );
 }

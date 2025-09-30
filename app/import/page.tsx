@@ -53,7 +53,7 @@ export default function ImportQuestionsPage() {
       variant: 'full',
       leftContent: (
         <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Back to Quiz
+          Home
         </Link>
       ),
     });

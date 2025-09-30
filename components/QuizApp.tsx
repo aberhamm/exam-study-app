@@ -54,6 +54,7 @@ type Props = {
   onBackToSettings: () => void;
   initialExamState?: ExamState | null;
   examId: string;
+  examTitle?: string;
 };
 
 export function QuizApp({
@@ -62,12 +63,13 @@ export function QuizApp({
   onBackToSettings,
   initialExamState,
   examId,
+  examTitle,
 }: Props) {
   const [questions, setQuestions] = useState<NormalizedQuestion[]>(
     initialExamState?.questions || preparedQuestions
   );
   const { setConfig } = useHeader();
-  const [showRestartDialog, setShowRestartDialog] = useState(false);
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<NormalizedQuestion | null>(null);
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
@@ -153,6 +155,7 @@ export function QuizApp({
       // Results page - simple header
       setConfig({
         variant: 'short',
+        title: examTitle,
         leftContent: null,
         rightContent: null,
         visible: true,
@@ -161,14 +164,16 @@ export function QuizApp({
       // No questions - simple header
       setConfig({
         variant: 'short',
+        title: examTitle,
         leftContent: null,
         rightContent: null,
         visible: true,
       });
     } else {
-      // Main quiz - complex header with settings and back button
+      // Main quiz - compact header with a single quit button
       setConfig({
         variant: 'short',
+        title: examTitle,
         leftContent: (
           <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
             <span className="bg-muted px-2 py-1 rounded">
@@ -187,28 +192,16 @@ export function QuizApp({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowRestartDialog(true)}
-              className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-              title="Restart exam"
+              onClick={() => setShowQuitDialog(true)}
             >
-              🔄 Restart
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                clearExamState();
-                onBackToSettings();
-              }}
-            >
-              ← Settings
+              Quit and go Home
             </Button>
           </div>
         ),
         visible: true,
       });
     }
-  }, [quizState.showResult, questions, testSettings, onBackToSettings, setConfig]);
+  }, [quizState.showResult, questions, testSettings, onBackToSettings, setConfig, examTitle]);
 
   const currentQuestion = questions?.[quizState.currentQuestionIndex];
   const totalQuestions = questions?.length || 0;
@@ -367,16 +360,6 @@ export function QuizApp({
 
     setQuizState(resetState);
   };
-
-  const handleRestartConfirm = () => {
-    setShowRestartDialog(false);
-    resetQuiz();
-  };
-
-  const handleRestartCancel = () => {
-    setShowRestartDialog(false);
-  };
-
   const handleTimeUp = useCallback(() => {
     finishQuiz();
   }, [finishQuiz]);
@@ -464,7 +447,7 @@ export function QuizApp({
     (e: KeyboardEvent) => {
       if (!currentQuestion || quizState.showResult) return;
       // Disable global shortcuts while any dialog is open
-      if (editDialogOpen || showRestartDialog) return;
+      if (editDialogOpen || showQuitDialog) return;
 
       if (e.key >= '1' && e.key <= '5') {
         const answerIndex = parseInt(e.key) - 1;
@@ -487,7 +470,7 @@ export function QuizApp({
       quizState.showFeedback,
       quizState.showResult,
       editDialogOpen,
-      showRestartDialog,
+      showQuitDialog,
       selectAnswer,
       nextQuestion,
       submitMultipleAnswer,
@@ -537,7 +520,7 @@ export function QuizApp({
               }}
               className="mt-4"
             >
-              Back to Settings
+              Home
             </Button>
           </div>
         </Card>
@@ -574,7 +557,7 @@ export function QuizApp({
                 variant="outline"
                 size="lg"
               >
-                Change Settings
+                Home
               </Button>
             </div>
           </div>
@@ -673,7 +656,13 @@ export function QuizApp({
 
   return (
     <div className="space-y-6">
-      {/* Mobile Settings Display */}
+      {/* Page Header - Exam Title */}
+      {examTitle && (
+        <div className="text-center lg:text-left">
+          <h1 className="text-2xl font-bold">{examTitle}</h1>
+        </div>
+      )}
+      {/* Mobile Header Actions */}
       <div className="md:hidden flex justify-between items-center text-sm">
         <div className="flex items-center gap-2 text-muted-foreground">
           <span className="bg-muted px-2 py-1 rounded">
@@ -690,21 +679,9 @@ export function QuizApp({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowRestartDialog(true)}
-            className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 text-xs px-2"
-            title="Restart exam"
+            onClick={() => setShowQuitDialog(true)}
           >
-            🔄
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              clearExamState();
-              onBackToSettings();
-            }}
-          >
-            Settings
+            Quit and go Home
           </Button>
         </div>
       </div>
@@ -945,26 +922,29 @@ export function QuizApp({
           : 'Use keys 1-5 to select answers, Enter/Space to continue'}
       </div>
 
-      {/* Restart Confirmation Dialog */}
-      <Dialog open={showRestartDialog} onOpenChange={setShowRestartDialog}>
+      {/* Quit Confirmation Dialog */}
+      <Dialog open={showQuitDialog} onOpenChange={setShowQuitDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Restart Exam</DialogTitle>
+            <DialogTitle>Quit Exam</DialogTitle>
             <DialogDescription>
-              Are you sure you want to restart the exam? This will lose all your current progress
-              and cannot be undone.
+              Are you sure you want to quit and go home? This will lose your current progress.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={handleRestartCancel}>
+            <Button variant="outline" onClick={() => setShowQuitDialog(false)}>
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={handleRestartConfirm}
+              onClick={() => {
+                setShowQuitDialog(false);
+                clearExamState();
+                onBackToSettings();
+              }}
               className="bg-red-600 hover:bg-red-700"
             >
-              Restart Exam
+              Quit and go Home
             </Button>
           </DialogFooter>
         </DialogContent>
