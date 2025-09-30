@@ -53,8 +53,28 @@ export default function HomeClient({ examMetadata, stats }: Props) {
       setResumeExamState(existingExamState);
       setTestSettings(existingExamState.testSettings);
       setCurrentView('quiz');
+    } else {
+      // Ensure we land on the home config when no active exam exists
+      setRedirectingToExam(false);
+      setResumeExamState(null);
+      setCurrentView('config');
     }
   }, [router]);
+
+  // Handle bfcache restores: ensure we don't auto-redirect if no active exam exists
+  useEffect(() => {
+    const handlePageShow = () => {
+      const active = loadExamState();
+      // When restored from bfcache, event.persisted can be true; regardless, reset if no active exam
+      if (!active || !isExamStateValid(active) || active.showResult) {
+        setRedirectingToExam(false);
+        setResumeExamState(null);
+        setCurrentView('config');
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow as EventListener);
+    return () => window.removeEventListener('pageshow', handlePageShow as EventListener);
+  }, []);
 
   // If resuming, navigate to the correct exam route, but don't override Back/Forward navigations
   useEffect(() => {
@@ -65,6 +85,15 @@ export default function HomeClient({ examMetadata, stats }: Props) {
     const navType = navEntries[0]?.type;
     const isBackForward = navType === 'back_forward';
     if (isBackForward) return;
+
+    // Double-check there is still an active exam persisted; if not, avoid redirect
+    const active = loadExamState();
+    if (!active || !isExamStateValid(active) || active.showResult) {
+      setRedirectingToExam(false);
+      setResumeExamState(null);
+      setCurrentView('config');
+      return;
+    }
 
     const targetExamId = resumeExamState.examId || (examMetadata?.examId ?? 'sitecore-xmc');
     try {

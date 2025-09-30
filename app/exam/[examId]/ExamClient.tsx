@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { QuizApp } from "@/components/QuizApp";
 import { useQuestions } from "@/app/useQuestions";
 import { prepareQuestionsForTest } from "@/lib/question-utils";
-import { loadExamState, isExamStateValid, type ExamState } from "@/lib/exam-state";
+import { loadExamState, isExamStateValid, clearExamState, type ExamState } from "@/lib/exam-state";
 import { loadTestSettings, type TestSettings } from "@/lib/test-settings";
 import ExamSkeleton from "@/components/ExamSkeleton";
 
@@ -66,8 +66,22 @@ export default function ExamClient({ examId, examTitle }: Props) {
     return prepareQuestionsForTest(allQuestions, testSettings);
   }, [allQuestions, initialExamState, testSettings]);
 
+  // Clear exam session when user navigates back/forward from the exam route
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        clearExamState();
+      } catch {}
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   const handleBackToSettings = () => {
     try {
+      clearExamState();
       router.push("/");
     } catch {}
   };
