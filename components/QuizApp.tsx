@@ -134,7 +134,7 @@ export function QuizApp({
   // Save exam state to localStorage whenever quiz state changes
   useEffect(() => {
     if (!quizState.showResult && questions.length > 0) {
-      const examState = createExamState(questions, testSettings);
+      const examState = createExamState(questions, testSettings, examId);
       const updatedState = updateExamState(examState, {
         currentQuestionIndex: quizState.currentQuestionIndex,
         selectedAnswers: quizState.selectedAnswers,
@@ -147,7 +147,7 @@ export function QuizApp({
       });
       saveExamState(updatedState);
     }
-  }, [quizState, questions, testSettings]);
+  }, [quizState, questions, testSettings, examId]);
 
   // Configure header based on quiz state
   useEffect(() => {
