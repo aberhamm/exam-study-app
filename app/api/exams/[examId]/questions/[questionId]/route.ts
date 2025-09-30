@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { ExternalQuestionUpdateZ } from '@/lib/validation';
+import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 import { getQuestionById, updateQuestion } from '@/lib/server/questions';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -15,7 +16,7 @@ interface RouteContext {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isDevFeaturesEnabled()) {
     return NextResponse.json(
       { error: 'Not allowed' },
       { status: 403 }

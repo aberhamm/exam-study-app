@@ -178,6 +178,19 @@ Requirements:
 - Set `OPENAI_API_KEY` and (optionally) `QUESTIONS_EMBEDDING_DIMENSIONS`
 - Set `MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX` to your index name if not using the default
 
+### Dev Features Toggle
+
+You can enable development tools and endpoints in non-development environments via feature flags.
+
+- Server/API and middleware gating:
+  - Set `ENABLE_DEV_FEATURES=1` to allow routes like `/import`, `/dev/*`, and APIs such as `/api/exams/:examId/search`, `/questions/import`, and `/questions/embed`.
+- Client UI (build-time) toggle:
+  - Set `NEXT_PUBLIC_ENABLE_DEV_FEATURES=1` so client-rendered pages reflect that dev tools are enabled.
+
+Notes:
+- If neither flag is set, dev features are enabled only when `NODE_ENV === 'development'`.
+- Production cache behavior and diagnostic logging remain tied to `NODE_ENV`.
+
 
 
 ### Importing Additional Questions

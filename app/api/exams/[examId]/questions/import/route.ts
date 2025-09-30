@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { ExternalQuestionsImportZ } from '@/lib/validation';
+import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 import { addExamQuestions } from '@/lib/server/questions';
 import { DuplicateQuestionIdsError, ExamNotFoundError } from '@/lib/server/exams';
 
@@ -11,7 +12,7 @@ interface RouteContext {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isDevFeaturesEnabled()) {
     return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   }
   let examId = 'unknown';

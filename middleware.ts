@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 
 export function middleware() {
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isDevFeaturesEnabled()) {
     return new NextResponse('Not Found', { status: 404 });
   }
   return NextResponse.next();

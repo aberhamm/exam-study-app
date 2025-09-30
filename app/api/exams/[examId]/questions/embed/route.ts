@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName } from '@/lib/server/mongodb';
 
 type RouteParams = {
@@ -45,7 +46,7 @@ async function createEmbeddings(inputs: string[], model: string, dimensions?: nu
 }
 
 export async function POST(request: Request, context: RouteParams) {
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isDevFeaturesEnabled()) {
     return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   }
 

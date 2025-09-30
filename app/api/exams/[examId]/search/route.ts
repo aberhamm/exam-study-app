@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 import { searchSimilarQuestions } from '@/lib/server/questions-search';
 
 type RouteParams = {
@@ -47,8 +48,8 @@ export async function POST(request: Request, context: RouteParams) {
     const params = await context.params;
     examId = params.examId;
 
-    // Dev-only endpoint
-    if (process.env.NODE_ENV !== 'development') {
+    // Controlled via dev feature flag
+    if (!isDevFeaturesEnabled()) {
       return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
     }
 
