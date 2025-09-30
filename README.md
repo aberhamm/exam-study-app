@@ -175,7 +175,10 @@ curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/search" \
 Requirements:
 - Populate `question_embeddings` (see Embeddings above)
 - Create a MongoDB Atlas Vector Search index on `question_embeddings.embedding`
-- Set `OPENAI_API_KEY` and `MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX`
+- Set `OPENAI_API_KEY` and (optionally) `QUESTIONS_EMBEDDING_DIMENSIONS`
+- Set `MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX` to your index name if not using the default
+
+
 
 ### Importing Additional Questions
 

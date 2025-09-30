@@ -12,6 +12,8 @@
     "embed:questions": "tsx scripts/embed-questions.ts",
     "migrate:embeddings": "tsx scripts/migrate-embeddings-to-collection.ts",
     "status:questions": "node scripts/agg-questions-status.mjs",
+    "create:vector-index": "tsx scripts/create-vector-index.ts",
+    "check:vector-search": "tsx scripts/check-vector-search.ts",
     "sync:questions": "tsx scripts/sync-questions-from-legacy.ts",
     "remove:legacy-questions": "tsx scripts/remove-legacy-embedded-questions.ts"
   },
