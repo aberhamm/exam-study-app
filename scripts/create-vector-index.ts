@@ -35,7 +35,7 @@ function parseArgs(): Args {
     const a = args[i];
     if (a === '--index') out.indexName = args[++i];
     else if (a === '--dims') out.dims = Number(args[++i]);
-    else if (a === '--similarity') out.similarity = args[++i] as any;
+    else if (a === '--similarity') out.similarity = args[++i] as 'cosine' | 'euclidean' | 'dotProduct';
     else if (a === '--update') out.update = true;
     else if (a === '--help' || a === '-h') {
       console.log('Usage: tsx scripts/create-vector-index.ts [--index <name>] [--dims <n>] [--similarity <cosine|euclidean|dotProduct>] [--update]');
@@ -77,12 +77,12 @@ Mode: ${update ? 'update if exists' : 'create if absent'}
 `);
 
     // Check if index exists
-    let existing: any = null;
+    let hasExisting = false;
     try {
       const res = await db.command({ listSearchIndexes: collection, name: indexName });
-      const batch = (res as any)?.cursor?.firstBatch || [];
-      existing = batch[0] || null;
-    } catch (e) {
+      const batch = (res as { cursor?: { firstBatch?: unknown[] } }).cursor?.firstBatch ?? [];
+      hasExisting = (batch?.length ?? 0) > 0;
+    } catch {
       console.warn('Could not list existing search indexes (ensure Atlas Search is enabled). Proceeding…');
     }
 
@@ -98,7 +98,7 @@ Mode: ${update ? 'update if exists' : 'create if absent'}
       },
     } as const;
 
-    if (existing) {
+    if (hasExisting) {
       console.log(`Index "${indexName}" already exists.`);
       if (update) {
         console.log('Updating index definition…');
@@ -131,7 +131,7 @@ Mode: ${update ? 'update if exists' : 'create if absent'}
   }
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error(err);
   process.exitCode = 1;
 });

@@ -95,8 +95,9 @@ export async function searchSimilarQuestions(
         console.info(`[vectorSearch] 0 results. embeddingsForExam=${count} sampleDim=${dim ?? 'n/a'}`);
 
         // Extra diagnostics: check raw hits before join
+        type RawHit = { id: string; examId: string; score?: number };
         const rawHits = await embCol
-          .aggregate([
+          .aggregate<RawHit>([
             { $vectorSearch: { index: indexName, queryVector: queryEmbedding, path: 'embedding', numCandidates: Math.max(100, topK * 5), limit: topK, filter: { examId } } },
             { $project: { _id: 0, id: 1, examId: 1, score: { $meta: 'vectorSearchScore' } } },
           ])
@@ -107,7 +108,7 @@ export async function searchSimilarQuestions(
 
         // Global hits without exam filter (diagnostic only)
         const globalHits = await embCol
-          .aggregate([
+          .aggregate<RawHit>([
             { $vectorSearch: { index: indexName, queryVector: queryEmbedding, path: 'embedding', numCandidates: Math.max(100, topK * 5), limit: topK } },
             { $project: { _id: 0, id: 1, examId: 1, score: { $meta: 'vectorSearchScore' } } },
           ])
@@ -137,7 +138,7 @@ export async function searchSimilarQuestions(
           const fallback: SimilarQuestion[] = [];
           for (const hit of rawHits) {
             const q = await questionsCol.findOne({ id: hit.id, examId: hit.examId });
-            if (q) fallback.push({ question: q as QuestionDocument, score: (hit as any).score ?? 0 });
+            if (q) fallback.push({ question: q as QuestionDocument, score: hit.score ?? 0 });
           }
           if (fallback.length > 0) {
             console.info(`[vectorSearch] returning ${fallback.length} fallback result(s) after app-side join.`);

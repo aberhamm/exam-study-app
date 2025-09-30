@@ -30,12 +30,14 @@ function requireEnv(name: string): string {
   return v;
 }
 
-function parseArgs() {
+type ParsedArgs = { exam?: string; limit: number; candidates: number; index?: string };
+
+function parseArgs(): ParsedArgs {
   const args = process.argv.slice(2);
-  const out: { exam?: string; limit: number; candidates: number; index?: string } = {
+  const out: ParsedArgs = {
     limit: 3,
     candidates: 200,
-  } as any;
+  };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--exam') out.exam = args[++i];
@@ -64,13 +66,13 @@ async function main() {
 
   try {
     const match: Document = exam ? { examId: exam } : {};
-    const sample = await col.findOne(match, { projection: { _id: 0, id: 1, examId: 1, embedding: 1 } });
-    if (!sample || !Array.isArray((sample as any).embedding)) {
+    const sample = await col.findOne<{ id: string; examId: string; embedding: number[] }>(match, { projection: { _id: 0, id: 1, examId: 1, embedding: 1 } });
+    if (!sample || !Array.isArray(sample.embedding)) {
       console.log('No sample embedding found. Verify the collection and examId.');
       return;
     }
-    const q = (sample as any).embedding as number[];
-    console.log(`Sample: id=${(sample as any).id} examId=${(sample as any).examId} dim=${q.length}`);
+    const q = sample.embedding;
+    console.log(`Sample: id=${sample.id} examId=${sample.examId} dim=${q.length}`);
 
     const pipelineFiltered: Document[] = [
       {
@@ -101,10 +103,10 @@ async function main() {
 
     console.log(`\nRunning $vectorSearch (index=${indexName}) with${exam ? ' exam filter' : 'out exam filter'}...`);
     try {
-      const hitsFiltered = await col.aggregate(pipelineFiltered).toArray();
+      const hitsFiltered = await col.aggregate<{ id: string; examId: string; score?: number }>(pipelineFiltered).toArray();
       console.table(hitsFiltered);
-    } catch (err: any) {
-      const msg = (err && err.message) || String(err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error('Filtered vector search failed:', msg);
       if (msg.includes("needs to be indexed as token")) {
         console.error('\nHint: fields used in $vectorSearch.filter must be mapped as type "token".');
@@ -113,7 +115,7 @@ async function main() {
     }
 
     console.log(`\nRunning $vectorSearch (index=${indexName}) globally...`);
-    const hitsGlobal = await col.aggregate(pipelineGlobal).toArray();
+    const hitsGlobal = await col.aggregate<{ id: string; examId: string; score?: number }>(pipelineGlobal).toArray();
     console.table(hitsGlobal);
 
     console.log('\nDimension histogram for embeddings:');
@@ -130,7 +132,7 @@ async function main() {
   }
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error(err);
   process.exitCode = 1;
 });
