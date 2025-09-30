@@ -258,6 +258,31 @@ type ThemeProviderContextType = {
 
 ---
 
+### usePreparedQuestions (`app/usePreparedQuestions.ts`)
+
+**Purpose**: Fetch only the number of questions needed to start an exam. The server filters and randomly samples matching questions, returning a normalized subset.
+
+**Return Type**:
+```typescript
+{
+  data: NormalizedQuestion[] | null;
+  error: string | null;
+  loading: boolean;
+}
+```
+
+**Responsibilities**:
+- POST to `/api/exams/:examId/questions/prepare` with `{ questionType, explanationFilter, questionCount }`
+- Receive and expose server-normalized `questions`
+- Handle loading and error states
+
+**Features**:
+- Avoids downloading full datasets on exam start
+- Aligns server/client selection logic for consistency
+- Plays well with resume flows (client bypasses when a saved state exists)
+
+---
+
 ### useTheme (from ThemeProvider)
 
 **Purpose**: Hook for accessing theme context.

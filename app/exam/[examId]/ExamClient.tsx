@@ -2,8 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QuizApp } from "@/components/QuizApp";
-import { useQuestions } from "@/app/useQuestions";
-import { prepareQuestionsForTest } from "@/lib/question-utils";
+import { usePreparedQuestions } from "@/app/usePreparedQuestions";
 import { loadExamState, isExamStateValid, clearExamState, type ExamState } from "@/lib/exam-state";
 import { loadTestSettings, type TestSettings } from "@/lib/test-settings";
 import ExamSkeleton from "@/components/ExamSkeleton";
@@ -21,7 +20,6 @@ export default function ExamClient({ examId, examTitle }: Props) {
   // rehydration and other browser-only effects.
   const [mounted, setMounted] = useState(false);
   const [enabledFetch, setEnabledFetch] = useState<boolean>(false);
-  const { data: allQuestions, examMetadata: fetchedMetadata, error, loading } = useQuestions(examId, { enabled: enabledFetch });
   const [initialExamState, setInitialExamState] = useState<ExamState | null>(() => {
     const existingExamState = loadExamState();
     if (
@@ -44,6 +42,7 @@ export default function ExamClient({ examId, examTitle }: Props) {
     }
     return loadTestSettings();
   });
+  const { data: preparedData, error: preparedError, loading: preparedLoading } = usePreparedQuestions(examId, testSettings, { enabled: enabledFetch });
 
   // Ensure initial SSR/client render matches by showing skeleton until mounted
   useEffect(() => {
@@ -71,12 +70,9 @@ export default function ExamClient({ examId, examTitle }: Props) {
   }, [examId]);
 
   const preparedQuestions = useMemo(() => {
-    if (initialExamState) {
-      return initialExamState.questions;
-    }
-    if (!allQuestions) return [];
-    return prepareQuestionsForTest(allQuestions, testSettings);
-  }, [allQuestions, initialExamState, testSettings]);
+    if (initialExamState) return initialExamState.questions;
+    return preparedData ?? [];
+  }, [initialExamState, preparedData]);
 
   // Clear exam session when user navigates back/forward from the exam route
   useEffect(() => {
@@ -99,28 +95,28 @@ export default function ExamClient({ examId, examTitle }: Props) {
   };
 
   // Show skeleton while loading questions for a fresh session
-  if (!initialExamState && loading) {
-    return <ExamSkeleton examTitle={examTitle ?? fetchedMetadata?.examTitle} />;
+  if (!initialExamState && preparedLoading) {
+    return <ExamSkeleton examTitle={initialExamState?.examTitle ?? examTitle} />;
   }
-  if (error) {
+  if (preparedError) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center text-red-600 dark:text-red-400">
           <h2 className="text-xl font-semibold mb-2">Error loading exam</h2>
-          <p className="text-sm opacity-90">{String(error)}</p>
+          <p className="text-sm opacity-90">{String(preparedError)}</p>
         </div>
       </div>
     );
   }
 
-  const effectiveExamId = (fetchedMetadata?.examId ?? initialExamState?.examId) || examId;
-  const effectiveExamTitle = initialExamState?.examTitle ?? fetchedMetadata?.examTitle ?? examTitle;
+  const effectiveExamId = initialExamState?.examId || examId;
+  const effectiveExamTitle = initialExamState?.examTitle ?? examTitle;
 
   // If we still don't have questions prepared for a fresh session, or we
   // haven't mounted yet, keep showing the skeleton so server and client
   // render the same markup.
   if (!mounted || (!initialExamState && (!preparedQuestions || preparedQuestions.length === 0))) {
-    return <ExamSkeleton examTitle={examTitle ?? fetchedMetadata?.examTitle} />;
+    return <ExamSkeleton examTitle={initialExamState?.examTitle ?? examTitle} />;
   }
 
   return (

@@ -191,6 +191,35 @@ Notes:
 - If neither flag is set, dev features are enabled only when `NODE_ENV === 'development'`.
 - Production cache behavior and diagnostic logging remain tied to `NODE_ENV`.
 
+### Starting an Exam (server-prepared subset)
+
+When starting a fresh exam, the client requests only the number of questions needed instead of fetching the entire exam dataset. The server performs filtering and random sampling:
+
+Endpoint:
+
+```
+POST /api/exams/:examId/questions/prepare
+{
+  "questionType": "all" | "single" | "multiple",
+  "explanationFilter": "all" | "with-explanations" | "without-explanations",
+  "questionCount": number
+}
+```
+
+Response:
+
+```
+{
+  "examId": string,
+  "count": number,
+  "questions": NormalizedQuestion[]
+}
+```
+
+Client usage:
+- The exam route uses `usePreparedQuestions(examId, settings)` to POST to this endpoint and render the returned subset.
+- Resuming an in-progress exam bypasses the endpoint and uses the saved snapshot from localStorage.
+
 
 
 ### Importing Additional Questions
@@ -235,7 +264,8 @@ scxmcl-study-util/
 ├── app/                    # Next.js App Router
 │   ├── layout.tsx         # Root layout with theme provider
 │   ├── page.tsx           # Main app with view state management
-│   ├── useQuestions.ts    # Questions data fetching hook
+│   ├── useQuestions.ts    # Full exam fetch hook (metadata, legacy flows)
+│   ├── usePreparedQuestions.ts # Server-prepared subset fetch for exam start
 │   └── globals.css        # Global styles
 ├── components/             # React components
 │   ├── ui/                # Reusable UI components

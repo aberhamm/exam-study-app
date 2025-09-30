@@ -26,3 +26,16 @@ export type ExamStatsResponse = {
     };
   };
 };
+
+// Prepare endpoint payloads
+export type PrepareQuestionsRequest = {
+  questionType: 'all' | 'single' | 'multiple';
+  explanationFilter: 'all' | 'with-explanations' | 'without-explanations';
+  questionCount: number;
+};
+
+export type PrepareQuestionsResponse = {
+  examId: string;
+  count: number;
+  questions: import('./normalized').NormalizedQuestion[];
+};

@@ -62,32 +62,28 @@ The SCXMCL Study Utility is built using a modern React-based architecture with N
 
 ### Application Flow
 ```
-App Start → Test Configuration → Question Preparation → Quiz Execution
+App Start → Test Configuration → Server Prepare → Quiz Execution
     ↓
 TestConfigPage (splash screen)
     ↓
 User selects question type + count
     ↓
-prepareQuestionsForTest() - filter, shuffle, limit
+POST /api/exams/:examId/questions/prepare (server filters + samples)
     ↓
-QuizApp with prepared questions
+QuizApp with prepared subset
 ```
 
 ### Question Loading Flow
 ```
-API → Fetch → Zod Validation → Normalization → Configuration → Component State
+API → Fetch → Zod Validation → Normalization → Component State
     ↓
-GET /api/exams/:examId
+POST /api/exams/:examId/questions/prepare
     ↓
-useQuestions Hook
+usePreparedQuestions Hook
     ↓
-ExamDetailZ.parse()
+normalizeQuestions() on server
     ↓
-normalizeQuestions()
-    ↓
-Test Settings Applied (filter + limit)
-    ↓
-QuizApp useState
+Client renders returned subset
 ```
 
 ### Quiz State Flow

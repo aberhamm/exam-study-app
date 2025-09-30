@@ -15,7 +15,6 @@ export const config = {
     '/api/exams/:examId/questions/import',
     '/api/exams/:examId/questions/:questionId',
     '/api/exams/:examId/questions/embed',
-    '/api/exams/:examId/questions/prepare',
     '/api/exams/:examId/stats',
     '/api/exams/:examId/search',
   ],
