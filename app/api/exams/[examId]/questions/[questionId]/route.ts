@@ -1,90 +1,102 @@
 import { NextResponse } from 'next/server';
-import { ZodError } from 'zod';
-import { ExternalQuestionUpdateZ } from '@/lib/validation';
 import { isDevFeaturesEnabled } from '@/lib/feature-flags';
-import { getQuestionById, updateQuestion } from '@/lib/server/questions';
+import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName } from '@/lib/server/mongodb';
+import type { ExternalQuestion } from '@/types/external-question';
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
+type RouteParams = {
+  params: Promise<{ examId: string; questionId: string }>;
+};
 
-interface RouteContext {
-  params: Promise<{
-    examId: string;
-    questionId: string;
-  }>;
-}
-
-export async function PATCH(request: Request, context: RouteContext) {
-  if (!isDevFeaturesEnabled()) {
-    return NextResponse.json(
-      { error: 'Not allowed' },
-      { status: 403 }
-    );
-  }
+export async function DELETE(_request: Request, context: RouteParams) {
   let examId = 'unknown';
   let questionId = 'unknown';
-
   try {
     const params = await context.params;
     examId = params.examId;
     questionId = params.questionId;
 
-    let body: unknown;
+    if (!isDevFeaturesEnabled()) {
+      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+    }
+
+    const db = await getDb();
+    const qCol = db.collection(getQuestionsCollectionName());
+    const embCol = db.collection(getQuestionEmbeddingsCollectionName());
+
+    const delQ = await qCol.deleteOne({ examId, id: questionId });
+    const delEmb = await embCol.deleteOne({ examId, id: questionId });
+
+    if (delQ.deletedCount === 0) {
+      return NextResponse.json({ error: 'Question not found' }, { status: 404 });
+    }
+    return NextResponse.json({ examId, questionId, deleted: true, deletedEmbedding: delEmb.deletedCount > 0 }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    console.error(`Delete question failed examId=${examId} id=${questionId}`, error);
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request, context: RouteParams) {
+  let examId = 'unknown';
+  let questionId = 'unknown';
+  try {
+    const params = await context.params;
+    examId = params.examId;
+    questionId = params.questionId;
+
+    if (!isDevFeaturesEnabled()) {
+      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+    }
+
+    let payload: ExternalQuestion & { id: string };
     try {
-      body = await request.json();
+      payload = (await request.json()) as ExternalQuestion & { id: string };
     } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON payload' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
-    if (!isRecord(body)) {
-      return NextResponse.json(
-        { error: 'Invalid question payload' },
-        { status: 400 }
-      );
+    if (!payload || typeof payload.id !== 'string' || payload.id !== questionId) {
+      return NextResponse.json({ error: 'Mismatched or missing question id' }, { status: 400 });
     }
 
-    let payload;
-    try {
-      payload = ExternalQuestionUpdateZ.parse({ ...body, id: questionId });
-    } catch (validationError) {
-      if (validationError instanceof ZodError) {
-        return NextResponse.json(
-          { error: 'Invalid question payload', details: validationError.flatten() },
-          { status: 400 }
-        );
-      }
-      throw validationError;
-    }
+    const db = await getDb();
+    const qCol = db.collection(getQuestionsCollectionName());
 
-    const existing = await getQuestionById(examId, questionId);
-    if (!existing) {
-      return NextResponse.json(
-        { error: `Question "${questionId}" not found in exam "${examId}"` },
-        { status: 404 }
-      );
-    }
-
-    const merged = {
-      ...existing,
+    const updateDoc: Record<string, unknown> = {
       question: payload.question,
       options: payload.options,
       answer: payload.answer,
-      question_type: payload.question_type,
+      question_type: payload.question_type ?? 'single',
       explanation: payload.explanation,
       study: payload.study,
+      updatedAt: new Date(),
     };
 
-    const updated = await updateQuestion(examId, merged);
-    return NextResponse.json(updated, { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
-    console.error(`Failed to update question ${questionId} for exam ${examId}`, error);
-    return NextResponse.json(
-      { error: 'Failed to update question', details: error instanceof Error ? error.message : undefined },
-      { status: 500 }
+    const result = await qCol.findOneAndUpdate(
+      { examId, id: questionId },
+      { $set: updateDoc },
+      { returnDocument: 'after', projection: { _id: 0 } }
     );
+
+    const doc = result?.value;
+    if (!doc) {
+      return NextResponse.json({ error: 'Question not found' }, { status: 404 });
+    }
+
+    // Return the updated question in external format
+    const responseBody: ExternalQuestion & { id: string } = {
+      id: doc.id,
+      question: doc.question,
+      options: doc.options,
+      answer: doc.answer,
+      question_type: doc.question_type,
+      explanation: doc.explanation,
+      study: doc.study,
+    };
+
+    return NextResponse.json(responseBody, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    console.error(`Patch question failed examId=${examId} id=${questionId}`, error);
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 }

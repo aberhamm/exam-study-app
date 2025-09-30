@@ -67,6 +67,9 @@ export default function EmbeddingsDevPage() {
           <Link href="/dev/search">
             <Button variant="outline">Go to Semantic Search</Button>
           </Link>
+          <Link href="/dev/dedupe">
+            <Button variant="outline">Open Dedupe Tool</Button>
+          </Link>
           <Link href="/import" className="text-sm text-muted-foreground hover:text-foreground">
             Import Questions
           </Link>

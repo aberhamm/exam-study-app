@@ -61,3 +61,11 @@ export function getQuestionEmbeddingsCollectionName(): string {
   }
   return collection;
 }
+
+export function getDedupePairsCollectionName(): string {
+  const collection = process.env.MONGODB_DEDUPE_PAIRS_COLLECTION;
+  if (!collection) {
+    throw new Error('Missing MONGODB_DEDUPE_PAIRS_COLLECTION environment variable');
+  }
+  return collection;
+}

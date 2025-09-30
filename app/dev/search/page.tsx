@@ -7,6 +7,10 @@ import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
 import { APP_CONFIG } from '@/lib/app-config';
 import type { ExamSummary } from '@/types/api';
+import { QuestionEditorDialog } from '@/components/QuestionEditorDialog';
+import type { NormalizedQuestion } from '@/types/normalized';
+import type { ExternalQuestion } from '@/types/external-question';
+import { normalizeQuestions } from '@/lib/normalize';
 
 type ApiSearchResult = {
   score: number;
@@ -34,6 +38,10 @@ export default function SearchDevPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<ApiSearchResult[]>([]);
+  const [editing, setEditing] = useState<NormalizedQuestion | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setConfig({
@@ -45,9 +53,14 @@ export default function SearchDevPage() {
         </Link>
       ),
       rightContent: (
-        <Link href="/import" className="text-sm text-muted-foreground hover:text-foreground">
-          Import Questions
-        </Link>
+        <div className="hidden md:flex items-center gap-3">
+          <Link href="/import" className="text-sm text-muted-foreground hover:text-foreground">
+            Import Questions
+          </Link>
+          <Link href="/dev/dedupe" className="text-sm text-muted-foreground hover:text-foreground">
+            Dedupe
+          </Link>
+        </div>
       ),
     });
     return () => {
@@ -110,6 +123,56 @@ export default function SearchDevPage() {
   const handleTrySample = () => {
     if (!query) {
       setQuery('experience edge publishing pipeline');
+    }
+  };
+
+  const openEdit = (item: ApiSearchResult) => {
+    const [norm] = normalizeQuestions([{ id: item.question.id, question: item.question.question, options: item.question.options, answer: item.question.answer, question_type: item.question.question_type, explanation: item.question.explanation } as ExternalQuestion]);
+    setEditing(norm);
+    setSaveError(null);
+    setEditOpen(true);
+  };
+
+  const saveEdited = async (updated: NormalizedQuestion) => {
+    if (!examId) throw new Error('Missing examId');
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const payload: ExternalQuestion & { id: string } = {
+        id: updated.id,
+        question: updated.prompt,
+        options: {
+          A: updated.choices[0],
+          B: updated.choices[1],
+          C: updated.choices[2],
+          D: updated.choices[3],
+          ...(updated.choices[4] ? { E: updated.choices[4] } : {}),
+        },
+        answer: Array.isArray(updated.answerIndex)
+          ? (updated.answerIndex.map((i) => (['A','B','C','D','E'][i] as 'A'|'B'|'C'|'D'|'E')) as ('A'|'B'|'C'|'D'|'E')[])
+          : (['A','B','C','D','E'][updated.answerIndex] as 'A'|'B'|'C'|'D'|'E'),
+        question_type: updated.questionType,
+        explanation: updated.explanation,
+        study: updated.study,
+      };
+      const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/questions/${encodeURIComponent(updated.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(typeof json?.error === 'string' ? json.error : `Save failed (${resp.status})`);
+
+      // Update results inline
+      setResults((prev) => prev.map((r) => (r.question.id === updated.id ? { ...r, question: { ...r.question, ...json } } : r)));
+      setEditOpen(false);
+      setEditing(null);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Failed to save');
+      throw e;
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -195,6 +258,11 @@ export default function SearchDevPage() {
 
       <Card className="p-6">
         <h3 className="text-xl font-semibold mb-2">Results</h3>
+        {saveError && (
+          <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            {saveError}
+          </div>
+        )}
         {results.length === 0 ? (
           <p className="text-sm text-muted-foreground">No results yet. Submit a query to see matches.</p>
         ) : (
@@ -219,11 +287,28 @@ export default function SearchDevPage() {
                 {item.question.explanation && (
                   <p className="mt-2 text-sm text-muted-foreground"><span className="font-medium text-foreground">Explanation:</span> {item.question.explanation}</p>
                 )}
+                <div className="mt-3 flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => openEdit(item)}>Edit</Button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </Card>
+
+      <QuestionEditorDialog
+        open={editOpen}
+        question={editing}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+          if (!open) {
+            setEditing(null);
+            setSaveError(null);
+          }
+        }}
+        onSave={saveEdited}
+        saving={saving}
+      />
     </div>
   );
 }

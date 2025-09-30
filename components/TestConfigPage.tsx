@@ -69,6 +69,12 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
           >
             Embeddings
           </Link>
+          <Link
+            href="/dev/dedupe"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            Dedupe
+          </Link>
         </div>
       ) : null,
       visible: true,
