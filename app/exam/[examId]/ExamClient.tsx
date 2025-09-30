@@ -15,6 +15,11 @@ type Props = {
 
 export default function ExamClient({ examId, examTitle }: Props) {
   const router = useRouter();
+  // Mount guard: keep server/client markup identical during hydration
+  // by rendering the lightweight skeleton on the first client paint.
+  // This avoids SSR vs client differences caused by localStorage/state
+  // rehydration and other browser-only effects.
+  const [mounted, setMounted] = useState(false);
   const [enabledFetch, setEnabledFetch] = useState<boolean>(false);
   const { data: allQuestions, examMetadata: fetchedMetadata, error, loading } = useQuestions(examId, { enabled: enabledFetch });
   const [initialExamState, setInitialExamState] = useState<ExamState | null>(() => {
@@ -40,7 +45,14 @@ export default function ExamClient({ examId, examTitle }: Props) {
     return loadTestSettings();
   });
 
-  // Enable data fetch only if no saved state exists
+  // Ensure initial SSR/client render matches by showing skeleton until mounted
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Enable data fetch only if no saved state exists.
+  // We defer reading localStorage to the client and update initial state
+  // accordingly to prevent hydration mismatches.
   useEffect(() => {
     const existingExamState = loadExamState();
     if (
@@ -104,8 +116,10 @@ export default function ExamClient({ examId, examTitle }: Props) {
   const effectiveExamId = (fetchedMetadata?.examId ?? initialExamState?.examId) || examId;
   const effectiveExamTitle = initialExamState?.examTitle ?? fetchedMetadata?.examTitle ?? examTitle;
 
-  // If we still don't have questions prepared for a fresh session, keep showing skeleton
-  if (!initialExamState && (!preparedQuestions || preparedQuestions.length === 0)) {
+  // If we still don't have questions prepared for a fresh session, or we
+  // haven't mounted yet, keep showing the skeleton so server and client
+  // render the same markup.
+  if (!mounted || (!initialExamState && (!preparedQuestions || preparedQuestions.length === 0))) {
     return <ExamSkeleton examTitle={examTitle ?? fetchedMetadata?.examTitle} />;
   }
 
