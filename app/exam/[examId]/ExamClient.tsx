@@ -28,7 +28,7 @@ export default function ExamClient({ examId, examTitle }: Props) {
     }
     return null;
   });
-  const [testSettings, setTestSettings] = useState<TestSettings | null>(() => {
+  const [testSettings, setTestSettings] = useState<TestSettings>(() => {
     const existingExamState = loadExamState();
     if (
       existingExamState &&
@@ -62,7 +62,7 @@ export default function ExamClient({ examId, examTitle }: Props) {
     if (initialExamState) {
       return initialExamState.questions;
     }
-    if (!allQuestions || !testSettings) return [];
+    if (!allQuestions) return [];
     return prepareQuestionsForTest(allQuestions, testSettings);
   }, [allQuestions, initialExamState, testSettings]);
 
@@ -72,8 +72,8 @@ export default function ExamClient({ examId, examTitle }: Props) {
     } catch {}
   };
 
-  // Show skeleton while initializing settings or loading questions for a fresh session
-  if (!initialExamState && (!testSettings || loading)) {
+  // Show skeleton while loading questions for a fresh session
+  if (!initialExamState && loading) {
     return <ExamSkeleton examTitle={examTitle ?? fetchedMetadata?.examTitle} />;
   }
   if (error) {
