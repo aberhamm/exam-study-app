@@ -75,13 +75,13 @@ QuizApp with prepared questions
 
 ### Question Loading Flow
 ```
-JSON File → Fetch → Zod Validation → Normalization → Configuration → Component State
+API → Fetch → Zod Validation → Normalization → Configuration → Component State
     ↓
-/public/questions.json
+GET /api/exams/:examId
     ↓
 useQuestions Hook
     ↓
-ExternalQuestionsFileZ.parse()
+ExamDetailZ.parse()
     ↓
 normalizeQuestions()
     ↓

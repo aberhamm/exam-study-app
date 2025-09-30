@@ -1,5 +1,5 @@
 // src/types/api.ts
-import type { ExternalQuestionsFile } from './external-question';
+import type { ExamDetail } from './external-question';
 
 export type ExamSummary = {
   examId: string;
@@ -10,4 +10,4 @@ export type ExamsListResponse = {
   exams: ExamSummary[];
 };
 
-export type ExamDetailResponse = ExternalQuestionsFile;
+export type ExamDetailResponse = ExamDetail;

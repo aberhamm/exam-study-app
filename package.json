@@ -11,7 +11,9 @@
     "migrate:questions": "tsx scripts/migrate-questions-to-collection.ts",
     "embed:questions": "tsx scripts/embed-questions.ts",
     "migrate:embeddings": "tsx scripts/migrate-embeddings-to-collection.ts",
-    "status:questions": "node scripts/agg-questions-status.mjs"
+    "status:questions": "node scripts/agg-questions-status.mjs",
+    "sync:questions": "tsx scripts/sync-questions-from-legacy.ts",
+    "remove:legacy-questions": "tsx scripts/remove-legacy-embedded-questions.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",

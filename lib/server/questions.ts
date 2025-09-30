@@ -1,11 +1,11 @@
 import type { Collection, IndexSpecification } from 'mongodb';
-import type { ExternalQuestion, ExternalQuestionsFile } from '@/types/external-question';
+import type { ExternalQuestion, ExamDetail } from '@/types/external-question';
 import type { QuestionDocument, QuestionWithId } from '@/types/question';
 import { getDb, getExamsCollectionName, getQuestionsCollectionName } from './mongodb';
 import { generateQuestionId } from '@/lib/normalize';
 import { DuplicateQuestionIdsError, ExamNotFoundError } from '@/lib/server/exams';
 
-type ExamDocument = ExternalQuestionsFile & {
+type ExamDocument = ExamDetail & {
   _id?: unknown;
   examId: string;
   createdAt?: Date;
@@ -131,7 +131,7 @@ export async function updateQuestion(
   return { ...question };
 }
 
-export async function fetchExamDetail(examId: string): Promise<ExternalQuestionsFile | null> {
+export async function fetchExamDetail(examId: string): Promise<ExamDetail | null> {
   const examsCol = await getExamsCollection();
   const exam = await examsCol.findOne({ examId });
   if (!exam) return null;

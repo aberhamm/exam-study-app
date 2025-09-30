@@ -90,3 +90,9 @@ main().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
+/**
+ * Aggregate Questions/Embeddings Status (Node .mjs)
+ * Purpose: Print per-exam counts and latest timestamps.
+ * Env: MONGODB_URI, MONGODB_DB, MONGODB_QUESTIONS_COLLECTION, MONGODB_QUESTION_EMBEDDINGS_COLLECTION
+ * Usage: pnpm status:questions
+ */

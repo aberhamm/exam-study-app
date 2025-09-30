@@ -1,7 +1,7 @@
 // src/app/useQuestions.ts
 "use client";
 import { useEffect, useState } from "react";
-import { ExternalQuestionsFileZ } from "@/lib/validation";
+import { ExamDetailZ } from "@/lib/validation";
 import { normalizeQuestions } from "@/lib/normalize";
 import type { ExamSummary, ExamsListResponse } from "@/types/api";
 import type { NormalizedQuestion, ExamMetadata } from "@/types/normalized";
@@ -25,7 +25,7 @@ export function useQuestions(examId: string = "sitecore-xmc") {
           throw new Error(message);
         }
         const json = await res.json();
-        const parsed = ExternalQuestionsFileZ.parse(json);
+        const parsed = ExamDetailZ.parse(json);
         setData(normalizeQuestions(parsed.questions));
         setExamMetadata({
           examId: parsed.examId ?? examId,

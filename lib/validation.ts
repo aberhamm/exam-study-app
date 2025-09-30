@@ -1,6 +1,6 @@
 // src/lib/validation.ts
 import { z } from 'zod';
-import type { ExternalQuestionsFile, ExternalQuestion, StudyLink } from '@/types/external-question';
+import type { ExamDetail, ExternalQuestion, StudyLink } from '@/types/external-question';
 
 export const StudyLinkZ = z.object({
   chunkId: z.string().min(1),
@@ -39,7 +39,12 @@ export const WelcomeConfigZ = z.object({
   showDefaultSubtitle: z.boolean().optional().default(true),
 });
 
-export const ExternalQuestionsFileZ = z.object({
+/**
+ * ExamDetailZ
+ * Strict schema for the in-memory exam + questions payload used by the app/API.
+ * Note: This is not a file on disk; the name reflects the pipeline-originated shape.
+ */
+export const ExamDetailZ = z.object({
   examId: z.string().optional().default('sitecore-xmc'),
   examTitle: z.string().optional().default('Sitecore XM Cloud'),
   welcomeConfig: WelcomeConfigZ.optional(),
@@ -50,26 +55,32 @@ export const ExternalQuestionsImportZ = z.object({
   questions: z.array(ExternalQuestionZ).min(1, 'questions array must include at least one question'),
 });
 
-// Utility: sanitize potentially-loose data (e.g., DB docs) into strict ExternalQuestionsFile shape
-export function sanitizeExternalQuestionsFile(input: unknown): ExternalQuestionsFile {
-  const file = (input ?? {}) as Partial<ExternalQuestionsFile> & { questions?: unknown };
+// Utility: non-throwing structural coercion from loose input into ExamDetail-like shape
+// Intended to be followed by ExamDetailZ.parse(...) for strict validation.
+export function coerceExamDetail(input: unknown): ExamDetail {
+  const file = (input ?? {}) as Partial<ExamDetail> & { questions?: unknown };
 
   const questionsIn = Array.isArray(file.questions) ? (file.questions as unknown[]) : [];
-  const questions: ExternalQuestion[] = questionsIn.map((q) => sanitizeExternalQuestion(q));
+  const questions: ExternalQuestion[] = questionsIn.map((q) => coerceExternalQuestion(q));
 
   return {
-    examId: typeof (file as Partial<ExternalQuestionsFile> & { examId?: unknown }).examId === 'string'
-      ? (file as Partial<ExternalQuestionsFile> & { examId?: string }).examId
+    examId: typeof (file as Partial<ExamDetail> & { examId?: unknown }).examId === 'string'
+      ? (file as Partial<ExamDetail> & { examId?: string }).examId
       : undefined,
-    examTitle: typeof (file as Partial<ExternalQuestionsFile> & { examTitle?: unknown }).examTitle === 'string'
-      ? (file as Partial<ExternalQuestionsFile> & { examTitle?: string }).examTitle
+    examTitle: typeof (file as Partial<ExamDetail> & { examTitle?: unknown }).examTitle === 'string'
+      ? (file as Partial<ExamDetail> & { examTitle?: string }).examTitle
       : undefined,
-    welcomeConfig: (file as Partial<ExternalQuestionsFile>).welcomeConfig,
+    welcomeConfig: (file as Partial<ExamDetail>).welcomeConfig,
     questions,
   };
 }
 
-export function sanitizeExternalQuestion(q: unknown): ExternalQuestion {
+/**
+ * coerceExternalQuestion
+ * Non-throwing coercion of a loose question object into ExternalQuestion shape.
+ * Does not validate contents; use ExternalQuestionZ.parse for strict validation.
+ */
+export function coerceExternalQuestion(q: unknown): ExternalQuestion {
   const qq = (q ?? {}) as Partial<ExternalQuestion> & { id?: string };
 
   // Normalize study: only accept arrays; coerce null/other to undefined

@@ -1,3 +1,19 @@
+/**
+ * Migrate Embeddings To Collection
+ *
+ * Purpose
+ * - Move embeddings stored inline on question documents into a dedicated embeddings collection.
+ *
+ * Flags
+ * - --unset-in-questions  After copying, remove embedding fields from questions
+ *
+ * Env
+ * - MONGODB_URI, MONGODB_DB, MONGODB_QUESTIONS_COLLECTION, MONGODB_QUESTION_EMBEDDINGS_COLLECTION
+ *
+ * Usage
+ * - pnpm migrate:embeddings
+ * - pnpm migrate:embeddings --unset-in-questions
+ */
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
@@ -67,4 +83,3 @@ main().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
-

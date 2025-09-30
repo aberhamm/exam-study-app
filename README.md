@@ -71,7 +71,16 @@ npm run dev       # Start development server with Turbopack
 npm run build     # Build for production with Turbopack
 npm start         # Start production server
 npm run lint      # Run ESLint
+pnpm seed:exams   # Seed exam metadata + questions (no embedded arrays)
+pnpm migrate:questions           # Migrate legacy embedded questions → collection
+pnpm sync:questions [flags]      # Reconcile new collection from legacy (preserves explanations)
+pnpm remove:legacy-questions     # Remove embedded questions from exams
+pnpm embed:questions [flags]     # Generate/refresh question embeddings
+pnpm migrate:embeddings [flags]  # Move embeddings into their own collection
+pnpm status:questions            # Summarize counts and latest update timestamps
 ```
+
+See detailed script docs and use cases in docs/scripts.md.
 
 ### Environment Variables
 
@@ -94,23 +103,34 @@ When running against MongoDB Atlas, supply the SRV connection string (e.g. `mong
 
 ### Seeding Exam Data
 
-Populate your MongoDB collection with the bundled JSON exams using:
+Populate your MongoDB with the bundled exams using:
 
 ```bash
 pnpm seed:exams
 ```
 
-The seeder loads JSON files from `data/exams/`, validates them with the shared Zod schema, and upserts documents keyed by `examId`. Ensure your environment variables point at the desired database/collection before running.
+This validates JSON files in `data/exams/` and upserts:
+- Exam metadata into `MONGODB_EXAMS_COLLECTION` (no embedded questions)
+- Questions into `MONGODB_QUESTIONS_COLLECTION` (stable ids). Existing explanation fields are preserved and not overwritten.
 
-### Migrating Questions to Their Own Collection
+### Migrating and Removing Legacy Embedded Questions
 
-To move embedded questions from each exam document into a dedicated `questions` collection while keeping backward compatibility:
+If you previously embedded questions inside exam documents, migrate them and remove the legacy array:
 
 ```bash
+# 1) Migrate embedded questions → questions collection (insert/update)
 pnpm migrate:questions
+
+# 2) (Optional) Sync new collection from legacy without overwriting explanations
+pnpm sync:questions [--exam <id>] [--dry-run] [--overwrite]
+
+# 3) Remove embedded questions array from exams
+pnpm remove:legacy-questions [--exam <id>] [--dry-run]
 ```
 
-This script iterates all exams, upserts each embedded question into `MONGODB_QUESTIONS_COLLECTION` with a stable `id`, and marks the exam with `legacyQuestionsMigrated: true`. The API now prefers reading from the `questions` collection but falls back to the embedded array if none are present. Writes mirror to the legacy array to ease transition.
+Notes:
+- Explanations are never overwritten during migration/sync; they’re set only on insert.
+- The API reads exclusively from the dedicated questions collection.
 
 ### Generating Question Embeddings
 

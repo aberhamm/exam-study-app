@@ -1,3 +1,24 @@
+/**
+ * Generate Question Embeddings
+ *
+ * Purpose
+ * - Create vector embeddings for questions (question, options, answer, optional explanation) to support semantic search.
+ *
+ * Flags
+ * - --exam <id>   Limit to a specific exam
+ * - --limit <n>   Cap number of questions processed
+ * - --batch <n>   Batch size for embedding API calls (default 16)
+ * - --recompute   Recompute embeddings even if present (otherwise, embed missing only)
+ *
+ * Env
+ * - OPENAI_API_KEY, MONGODB_URI, MONGODB_DB
+ * - MONGODB_QUESTIONS_COLLECTION, MONGODB_QUESTION_EMBEDDINGS_COLLECTION
+ * - Optional: QUESTIONS_EMBEDDING_MODEL (default text-embedding-3-small), QUESTIONS_EMBEDDING_DIMENSIONS
+ *
+ * Usage
+ * - pnpm embed:questions
+ * - pnpm embed:questions --exam sitecore-xmc --recompute --batch 32
+ */
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 

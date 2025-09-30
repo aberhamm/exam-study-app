@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchExamDetail, getExamCacheTag } from '@/lib/server/questions';
-import { ExternalQuestionsFileZ, sanitizeExternalQuestionsFile } from '@/lib/validation';
+import { ExamDetailZ, coerceExamDetail } from '@/lib/validation';
 import type { ExamDetailResponse } from '@/types/api';
 
 type RouteParams = {
@@ -29,8 +29,8 @@ export async function GET(request: Request, context: RouteParams) {
       );
     }
 
-    const sanitized = sanitizeExternalQuestionsFile(examRaw);
-    const parsed = ExternalQuestionsFileZ.parse(sanitized) as ExamDetailResponse;
+    const coerced = coerceExamDetail(examRaw);
+    const parsed = ExamDetailZ.parse(coerced) as ExamDetailResponse;
     const headers: Record<string, string> = { ETag: etag };
     if (process.env.NODE_ENV === 'development') {
       headers['Cache-Control'] = 'no-store';

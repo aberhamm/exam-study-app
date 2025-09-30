@@ -1,17 +1,16 @@
 import type { Collection } from 'mongodb';
-import type { ExternalQuestion, ExternalQuestionsFile } from '@/types/external-question';
+import type { ExamDetail } from '@/types/external-question';
 import type { ExamSummary } from '@/types/api';
 import { getDb, getExamsCollectionName } from './mongodb';
-import { generateQuestionId } from '@/lib/normalize';
 
-type ExamDocument = ExternalQuestionsFile & {
+type ExamDocument = ExamDetail & {
   _id?: unknown;
   examId: string;
 };
 
-type QuestionWithId = ExternalQuestion & { id: string };
+// Questions are managed in a separate collection; no embedded question types here.
 
-function mapExamDocument(doc: ExamDocument): ExternalQuestionsFile {
+function mapExamDocument(doc: ExamDocument): ExamDetail {
   const { _id: _ignored, ...rest } = doc;
   void _ignored;
   return rest;
@@ -22,7 +21,7 @@ async function getExamsCollection(): Promise<Collection<ExamDocument>> {
   return db.collection<ExamDocument>(getExamsCollectionName());
 }
 
-export async function fetchExamById(examId: string): Promise<ExternalQuestionsFile | null> {
+export async function fetchExamById(examId: string): Promise<ExamDetail | null> {
   const collection = await getExamsCollection();
   const doc = await collection.findOne({ examId });
   if (!doc) {
@@ -55,72 +54,4 @@ export class DuplicateQuestionIdsError extends Error {
   }
 }
 
-export async function addExamQuestions(
-  examId: string,
-  questions: ExternalQuestion[]
-): Promise<QuestionWithId[]> {
-  const collection = await getExamsCollection();
-  const doc = await collection.findOne({ examId }, { projection: { questions: 1 } });
-
-  if (!doc) {
-    throw new ExamNotFoundError(examId);
-  }
-
-  const existingIds = new Set(
-    (doc.questions ?? []).map((question) => generateQuestionId(question))
-  );
-
-  const toInsert: QuestionWithId[] = [];
-  const seenNewIds = new Set<string>();
-  const duplicates: string[] = [];
-
-  for (const question of questions) {
-    const id = generateQuestionId(question);
-    if (existingIds.has(id) || seenNewIds.has(id)) {
-      duplicates.push(id);
-      continue;
-    }
-    seenNewIds.add(id);
-    toInsert.push({ ...question, id });
-  }
-
-  if (duplicates.length > 0) {
-    throw new DuplicateQuestionIdsError(duplicates);
-  }
-
-  if (toInsert.length === 0) {
-    return [];
-  }
-
-  await collection.updateOne(
-    { examId },
-    {
-      $push: { questions: { $each: toInsert } },
-      $set: { updatedAt: new Date() },
-    }
-  );
-
-  return toInsert;
-}
-
-export async function updateExamQuestion(
-  examId: string,
-  question: QuestionWithId
-): Promise<QuestionWithId | null> {
-  const collection = await getExamsCollection();
-  const result = await collection.updateOne(
-    { examId, 'questions.id': question.id },
-    {
-      $set: {
-        'questions.$': question,
-        updatedAt: new Date(),
-      },
-    }
-  );
-
-  if (result.matchedCount === 0) {
-    return null;
-  }
-
-  return question;
-}
+// Legacy embedded-question writers have been removed; questions live in their own collection.

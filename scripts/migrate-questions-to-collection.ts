@@ -1,11 +1,28 @@
+/**
+ * Migrate Embedded Questions → Collection
+ *
+ * Purpose
+ * - Copy legacy embedded exams.questions[] into the dedicated questions collection.
+ * - Creates indexes on the questions collection.
+ * - Marks exams with legacyQuestionsMigrated: true.
+ *
+ * Safety
+ * - Does not overwrite existing explanation on update; explanation is set only on insert.
+ *
+ * Env
+ * - MONGODB_URI, MONGODB_DB, MONGODB_EXAMS_COLLECTION, MONGODB_QUESTIONS_COLLECTION
+ *
+ * Usage
+ * - pnpm migrate:questions
+ */
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
 import { MongoClient } from 'mongodb';
 import { generateQuestionId } from '@/lib/normalize';
-import type { ExternalQuestion, ExternalQuestionsFile } from '@/types/external-question';
+import type { ExternalQuestion, ExamDetail } from '@/types/external-question';
 
-type ExamDoc = ExternalQuestionsFile & { examId: string; updatedAt?: Date; legacyQuestionsMigrated?: boolean };
+type ExamDoc = ExamDetail & { examId: string; updatedAt?: Date; legacyQuestionsMigrated?: boolean };
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -55,13 +72,14 @@ async function main() {
                 id,
                 examId,
                 createdAt: now,
+                explanation: q.explanation, // set only when inserting new docs
               },
               $set: {
                 question: q.question,
                 options: q.options,
                 answer: q.answer,
                 question_type: q.question_type,
-                explanation: q.explanation,
+                // Do not overwrite existing explanation on updates
                 study: q.study,
                 updatedAt: now,
               },
@@ -92,4 +110,3 @@ main().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
-

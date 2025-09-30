@@ -18,9 +18,19 @@ export type ExternalQuestion = {
   study?: StudyLink[];
 };
 
-export type ExternalQuestionsFile = {
+/**
+ * ExamDetail
+ * In-memory payload shape used by the app/API for an exam with its questions.
+ * Originated from pipeline JSON, but not a literal file in the app.
+ */
+export type ExamDetail = {
   examId?: string;
   examTitle?: string;
   welcomeConfig?: WelcomeConfig;
   questions: ExternalQuestion[];
 };
+
+/**
+ * @deprecated Use ExamDetail instead. Kept temporarily for intra-repo compatibility.
+ */
+export type ExternalQuestionsFile = ExamDetail;

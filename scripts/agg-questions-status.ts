@@ -1,3 +1,15 @@
+/**
+ * Aggregate Questions/Embeddings Status
+ *
+ * Purpose
+ * - Print a per-exam summary table with question counts, embedding counts, and latest update timestamps.
+ *
+ * Env
+ * - MONGODB_URI, MONGODB_DB, MONGODB_QUESTIONS_COLLECTION, MONGODB_QUESTION_EMBEDDINGS_COLLECTION
+ *
+ * Usage
+ * - pnpm status:questions
+ */
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
@@ -78,4 +90,3 @@ main().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
-
