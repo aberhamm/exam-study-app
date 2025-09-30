@@ -88,6 +88,7 @@ export function QuizApp({
   });
   const seenQuestionsRef = useRef<Set<string>>(new Set());
   const scoredQuestionsRef = useRef<Set<string>>(new Set());
+  const persistEnabledRef = useRef<boolean>(true);
 
   const evaluateAnswer = useCallback(
     (question: NormalizedQuestion, selected: number | number[] | null): 'correct' | 'incorrect' | 'unanswered' => {
@@ -133,8 +134,9 @@ export function QuizApp({
 
   // Save exam state to localStorage whenever quiz state changes
   useEffect(() => {
+    if (!persistEnabledRef.current) return;
     if (!quizState.showResult && questions.length > 0) {
-      const examState = createExamState(questions, testSettings, examId);
+      const examState = createExamState(questions, testSettings, examId, examTitle);
       const updatedState = updateExamState(examState, {
         currentQuestionIndex: quizState.currentQuestionIndex,
         selectedAnswers: quizState.selectedAnswers,
@@ -147,7 +149,7 @@ export function QuizApp({
       });
       saveExamState(updatedState);
     }
-  }, [quizState, questions, testSettings, examId]);
+  }, [quizState, questions, testSettings, examId, examTitle]);
 
   // Configure header based on quiz state
   useEffect(() => {
@@ -515,6 +517,7 @@ export function QuizApp({
             <p>No questions found to display.</p>
             <Button
               onClick={() => {
+                persistEnabledRef.current = false;
                 clearExamState();
                 onBackToSettings();
               }}
@@ -551,6 +554,7 @@ export function QuizApp({
               </Button>
               <Button
                 onClick={() => {
+                  persistEnabledRef.current = false;
                   clearExamState();
                   onBackToSettings();
                 }}
@@ -939,6 +943,7 @@ export function QuizApp({
               variant="destructive"
               onClick={() => {
                 setShowQuitDialog(false);
+                persistEnabledRef.current = false;
                 clearExamState();
                 onBackToSettings();
               }}

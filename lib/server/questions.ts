@@ -152,6 +152,79 @@ export async function fetchExamDetail(examId: string): Promise<ExamDetail | null
   };
 }
 
+export type ExamStats = {
+  total: number;
+  byType: { single: number; multiple: number };
+  byExplanation: { with: number; without: number };
+  matrix: {
+    single: { with: number; without: number };
+    multiple: { with: number; without: number };
+  };
+};
+
+export async function computeExamStats(examId: string): Promise<ExamStats> {
+  const questionsCol = await getQuestionsCollection();
+
+  const agg = await questionsCol
+    .aggregate<{
+      _id: { type: 'single' | 'multiple' | null; hasExplanation: boolean };
+      count: number;
+    }>([
+      { $match: { examId } },
+      {
+        $group: {
+          _id: {
+            type: '$question_type',
+            hasExplanation: {
+              $gt: [
+                {
+                  $strLenCP: {
+                    $trim: { input: { $ifNull: ['$explanation', ''] } },
+                  },
+                },
+                0,
+              ],
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ])
+    .toArray();
+
+  let total = 0;
+  let single = 0;
+  let multiple = 0;
+  let singleWith = 0;
+  let singleWithout = 0;
+  let multipleWith = 0;
+  let multipleWithout = 0;
+
+  for (const row of agg) {
+    const type = row._id.type;
+    const hasExp = row._id.hasExplanation;
+    const count = row.count;
+    total += count;
+    if (type === 'single') {
+      single += count;
+      if (hasExp) singleWith += count; else singleWithout += count;
+    } else if (type === 'multiple') {
+      multiple += count;
+      if (hasExp) multipleWith += count; else multipleWithout += count;
+    }
+  }
+
+  return {
+    total,
+    byType: { single, multiple },
+    byExplanation: { with: singleWith + multipleWith, without: singleWithout + multipleWithout },
+    matrix: {
+      single: { with: singleWith, without: singleWithout },
+      multiple: { with: multipleWith, without: multipleWithout },
+    },
+  };
+}
+
 export async function getExamCacheTag(examId: string): Promise<string> {
   const db = await getDb();
   const examsCol = db.collection(getExamsCollectionName());

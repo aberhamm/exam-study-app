@@ -20,6 +20,7 @@ import {
 } from '@/lib/test-settings';
 import type { NormalizedQuestion, ExamMetadata } from '@/types/normalized';
 import { getMissedQuestionIds } from '@/lib/question-metrics';
+import type { ExamStatsResponse } from '@/types/api';
 
 type StartTestOptions = {
   overrideQuestions?: NormalizedQuestion[];
@@ -28,12 +29,13 @@ type StartTestOptions = {
 type Props = {
   questions: NormalizedQuestion[] | null;
   examMetadata?: ExamMetadata | null;
-  onStartTest: (settings: TestSettings, options?: StartTestOptions) => void;
+  onStartTest: (settings: TestSettings, options?: StartTestOptions) => Promise<void> | void;
   loading: boolean;
   error: string | null;
+  stats?: ExamStatsResponse['stats'];
 };
 
-export function TestConfigPage({ questions, examMetadata, onStartTest, loading, error }: Props) {
+export function TestConfigPage({ questions, examMetadata, onStartTest, loading, error, stats }: Props) {
   const [settings, setSettings] = useState<TestSettings>(DEFAULT_TEST_SETTINGS);
   const { setConfig } = useHeader();
   const [customQuestionCount, setCustomQuestionCount] = useState<string>('');
@@ -42,6 +44,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [useCustomTimer, setUseCustomTimer] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [missedQuestionIds, setMissedQuestionIds] = useState<string[]>([]);
+  const [starting, setStarting] = useState(false);
 
   // Configure header on mount and when exam title loads
   useEffect(() => {
@@ -153,46 +156,72 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
   // Calculate available questions by type and explanation filter
   const questionCounts = useMemo(() => {
-    if (!questions) {
+    if (stats) {
       return {
-        all: 0,
-        single: 0,
-        multiple: 0,
-        'with-explanations': 0,
-        'without-explanations': 0,
+        all: stats.total,
+        single: stats.byType.single,
+        multiple: stats.byType.multiple,
+        'with-explanations': stats.byExplanation.with,
+        'without-explanations': stats.byExplanation.without,
       } as const;
     }
-
+    if (questions) {
+      return {
+        all: questions.length,
+        single: questions.filter((q) => q.questionType === 'single').length,
+        multiple: questions.filter((q) => q.questionType === 'multiple').length,
+        'with-explanations': questions.filter((q) => q.explanation && q.explanation.trim().length > 0)
+          .length,
+        'without-explanations': questions.filter(
+          (q) => !q.explanation || q.explanation.trim().length === 0
+        ).length,
+      } as const;
+    }
     return {
-      all: questions.length,
-      single: questions.filter((q) => q.questionType === 'single').length,
-      multiple: questions.filter((q) => q.questionType === 'multiple').length,
-      'with-explanations': questions.filter((q) => q.explanation && q.explanation.trim().length > 0)
-        .length,
-      'without-explanations': questions.filter(
-        (q) => !q.explanation || q.explanation.trim().length === 0
-      ).length,
+      all: 0,
+      single: 0,
+      multiple: 0,
+      'with-explanations': 0,
+      'without-explanations': 0,
     } as const;
-  }, [questions]);
+  }, [questions, stats]);
 
   // Get filtered questions based on current explanation filter
-  const getFilteredQuestions = () => {
-    if (!questions) return [];
-    if (settings.explanationFilter === 'all') return questions;
-    if (settings.explanationFilter === 'with-explanations') {
-      return questions.filter((q) => q.explanation && q.explanation.trim().length > 0);
-    }
-    return questions.filter((q) => !q.explanation || q.explanation.trim().length === 0);
-  };
-
-  const filteredQuestions = getFilteredQuestions();
   const filteredQuestionCounts = useMemo(() => {
+    if (stats) {
+      if (settings.explanationFilter === 'all') {
+        return {
+          all: stats.total,
+          single: stats.byType.single,
+          multiple: stats.byType.multiple,
+        } as const;
+      }
+      if (settings.explanationFilter === 'with-explanations') {
+        return {
+          all: stats.byExplanation.with,
+          single: stats.matrix.single.with,
+          multiple: stats.matrix.multiple.with,
+        } as const;
+      }
+      return {
+        all: stats.byExplanation.without,
+        single: stats.matrix.single.without,
+        multiple: stats.matrix.multiple.without,
+      } as const;
+    }
+    // fallback to client-side questions if present
+    const q = questions || [];
+    const filtered = (() => {
+      if (settings.explanationFilter === 'all') return q;
+      if (settings.explanationFilter === 'with-explanations') return q.filter((x) => x.explanation && x.explanation.trim().length > 0);
+      return q.filter((x) => !x.explanation || x.explanation.trim().length === 0);
+    })();
     return {
-      all: filteredQuestions.length,
-      single: filteredQuestions.filter((q) => q.questionType === 'single').length,
-      multiple: filteredQuestions.filter((q) => q.questionType === 'multiple').length,
+      all: filtered.length,
+      single: filtered.filter((x) => x.questionType === 'single').length,
+      multiple: filtered.filter((x) => x.questionType === 'multiple').length,
     } as const;
-  }, [filteredQuestions]);
+  }, [stats, settings.explanationFilter, questions]);
 
   const availableQuestions = filteredQuestionCounts[settings.questionType];
   const maxAllowedQuestions = Math.min(availableQuestions, TEST_SETTINGS.MAX_QUESTION_COUNT);
@@ -298,13 +327,18 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     }
   };
 
-  const handleStartTest = () => {
+  const handleStartTest = async () => {
     const finalSettings = validateTestSettings(settings);
     saveTestSettings(finalSettings);
-    onStartTest(finalSettings);
+    try {
+      setStarting(true);
+      await onStartTest(finalSettings);
+    } finally {
+      setStarting(false);
+    }
   };
 
-  const handleStartMissedQuestions = () => {
+  const handleStartMissedQuestions = async () => {
     if (!questions) return;
     if (missedQuestions.length === 0) return;
 
@@ -315,7 +349,12 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
       questionCount: missedQuestions.length,
     };
 
-    onStartTest(practiceSettings, { overrideQuestions: missedQuestions });
+    try {
+      setStarting(true);
+      await onStartTest(practiceSettings, { overrideQuestions: missedQuestions });
+    } finally {
+      setStarting(false);
+    }
   };
 
   const getValidationState = () => {
@@ -362,7 +401,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="text-lg">Loading questions...</div>
+        <div className="text-lg">Loading exam info...</div>
       </div>
     );
   }
@@ -421,18 +460,22 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 onClick={handleStartTest}
                 size="lg"
                 className="px-8 py-3 text-lg"
-                disabled={!isValidConfiguration}
+                disabled={!isValidConfiguration || starting}
               >
-                {examMetadata?.welcomeConfig?.ctaText ||
-                  `Start Exam (${settings.questionCount} ${
-                    settings.questionType === 'all' ? '' : settings.questionType
-                  } ${
-                    settings.explanationFilter === 'all'
-                      ? ''
-                      : settings.explanationFilter === 'with-explanations'
-                      ? 'explained '
-                      : 'non-explained '
-                  }questions)`}
+                {starting
+                  ? 'Loading questions…'
+                  : (
+                    examMetadata?.welcomeConfig?.ctaText ||
+                    `Start Exam (${settings.questionCount} ${
+                      settings.questionType === 'all' ? '' : settings.questionType
+                    } ${
+                      settings.explanationFilter === 'all'
+                        ? ''
+                        : settings.explanationFilter === 'with-explanations'
+                        ? 'explained '
+                        : 'non-explained '
+                    }questions)`
+                  )}
               </Button>
               <Button
                 variant="outline"
@@ -470,10 +513,10 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               <Button
                 type="button"
                 onClick={handleStartMissedQuestions}
-                disabled={missedQuestions.length === 0}
+                disabled={missedQuestions.length === 0 || starting}
                 className="w-full"
               >
-                Review missed questions
+                {starting ? 'Loading questions…' : 'Review missed questions'}
               </Button>
             </CardFooter>
           </Card>
@@ -738,11 +781,15 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 )}
                 <Button
                   onClick={handleStartTest}
-                  disabled={!isValidConfiguration}
+                  disabled={!isValidConfiguration || starting}
                   size="lg"
                   className="px-8"
                 >
-                  {isValidConfiguration ? 'Start with these settings' : 'Check configuration'}
+                  {starting
+                    ? 'Loading questions…'
+                    : isValidConfiguration
+                      ? 'Start with these settings'
+                      : 'Check configuration'}
                 </Button>
               </div>
             </section>

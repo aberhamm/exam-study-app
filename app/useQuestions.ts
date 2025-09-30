@@ -6,13 +6,20 @@ import { normalizeQuestions } from "@/lib/normalize";
 import type { ExamSummary, ExamsListResponse } from "@/types/api";
 import type { NormalizedQuestion, ExamMetadata } from "@/types/normalized";
 
-export function useQuestions(examId: string = "sitecore-xmc") {
+type UseQuestionsOptions = {
+  enabled?: boolean;
+};
+
+export function useQuestions(examId: string = "sitecore-xmc", options?: UseQuestionsOptions) {
   const [data, setData] = useState<NormalizedQuestion[] | null>(null);
   const [examMetadata, setExamMetadata] = useState<ExamMetadata | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const enabled = options?.enabled !== false;
+
   useEffect(() => {
+    if (!enabled) { setLoading(false); return; }
     const loadExamData = async () => {
       setLoading(true);
       setError(null);
@@ -41,7 +48,7 @@ export function useQuestions(examId: string = "sitecore-xmc") {
     };
 
     loadExamData();
-  }, [examId]);
+  }, [examId, enabled]);
 
   return { data, examMetadata, error, loading };
 }
