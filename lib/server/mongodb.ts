@@ -69,3 +69,8 @@ export function getDedupePairsCollectionName(): string {
   }
   return collection;
 }
+
+export function getQuestionClustersCollectionName(): string {
+  const collection = process.env.MONGODB_QUESTION_CLUSTERS_COLLECTION || 'question_clusters';
+  return collection;
+}
