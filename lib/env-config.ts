@@ -45,37 +45,17 @@ export const mongoConfig = {
     return requireEnvVar('MONGODB_DB', process.env.MONGODB_DB);
   },
 
-  get examsCollection(): string {
-    return requireEnvVar('MONGODB_EXAMS_COLLECTION', process.env.MONGODB_EXAMS_COLLECTION);
-  },
+  // Collection names (hardcoded)
+  examsCollection: 'exams',
+  questionsCollection: 'questions',
+  questionEmbeddingsCollection: 'question_embeddings',
+  dedupePairsCollection: 'question_duplicates',
+  questionClustersCollection: 'question_clusters',
+  examCompetenciesCollection: 'exam_competencies',
 
-  get questionsCollection(): string {
-    return requireEnvVar('MONGODB_QUESTIONS_COLLECTION', process.env.MONGODB_QUESTIONS_COLLECTION);
-  },
-
-  get questionEmbeddingsCollection(): string {
-    return requireEnvVar('MONGODB_QUESTION_EMBEDDINGS_COLLECTION', process.env.MONGODB_QUESTION_EMBEDDINGS_COLLECTION);
-  },
-
-  get dedupePairsCollection(): string {
-    return requireEnvVar('MONGODB_DEDUPE_PAIRS_COLLECTION', process.env.MONGODB_DEDUPE_PAIRS_COLLECTION);
-  },
-
-  get questionClustersCollection(): string {
-    return process.env.MONGODB_QUESTION_CLUSTERS_COLLECTION || 'question_clusters';
-  },
-
-  get examCompetenciesCollection(): string {
-    return process.env.MONGODB_EXAM_COMPETENCIES_COLLECTION || 'exam_competencies';
-  },
-
-  get questionEmbeddingsVectorIndex(): string {
-    return process.env.MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX || 'question_embeddings';
-  },
-
-  get competenciesVectorIndex(): string {
-    return process.env.MONGODB_COMPETENCIES_VECTOR_INDEX || 'competencies_vector_index';
-  },
+  // Vector index names (hardcoded)
+  questionEmbeddingsVectorIndex: 'question_embeddings_vector_index',
+  competenciesVectorIndex: 'competencies_vector_index',
 } as const;
 
 /**
@@ -173,10 +153,6 @@ export function validateRequiredEnvVars(): void {
     const requiredVars = [
       mongoConfig.uri,
       mongoConfig.database,
-      mongoConfig.examsCollection,
-      mongoConfig.questionsCollection,
-      mongoConfig.questionEmbeddingsCollection,
-      mongoConfig.dedupePairsCollection,
       openaiConfig.apiKey,
     ];
     // If we get here, all required variables are accessible
