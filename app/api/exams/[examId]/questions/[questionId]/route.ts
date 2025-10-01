@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ObjectId } from 'mongodb';
 import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName } from '@/lib/server/mongodb';
 import type { ExternalQuestion } from '@/types/external-question';
@@ -19,12 +20,16 @@ export async function DELETE(_request: Request, context: RouteParams) {
       return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
     }
 
+    if (!ObjectId.isValid(questionId)) {
+      return NextResponse.json({ error: 'Invalid question ID format' }, { status: 400 });
+    }
+
     const db = await getDb();
     const qCol = db.collection(getQuestionsCollectionName());
     const embCol = db.collection(getQuestionEmbeddingsCollectionName());
 
-    const delQ = await qCol.deleteOne({ examId, id: questionId });
-    const delEmb = await embCol.deleteOne({ examId, id: questionId });
+    const delQ = await qCol.deleteOne({ _id: new ObjectId(questionId), examId });
+    const delEmb = await embCol.deleteOne({ questionId: new ObjectId(questionId) });
 
     if (delQ.deletedCount === 0) {
       return NextResponse.json({ error: 'Question not found' }, { status: 404 });
@@ -46,6 +51,10 @@ export async function PATCH(request: Request, context: RouteParams) {
 
     if (!isDevFeaturesEnabled()) {
       return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+    }
+
+    if (!ObjectId.isValid(questionId)) {
+      return NextResponse.json({ error: 'Invalid question ID format' }, { status: 400 });
     }
 
     let payload: ExternalQuestion & { id: string };
@@ -72,20 +81,19 @@ export async function PATCH(request: Request, context: RouteParams) {
       updatedAt: new Date(),
     };
 
-    const result = await qCol.findOneAndUpdate(
-      { examId, id: questionId },
+    const doc = await qCol.findOneAndUpdate(
+      { _id: new ObjectId(questionId), examId },
       { $set: updateDoc },
-      { returnDocument: 'after', projection: { _id: 0 } }
+      { returnDocument: 'after' }
     );
 
-    const doc = result?.value;
     if (!doc) {
       return NextResponse.json({ error: 'Question not found' }, { status: 404 });
     }
 
     // Return the updated question in external format
     const responseBody: ExternalQuestion & { id: string } = {
-      id: doc.id,
+      id: doc._id.toString(),
       question: doc.question,
       options: doc.options,
       answer: doc.answer,

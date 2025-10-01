@@ -88,6 +88,10 @@ export const pipelineConfig = {
     return process.env.EMBEDDINGS_COLLECTION || 'embeddings';
   },
 
+  get vectorIndexName(): string {
+    return process.env.VECTOR_INDEX_NAME || 'embedding_vector';
+  },
+
   get openrouterApiKey(): string {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
@@ -98,6 +102,32 @@ export const pipelineConfig = {
 
   get openrouterModel(): string {
     return process.env.OPENROUTER_MODEL || 'anthropic/claude-3.5-sonnet';
+  },
+
+  // Vector search configuration
+  get candidateMultiplier(): number {
+    return parseInt(process.env.CANDIDATE_MULTIPLIER || '10');
+  },
+
+  get maxCandidates(): number {
+    return parseInt(process.env.MAX_CANDIDATES || '100');
+  },
+
+  get maxContextChunks(): number {
+    return parseInt(process.env.MAX_CONTEXT_CHUNKS || '4');
+  },
+
+  get maxChunkChars(): number {
+    return parseInt(process.env.MAX_CHUNK_CHARS || '1500');
+  },
+
+  // API timeouts and retries
+  get apiTimeoutMs(): number {
+    return parseInt(process.env.API_TIMEOUT_MS || '30000');
+  },
+
+  get maxRetries(): number {
+    return parseInt(process.env.MAX_RETRIES || '3');
   },
 } as const;
 
@@ -112,6 +142,10 @@ export const featureFlags = {
     if (isTruthyEnv(process.env.NEXT_PUBLIC_ENABLE_DEV_FEATURES)) return true;
     // Fallback: development environment
     return process.env.NODE_ENV === 'development';
+  },
+
+  get debugRetrieval(): boolean {
+    return isTruthyEnv(process.env.DEBUG_RETRIEVAL);
   },
 } as const;
 

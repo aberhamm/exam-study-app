@@ -1,8 +1,9 @@
-import type { Collection, Document } from 'mongodb';
+import type { Collection } from 'mongodb';
 import { getDb } from '@/lib/server/mongodb';
-import { envConfig } from '@/lib/env-config';
+import { envConfig, featureFlags } from '@/lib/env-config';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { EmbeddingChunkDocument } from '@/data-pipelines/src/shared/types/embedding';
+import crypto from 'crypto';
 
 export type DocumentChunk = {
   text: string;
@@ -24,355 +25,272 @@ export type ExplanationResult = {
   }>;
 };
 
+// Circuit breaker state
+let vectorSearchFailures = 0;
+let circuitBreakerUntil: number | null = null;
+const CIRCUIT_BREAKER_THRESHOLD = 3;
+const CIRCUIT_BREAKER_DURATION_MS = 2 * 60 * 1000; // 2 minutes
+
+// Helper to create hash for logging
+function hashText(text: string): string {
+  return crypto.createHash('sha256').update(text).digest('hex').substring(0, 8);
+}
+
+// Retry with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = envConfig.pipeline.maxRetries,
+  timeoutMs: number = envConfig.pipeline.apiTimeoutMs
+): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const result = await fn();
+        clearTimeout(timeout);
+        return result;
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch (error) {
+      lastError = error as Error;
+
+      if (attempt < maxRetries - 1) {
+        const backoffMs = Math.min(1000 * Math.pow(2, attempt), 10000);
+        if (featureFlags.debugRetrieval) {
+          console.warn(`[retryWithBackoff] Attempt ${attempt + 1} failed, retrying in ${backoffMs}ms`);
+        }
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+    }
+  }
+
+  throw lastError || new Error('Max retries exceeded');
+}
+
 async function getEmbeddingsCollection(): Promise<Collection<EmbeddingChunkDocument>> {
   const db = await getDb();
   return db.collection<EmbeddingChunkDocument>(envConfig.pipeline.embeddingsCollection);
 }
 
 async function createEmbedding(text: string): Promise<number[]> {
-  const apiKey = envConfig.openai.apiKey;
-  const model = envConfig.openai.embeddingModel;
-  const dimensions = envConfig.openai.embeddingDimensions;
+  return retryWithBackoff(async () => {
+    const apiKey = envConfig.openai.apiKey;
+    const model = envConfig.openai.embeddingModel;
+    const dimensions = envConfig.openai.embeddingDimensions;
 
-  const body: Record<string, unknown> = { model, input: text, dimensions };
+    const body = { model, input: text, dimensions };
 
-  const resp = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
+    const resp = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`OpenAI embeddings error ${resp.status}`);
+    }
+
+    const json = (await resp.json()) as { data?: Array<{ embedding?: number[] }> };
+
+    if (!json.data?.[0]?.embedding) {
+      throw new Error('Invalid embedding response');
+    }
+
+    return json.data[0].embedding;
   });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`OpenAI embeddings error ${resp.status}: ${text}`);
-  }
-
-  const json = (await resp.json()) as { data: Array<{ embedding: number[] }> };
-  return json.data[0]?.embedding ?? [];
 }
 
 async function searchDocumentChunks(
   queryEmbedding: number[],
-  topK: number = 5
+  topK: number = envConfig.pipeline.maxContextChunks
 ): Promise<DocumentChunk[]> {
-  const embeddingsCol = await getEmbeddingsCollection();
+  // Circuit breaker check
+  if (circuitBreakerUntil && Date.now() < circuitBreakerUntil) {
+    if (featureFlags.debugRetrieval) {
+      console.warn('[searchDocumentChunks] Circuit breaker active, skipping vector search');
+    }
+    return [];
+  }
 
-  console.info(
-    `[searchDocumentChunks] Starting vector search with topK=${topK}, embedding dimensions=${queryEmbedding.length}`
-  );
+  const embeddingsCol = await getEmbeddingsCollection();
+  const indexName = envConfig.pipeline.vectorIndexName;
+  const candidateMultiplier = envConfig.pipeline.candidateMultiplier;
+  const maxCandidates = envConfig.pipeline.maxCandidates;
+  const numCandidates = Math.min(topK * candidateMultiplier, maxCandidates);
+
+  if (featureFlags.debugRetrieval) {
+    console.info(`[searchDocumentChunks] topK=${topK}, candidates=${numCandidates}, dimensions=${queryEmbedding.length}`);
+  }
 
   try {
-    // Check if embeddings collection has documents
-    const totalDocs = await embeddingsCol.countDocuments();
-    console.info(`[searchDocumentChunks] Total documents in embeddings collection: ${totalDocs}`);
+    // Step 1: Vector search for IDs and scores only
+    const vectorPipeline = [
+      {
+        $vectorSearch: {
+          index: indexName,
+          queryVector: queryEmbedding,
+          path: 'embedding',
+          numCandidates,
+          limit: topK,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          score: { $meta: 'vectorSearchScore' },
+        },
+      },
+    ];
 
-    if (totalDocs === 0) {
-      console.warn('[searchDocumentChunks] No documents found in embeddings collection');
+    const vectorResults: Array<{ _id: unknown; score: number }> = [];
+    const cursor = embeddingsCol.aggregate(vectorPipeline);
+
+    for await (const doc of cursor) {
+      vectorResults.push(doc as { _id: unknown; score: number });
+    }
+
+    if (vectorResults.length === 0) {
+      if (featureFlags.debugRetrieval) {
+        console.warn('[searchDocumentChunks] No results from vector search');
+      }
       return [];
     }
 
-    // Sample a document to understand the structure
-    const sampleDoc = await embeddingsCol.findOne(
-      {},
-      {
-        projection: {
-          text: 1,
-          sourceFile: 1,
-          title: 1,
-          url: 1,
-          embedding: 1,
-          sectionPath: 1,
-          nearestHeading: 1,
-        },
-      }
-    );
+    // Step 2: Targeted find for full documents
+    const ids = vectorResults.map(r => r._id);
+    const scoreMap = new Map(vectorResults.map(r => [String(r._id), r.score]));
 
-    if (sampleDoc) {
-      console.info(`[searchDocumentChunks] Sample document structure:`, {
-        hasText: !!sampleDoc.text,
-        textLength: sampleDoc.text?.length || 0,
-        sourceFile: sampleDoc.sourceFile,
-        title: sampleDoc.title,
-        url: sampleDoc.url,
-        hasEmbedding: !!sampleDoc.embedding,
-        embeddingLength: Array.isArray(sampleDoc.embedding) ? sampleDoc.embedding.length : 0,
-        sectionPath: sampleDoc.sectionPath,
-        nearestHeading: sampleDoc.nearestHeading,
-      });
-    }
+    const documents = await embeddingsCol
+      .find({ _id: { $in: ids } } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      .project({
+        _id: 1,
+        text: 1,
+        url: 1,
+        title: 1,
+        description: 1,
+        sourceFile: 1,
+        sourceBasename: 1,
+        sectionPath: 1,
+        nearestHeading: 1,
+      })
+      .toArray();
 
-    // Try different index names and search methods like the working example
-    const indexNames = ['embedding_vector', 'embeddings_vector_index', 'vector_index'];
-    let results: DocumentChunk[] = [];
-    let searchMethod = 'none';
+    // Map results with scores
+    const results = documents.map(doc => ({
+      text: doc.text || '',
+      url: doc.url,
+      title: doc.title || doc.description,
+      sourceFile: doc.sourceFile || doc.sourceBasename || 'unknown',
+      sectionPath: doc.sectionPath,
+      nearestHeading: doc.nearestHeading,
+      score: scoreMap.get(String(doc._id)) || 0,
+    }));
 
-    for (const indexName of indexNames) {
-      console.info(`[searchDocumentChunks] Trying vector search with index: ${indexName}`);
+    // Reset circuit breaker on success
+    vectorSearchFailures = 0;
 
-      try {
-        // Try Atlas Search first (like the working example)
-        try {
-          const pipeline: Document[] = [
-            {
-              $search: {
-                index: indexName,
-                knnBeta: {
-                  vector: queryEmbedding,
-                  path: 'embedding',
-                  k: Math.max(100, topK * 5),
-                },
-              },
-            },
-            { $limit: topK },
-            {
-              $project: {
-                _id: 0,
-                text: 1,
-                url: 1,
-                title: 1,
-                description: 1,
-                sourceFile: 1,
-                sourceBasename: 1,
-                sectionPath: 1,
-                nearestHeading: 1,
-                chunkIndex: 1,
-                tags: 1,
-                score: { $meta: 'searchScore' },
-              },
-            },
-          ];
-
-          console.info(
-            `[searchDocumentChunks] Trying Atlas Search with pipeline:`,
-            JSON.stringify(pipeline, null, 2)
-          );
-          const cursor = embeddingsCol.aggregate(pipeline);
-          const atlasResults: (EmbeddingChunkDocument & { score: number })[] = [];
-
-          for await (const doc of cursor) {
-            atlasResults.push(doc as EmbeddingChunkDocument & { score: number });
-          }
-
-          if (atlasResults.length > 0) {
-            console.info(
-              `[searchDocumentChunks] Atlas Search succeeded with index ${indexName}, found ${atlasResults.length} results`
-            );
-            results = atlasResults.map((doc) => ({
-              text: doc.text || '',
-              url: doc.url,
-              title: doc.title || doc.description,
-              sourceFile: doc.sourceFile || doc.sourceBasename || 'unknown',
-              sectionPath: doc.sectionPath,
-              nearestHeading: doc.nearestHeading,
-              score: doc.score || 0,
-            }));
-            searchMethod = `atlas-search(${indexName})`;
-            break;
-          }
-        } catch (atlasError) {
-          console.info(
-            `[searchDocumentChunks] Atlas Search failed with index ${indexName}:`,
-            atlasError
-          );
-        }
-
-        // Fallback to $vectorSearch (like the working example)
-        try {
-          const pipeline: Document[] = [
-            {
-              $vectorSearch: {
-                index: indexName,
-                queryVector: queryEmbedding,
-                path: 'embedding',
-                numCandidates: Math.max(100, topK * 5),
-                limit: topK,
-              },
-            },
-            {
-              $project: {
-                _id: 0,
-                text: 1,
-                url: 1,
-                title: 1,
-                description: 1,
-                sourceFile: 1,
-                sourceBasename: 1,
-                sectionPath: 1,
-                nearestHeading: 1,
-                chunkIndex: 1,
-                tags: 1,
-                score: { $meta: 'vectorSearchScore' },
-              },
-            },
-          ];
-
-          console.info(
-            `[searchDocumentChunks] Trying $vectorSearch with pipeline:`,
-            JSON.stringify(pipeline, null, 2)
-          );
-          const cursor = embeddingsCol.aggregate(pipeline);
-          const vectorResults: (EmbeddingChunkDocument & { score: number })[] = [];
-
-          for await (const doc of cursor) {
-            vectorResults.push(doc as EmbeddingChunkDocument & { score: number });
-          }
-
-          if (vectorResults.length > 0) {
-            console.info(
-              `[searchDocumentChunks] $vectorSearch succeeded with index ${indexName}, found ${vectorResults.length} results`
-            );
-            results = vectorResults.map((doc) => ({
-              text: doc.text || '',
-              url: doc.url,
-              title: doc.title || doc.description,
-              sourceFile: doc.sourceFile || doc.sourceBasename || 'unknown',
-              sectionPath: doc.sectionPath,
-              nearestHeading: doc.nearestHeading,
-              score: doc.score || 0,
-            }));
-            searchMethod = `vector-search(${indexName})`;
-            break;
-          }
-        } catch (vectorError) {
-          console.info(
-            `[searchDocumentChunks] $vectorSearch failed with index ${indexName}:`,
-            vectorError
-          );
-        }
-      } catch (error) {
-        console.info(
-          `[searchDocumentChunks] Both search methods failed with index ${indexName}:`,
-          error
-        );
-      }
-    }
-
-    console.info(`[searchDocumentChunks] Search completed using method: ${searchMethod}`);
-    console.info(`[searchDocumentChunks] Found ${results.length} total results`);
-
-    // Log details of found results
-    if (results.length > 0) {
-      console.info(`[searchDocumentChunks] Results summary:`);
-      results.forEach((chunk, index) => {
-        console.info(`[searchDocumentChunks] Chunk ${index + 1}:`, {
-          score: chunk.score?.toFixed(4),
-          sourceFile: chunk.sourceFile,
-          title: chunk.title,
-          url: chunk.url,
-          sectionPath: chunk.sectionPath,
-          nearestHeading: chunk.nearestHeading,
-          textLength: chunk.text?.length || 0,
-          textPreview: chunk.text?.substring(0, 200) + (chunk.text?.length > 200 ? '...' : ''),
-        });
-      });
-
-      console.info(`[searchDocumentChunks] Best match score: ${results[0]?.score?.toFixed(4)}`);
-      console.info(
-        `[searchDocumentChunks] Worst match score: ${results[results.length - 1]?.score?.toFixed(
-          4
-        )}`
-      );
+    if (featureFlags.debugRetrieval) {
+      console.info(`[searchDocumentChunks] Retrieved ${results.length} chunks, best score: ${results[0]?.score.toFixed(4)}`);
     }
 
     return results;
   } catch (error) {
-    console.error('[searchDocumentChunks] Vector search failed:', error);
+    console.error('[searchDocumentChunks] Vector search failed:', error instanceof Error ? error.message : 'Unknown error');
 
-    // Try a fallback approach - get some random documents for debugging
-    try {
-      console.info('[searchDocumentChunks] Attempting fallback: fetching sample documents');
-      const fallbackDocs = await embeddingsCol
-        .find({})
-        .limit(topK)
-        .project({
-          _id: 0,
-          text: 1,
-          url: 1,
-          title: 1,
-          sourceFile: 1,
-          sectionPath: 1,
-          nearestHeading: 1,
-        })
-        .toArray();
-
-      console.info(`[searchDocumentChunks] Fallback returned ${fallbackDocs.length} documents`);
-
-      return fallbackDocs.map((doc) => ({
-        text: doc.text || '',
-        url: doc.url,
-        title: doc.title,
-        sourceFile: doc.sourceFile || 'unknown',
-        sectionPath: doc.sectionPath,
-        nearestHeading: doc.nearestHeading,
-        score: 0, // No score available in fallback
-      }));
-    } catch (fallbackError) {
-      console.error('[searchDocumentChunks] Fallback also failed:', fallbackError);
+    // Increment circuit breaker
+    vectorSearchFailures++;
+    if (vectorSearchFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+      circuitBreakerUntil = Date.now() + CIRCUIT_BREAKER_DURATION_MS;
+      console.warn(`[searchDocumentChunks] Circuit breaker activated for ${CIRCUIT_BREAKER_DURATION_MS}ms`);
     }
 
     return [];
   }
 }
 
+function deduplicateAndClampChunks(chunks: DocumentChunk[]): DocumentChunk[] {
+  const maxChunks = envConfig.pipeline.maxContextChunks;
+  const maxChars = envConfig.pipeline.maxChunkChars;
+
+  // Deduplicate by (sourceFile, url)
+  const seen = new Set<string>();
+  const unique: DocumentChunk[] = [];
+
+  for (const chunk of chunks) {
+    const key = `${chunk.sourceFile}::${chunk.url || ''}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+
+      // Clamp text length
+      const clampedChunk = {
+        ...chunk,
+        text: chunk.text.length > maxChars
+          ? chunk.text.substring(0, maxChars) + '...'
+          : chunk.text
+      };
+
+      unique.push(clampedChunk);
+
+      if (unique.length >= maxChunks) {
+        break;
+      }
+    }
+  }
+
+  return unique;
+}
+
 async function generateExplanationWithLLM(
   question: NormalizedQuestion,
   documentChunks: DocumentChunk[]
 ): Promise<string> {
-  const openrouterApiKey = envConfig.pipeline.openrouterApiKey;
-  const model = envConfig.pipeline.openrouterModel;
+  return retryWithBackoff(async () => {
+    const openrouterApiKey = envConfig.pipeline.openrouterApiKey;
+    const model = envConfig.pipeline.openrouterModel;
 
-  console.info(`[generateExplanationWithLLM] Starting LLM generation with model: ${model}`);
-  console.info(`[generateExplanationWithLLM] Question: ${question.prompt.substring(0, 100)}...`);
-  console.info(`[generateExplanationWithLLM] Document chunks provided: ${documentChunks.length}`);
+    if (featureFlags.debugRetrieval) {
+      console.info(`[generateExplanationWithLLM] question=${hashText(question.prompt)}, chunks=${documentChunks.length}, model=${model}`);
+    }
 
-  // Create the correct answer text
-  const correctAnswerText = Array.isArray(question.answerIndex)
-    ? question.answerIndex
-        .map((idx) => `${String.fromCharCode(65 + idx)}. ${question.choices[idx]}`)
-        .join(', ')
-    : `${String.fromCharCode(65 + question.answerIndex)}. ${
-        question.choices[question.answerIndex]
-      }`;
+    // Create the correct answer text
+    const correctAnswerText = Array.isArray(question.answerIndex)
+      ? question.answerIndex
+          .map((idx) => `${String.fromCharCode(65 + idx)}. ${question.choices[idx]}`)
+          .join(', ')
+      : `${String.fromCharCode(65 + question.answerIndex)}. ${
+          question.choices[question.answerIndex]
+        }`;
 
-  console.info(`[generateExplanationWithLLM] Correct answer: ${correctAnswerText}`);
+    // Prepare context from document chunks with citation IDs
+    const contextSections = documentChunks
+      .map((chunk, index) => {
+        const header = chunk.nearestHeading || chunk.sectionPath || 'Documentation';
+        const source = chunk.title || chunk.sourceFile;
+        const citationId = `[${index + 1}]`;
+        return `### Context ${citationId}: ${header} (from ${source})\n${chunk.text}`;
+      })
+      .join('\n\n');
 
-  // Prepare context from document chunks with citation IDs
-  const contextSections = documentChunks
-    .map((chunk, index) => {
-      const header = chunk.nearestHeading || chunk.sectionPath || 'Documentation';
-      const source = chunk.title || chunk.sourceFile;
-      const citationId = `[${index + 1}]`;
-      const contextSection = `### Context ${citationId}: ${header} (from ${source})
-${chunk.text}`;
+    // Prepare available citations for the LLM
+    const availableCitations = documentChunks
+      .map((chunk, index) => {
+        const citationId = `[${index + 1}]`;
+        const title = chunk.title || chunk.sourceFile;
+        const url = chunk.url;
+        return `${citationId}: ${title}${url ? ` - ${url}` : ''}`;
+      })
+      .join('\n');
 
-      console.info(`[generateExplanationWithLLM] Context ${index + 1}:`, {
-        header,
-        source,
-        score: chunk.score,
-        textLength: chunk.text?.length || 0,
-        textPreview: chunk.text?.substring(0, 150) + (chunk.text?.length > 150 ? '...' : ''),
-        citationId,
-        hasUrl: !!chunk.url,
-      });
-
-      return contextSection;
-    })
-    .join('\n\n');
-
-  // Prepare available citations for the LLM
-  const availableCitations = documentChunks
-    .map((chunk, index) => {
-      const citationId = `[${index + 1}]`;
-      const title = chunk.title || chunk.sourceFile;
-      const url = chunk.url;
-      return `${citationId}: ${title}${url ? ` - ${url}` : ''}`;
-    })
-    .join('\n');
-
-  const systemPrompt = `You are an Exam Explanation Engine for software/technology topics.
+    const systemPrompt = `You are an Exam Explanation Engine for software/technology topics.
 
 TASK
 Given: (a) one multiple-choice or true/false question, (b) the correct answer, and (c) 1-N short documentation excerpts.
@@ -388,14 +306,14 @@ HARD RULES
   The provided documentation does not contain enough information to explain the answer.
 - Do NOT invent facts or rely on outside knowledge.
 - Do NOT reveal or restate the answer choices or the letter keys.
-- Do NOT mention “snippets,” “context,” or “I”.
+- Do NOT mention "snippets," "context," or "I".
 - Use clear headings only if helpful (e.g., **Why this is correct**).
 - Prefer quotes or paraphrases anchored to the excerpts.
-- Phrases like “according to the documentation,” “the docs state,” “as per …,” “the excerpt shows,” etc. You present **direct explanations** supported implicitly by the facts, not by referencing *where* they came from.
-- Instead of saying “as described in the documentation,” just use the documentation's content as part of your explanation.
+- Phrases like "according to the documentation," "the docs state," "as per …," "the excerpt shows," etc. You present **direct explanations** supported implicitly by the facts, not by referencing *where* they came from.
+- Instead of saying "as described in the documentation," just use the documentation's content as part of your explanation.
 - Use assertive yet grounded language
-   * Use active voice: “sitecore.json defines…” rather than “is defined by…”
-   * Avoid signal phrases like “the document says” or “the docs show.”
+   * Use active voice: "sitecore.json defines…" rather than "is defined by…"
+   * Avoid signal phrases like "the document says" or "the docs show."
 - Make your explanation self-contained
    Phrase your explanation so it doesn't rely on reminding the reader of the source. The support is in the logic and evidence, not in mentioning where it came from.
 
@@ -415,7 +333,7 @@ _Sources:_
 - [Source Title 2 | Website Docs](URL2) (if you used citation [2])
 - etc.`;
 
-  const userPrompt = `Question:
+    const userPrompt = `Question:
 ${question.prompt}
 
 Correct answer:
@@ -431,153 +349,93 @@ Instructions:
 Explain why the correct answer is correct using ONLY the excerpts above.
 - Keep to 80-160 words.
 - Include one to two inline citations by linking directly to the most relevant excerpt URLs.
-- Do not mention option letters, option text, “excerpts,” or “context.”
+- Do not mention option letters, option text, "excerpts," or "context."
 - Do not engage in conversation or add greetings.
 `;
 
-  console.info(`[generateExplanationWithLLM] System prompt length: ${systemPrompt.length}`);
-  console.info(`[generateExplanationWithLLM] User prompt length: ${userPrompt.length}`);
-  console.info(
-    `[generateExplanationWithLLM] Total context length: ${systemPrompt.length + userPrompt.length}`
-  );
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${openrouterApiKey}`,
+        'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3000',
+        'X-Title': 'Study Utility - Question Explanation Generator',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.1,
+        max_tokens: 1000,
+      }),
+    });
 
-  console.info(`[generateExplanationWithLLM] Available citations provided to LLM:`);
-  console.info(availableCitations);
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error ${response.status}`);
+    }
 
-  if (documentChunks.length === 0) {
-    console.warn(
-      '[generateExplanationWithLLM] No document chunks provided - LLM will generate explanation without context'
-    );
-  }
+    const json = await response.json();
+    const explanation = json.choices?.[0]?.message?.content;
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${openrouterApiKey}`,
-      'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3000',
-      'X-Title': 'Study Utility - Question Explanation Generator',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.1,
-      max_tokens: 1000,
-    }),
+    if (!explanation || typeof explanation !== 'string') {
+      throw new Error('Invalid explanation response');
+    }
+
+    return explanation;
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenRouter API error ${response.status}: ${errorText}`);
-  }
-
-  const json = await response.json();
-  const explanation = json.choices?.[0]?.message?.content;
-
-  if (!explanation) {
-    throw new Error('No explanation generated by LLM');
-  }
-
-  return explanation;
 }
 
 export async function generateQuestionExplanation(
   question: NormalizedQuestion
 ): Promise<ExplanationResult> {
-  console.info(
-    `[generateQuestionExplanation] Starting explanation generation for question: ${question.id}`
-  );
-  console.info(`[generateQuestionExplanation] Question type: ${question.questionType}`);
-  console.info(
-    `[generateQuestionExplanation] Question prompt: ${question.prompt.substring(0, 200)}${
-      question.prompt.length > 200 ? '...' : ''
-    }`
-  );
+  const questionHash = hashText(question.id);
+
+  if (featureFlags.debugRetrieval) {
+    console.info(`[generateQuestionExplanation] Starting for question ${questionHash}`);
+  }
 
   try {
     // Create embedding for the question text
     const questionText = `${question.prompt} ${question.choices.join(' ')}`;
-    console.info(
-      `[generateQuestionExplanation] Full question text for embedding (${
-        questionText.length
-      } chars): ${questionText.substring(0, 300)}${questionText.length > 300 ? '...' : ''}`
-    );
-
-    console.info('[generateQuestionExplanation] Creating embedding for question text...');
     const queryEmbedding = await createEmbedding(questionText);
 
-    if (!queryEmbedding || queryEmbedding.length === 0) {
-      throw new Error('Failed to create question embedding');
+    if (featureFlags.debugRetrieval) {
+      console.info(`[generateQuestionExplanation] Created embedding (${queryEmbedding.length}d) for question ${questionHash}`);
     }
 
-    console.info(
-      `[generateQuestionExplanation] Successfully created embedding with ${queryEmbedding.length} dimensions`
-    );
-
     // Search for relevant document chunks
-    console.info('[generateQuestionExplanation] Searching for relevant document chunks...');
-    const documentChunks = await searchDocumentChunks(queryEmbedding, 5);
+    const documentChunks = await searchDocumentChunks(queryEmbedding);
 
-    console.info(`[generateQuestionExplanation] Found ${documentChunks.length} document chunks`);
+    // Deduplicate and clamp chunks
+    const processedChunks = deduplicateAndClampChunks(documentChunks);
 
-    if (documentChunks.length > 0) {
-      console.info('[generateQuestionExplanation] Document chunks summary:');
-      documentChunks.forEach((chunk, index) => {
-        console.info(
-          `  Chunk ${index + 1}: ${chunk.sourceFile} (score: ${chunk.score?.toFixed(4)}, length: ${
-            chunk.text?.length
-          })`
-        );
-      });
-    } else {
-      console.warn(
-        '[generateQuestionExplanation] No relevant document chunks found - proceeding with LLM-only explanation'
-      );
+    if (featureFlags.debugRetrieval) {
+      console.info(`[generateQuestionExplanation] Processed ${processedChunks.length} chunks (from ${documentChunks.length})`);
     }
 
     // Generate explanation using LLM
-    console.info('[generateQuestionExplanation] Generating explanation with LLM...');
-    const explanation = await generateExplanationWithLLM(question, documentChunks);
-
-    console.info(
-      `[generateQuestionExplanation] LLM generated explanation (${
-        explanation.length
-      } chars): ${explanation.substring(0, 200)}${explanation.length > 200 ? '...' : ''}`
-    );
+    const explanation = await generateExplanationWithLLM(question, processedChunks);
 
     // Extract unique sources
-    const sources = documentChunks
-      .filter(
-        (chunk, index, arr) =>
-          arr.findIndex((c) => c.sourceFile === chunk.sourceFile && c.url === chunk.url) === index
-      )
-      .map((chunk) => ({
-        url: chunk.url,
-        title: chunk.title,
-        sourceFile: chunk.sourceFile,
-        sectionPath: chunk.sectionPath,
-      }));
+    const sources = processedChunks.map((chunk) => ({
+      url: chunk.url,
+      title: chunk.title,
+      sourceFile: chunk.sourceFile,
+      sectionPath: chunk.sectionPath,
+    }));
 
-    console.info(
-      `[generateQuestionExplanation] Extracted ${sources.length} unique sources:`,
-      sources.map((s) => ({ sourceFile: s.sourceFile, url: s.url, title: s.title }))
-    );
-
-    console.info('[generateQuestionExplanation] Successfully completed explanation generation');
+    if (featureFlags.debugRetrieval) {
+      console.info(`[generateQuestionExplanation] Generated explanation (${explanation.length} chars) with ${sources.length} sources`);
+    }
 
     return {
       explanation,
       sources,
     };
   } catch (error) {
-    console.error('[generateQuestionExplanation] Error occurred:', error);
-    console.error(
-      '[generateQuestionExplanation] Error stack:',
-      error instanceof Error ? error.stack : 'No stack trace'
-    );
+    console.error(`[generateQuestionExplanation] Failed for question ${questionHash}:`, error instanceof Error ? error.message : 'Unknown error');
     throw new Error(
       `Failed to generate explanation: ${error instanceof Error ? error.message : 'Unknown error'}`
     );

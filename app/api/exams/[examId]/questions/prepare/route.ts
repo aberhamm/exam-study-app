@@ -62,8 +62,7 @@ export async function POST(request: Request, context: RouteParams) {
     pipeline.push({ $sample: { size: input.questionCount } });
     pipeline.push({
       $project: {
-        _id: 0,
-        id: 1,
+        _id: 1,
         examId: 1,
         question: 1,
         options: 1,
@@ -78,7 +77,7 @@ export async function POST(request: Request, context: RouteParams) {
 
     const docs = await col.aggregate(pipeline).toArray();
     const external: ExternalQuestion[] = docs.map((d) => ({
-      id: d.id,
+      id: d._id.toString(),
       question: d.question,
       options: d.options,
       answer: d.answer,
