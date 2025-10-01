@@ -29,6 +29,8 @@ export async function GET(request: Request, context: RouteParams) {
 
     const url = new URL(request.url);
     const forceRegenerate = url.searchParams.get('regenerate') === 'true';
+    const thresholdParam = url.searchParams.get('threshold');
+    const threshold = thresholdParam ? Math.max(0.8, Math.min(0.99, Number(thresholdParam))) : 0.85;
 
     const db = await getDb();
     const clustersCol = db.collection<ClusterDocument>(getQuestionClustersCollectionName());
@@ -53,7 +55,6 @@ export async function GET(request: Request, context: RouteParams) {
     }
 
     // Generate new clusters
-    const threshold = 0.85;
     const minClusterSize = 2;
 
     const embCol = db.collection<Document>(getQuestionEmbeddingsCollectionName());

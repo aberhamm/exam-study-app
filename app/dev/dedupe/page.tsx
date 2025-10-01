@@ -40,6 +40,7 @@ export default function DedupeDevPage() {
   const [view, setView] = useState<'all' | 'review' | 'clusters'>('all');
   const [clusters, setClusters] = useState<QuestionCluster[]>([]);
   const [clustersLoading, setClustersLoading] = useState(false);
+  const [clusterThreshold, setClusterThreshold] = useState(0.90);
   const [editing, setEditing] = useState<{ which: 'A' | 'B'; q: NormalizedQuestion } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -171,14 +172,31 @@ export default function DedupeDevPage() {
     setClustersLoading(true);
     setError(null);
     try {
-      const url = regenerate
-        ? `/api/exams/${encodeURIComponent(examId)}/dedupe/clusters?regenerate=true`
-        : `/api/exams/${encodeURIComponent(examId)}/dedupe/clusters`;
-      const resp = await fetch(url, { cache: 'no-store' });
-      const json = await resp.json();
-      if (!resp.ok) throw new Error(typeof json?.error === 'string' ? json.error : `Fetch failed (${resp.status})`);
-      const items: QuestionCluster[] = Array.isArray(json?.clusters) ? json.clusters : [];
-      setClusters(items);
+      if (regenerate) {
+        // Use POST for regeneration with custom threshold
+        const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/dedupe/clusters`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            threshold: clusterThreshold,
+            minClusterSize: 2
+          }),
+          cache: 'no-store'
+        });
+        const json = await resp.json();
+        if (!resp.ok) throw new Error(typeof json?.error === 'string' ? json.error : `Fetch failed (${resp.status})`);
+        const items: QuestionCluster[] = Array.isArray(json?.clusters) ? json.clusters : [];
+        setClusters(items);
+      } else {
+        // Use GET for loading existing clusters
+        const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/dedupe/clusters`, {
+          cache: 'no-store'
+        });
+        const json = await resp.json();
+        if (!resp.ok) throw new Error(typeof json?.error === 'string' ? json.error : `Fetch failed (${resp.status})`);
+        const items: QuestionCluster[] = Array.isArray(json?.clusters) ? json.clusters : [];
+        setClusters(items);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load clusters');
     } finally {
@@ -382,14 +400,14 @@ export default function DedupeDevPage() {
                 <input
                   id="cluster-threshold"
                   type="number"
-                  min={0.7}
-                  max={1}
+                  min={0.8}
+                  max={0.99}
                   step={0.01}
-                  value={0.85}
-                  readOnly
-                  className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm"
+                  value={clusterThreshold}
+                  onChange={(e) => setClusterThreshold(Math.min(0.99, Math.max(0.8, Number(e.target.value))))}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
-                <p className="text-xs text-muted-foreground">Min similarity for grouping (fixed at 0.85)</p>
+                <p className="text-xs text-muted-foreground">Min similarity for grouping (0.80–0.99) - higher = tighter clusters</p>
               </div>
             )}
           </div>
