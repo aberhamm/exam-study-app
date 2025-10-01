@@ -55,6 +55,31 @@ export const ExternalQuestionsImportZ = z.object({
   questions: z.array(ExternalQuestionZ).min(1, 'questions array must include at least one question'),
 });
 
+export const CompetencyZ = z.object({
+  id: z.string().min(1),
+  examId: z.string().min(1),
+  title: z.string().min(1).max(200),
+  description: z.string().min(1),
+  examPercentage: z.number().min(0).max(100),
+  embedding: z.array(z.number()).optional(),
+  embeddingModel: z.string().optional(),
+  embeddingUpdatedAt: z.date().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const CompetencyCreateZ = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().min(1),
+  examPercentage: z.number().min(0).max(100),
+});
+
+export const CompetencyUpdateZ = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().min(1).optional(),
+  examPercentage: z.number().min(0).max(100).optional(),
+});
+
 // Utility: non-throwing structural coercion from loose input into ExamDetail-like shape
 // Intended to be followed by ExamDetailZ.parse(...) for strict validation.
 export function coerceExamDetail(input: unknown): ExamDetail {

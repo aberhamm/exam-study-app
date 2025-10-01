@@ -65,8 +65,16 @@ export const mongoConfig = {
     return process.env.MONGODB_QUESTION_CLUSTERS_COLLECTION || 'question_clusters';
   },
 
+  get examCompetenciesCollection(): string {
+    return process.env.MONGODB_EXAM_COMPETENCIES_COLLECTION || 'exam_competencies';
+  },
+
   get questionEmbeddingsVectorIndex(): string {
     return process.env.MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX || 'question_embeddings';
+  },
+
+  get competenciesVectorIndex(): string {
+    return process.env.MONGODB_COMPETENCIES_VECTOR_INDEX || 'competencies_vector_index';
   },
 } as const;
 

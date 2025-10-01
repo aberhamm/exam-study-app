@@ -64,16 +64,19 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
             Search
           </Link>
           <Link
-            href="/dev/embeddings"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            Embeddings
-          </Link>
-          <Link
             href="/dev/dedupe"
             className="text-sm text-muted-foreground hover:text-foreground"
           >
             Dedupe
+          </Link>
+          <Link
+            href="/dev/competencies"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            Competencies
+          </Link>
+          <Link href="/dev/docs" className="text-sm text-muted-foreground hover:text-foreground">
+            Docs
           </Link>
         </div>
       ) : null,

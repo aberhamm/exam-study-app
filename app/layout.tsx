@@ -28,10 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // Keep SSR and client in sync for theme class. A tiny pre-hydration
-    // script in <head> sets the initial `dark` class before React hydrates
-    // to prevent flashes and root-level hydration mismatches.
-    <html lang="en" className="h-full">
+    // suppressHydrationWarning is needed because theme script modifies className before React hydrates
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
         {/* No-flash theme script: runs before hydration to set html.dark */}
         <Script id="theme-mode" strategy="beforeInteractive">

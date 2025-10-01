@@ -10,6 +10,7 @@ export type QuestionDocument = {
   explanation?: string;
   explanationGeneratedByAI?: boolean;
   study?: StudyLink[];
+  competencyIds?: string[];
   createdAt: Date;
   updatedAt: Date;
   embedding?: number[];

@@ -49,6 +49,33 @@
   - Update configuration documentation
   - Ensure proper setup instructions for new deployments
 
+### Exam Competencies System
+- [x] **Implement exam competencies collection and infrastructure**
+  - ✅ Database schema with embeddings support
+  - ✅ API endpoints for CRUD operations
+  - ✅ Vector search for semantic competency assignment
+  - ✅ Scripts for embedding and auto-assignment
+  - ✅ Management UI at /dev/competencies
+
+- [ ] **Integrate competencies into question preparation**
+  - Filter questions by competency in exam preparation
+  - Ensure balanced competency distribution
+  - Display competency assignments in question views
+
+### UI/UX Improvements
+- [ ] **Implement react-markdown to enable editing markdown better**
+  - Improve markdown editing experience across the application
+  - Better preview and editing capabilities
+
+- [ ] **Create exam control panel for editing config/messages**
+  - Centralized interface for exam configuration management
+  - Ability to edit exam messages and settings
+
+- [ ] **Break sources out of explanation and create relation between question and document chunk**
+  - Remove embedded sources from explanation text
+  - Create proper relation between questions and document chunks
+  - Display sources in a prettier, more structured way using URLs from document chunks
+
 ## 🎯 Future Enhancements
 
 ### Clustering Improvements

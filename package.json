@@ -17,7 +17,10 @@
     "create:vector-index": "tsx scripts/create-vector-index.ts",
     "check:vector-search": "tsx scripts/check-vector-search.ts",
     "sync:questions": "tsx scripts/sync-questions-from-legacy.ts",
-    "remove:legacy-questions": "tsx scripts/remove-legacy-embedded-questions.ts"
+    "remove:legacy-questions": "tsx scripts/remove-legacy-embedded-questions.ts",
+    "create:competencies-index": "tsx scripts/create-competencies-vector-index.ts",
+    "embed:competencies": "tsx scripts/embed-competencies.ts",
+    "assign:competencies": "tsx scripts/assign-competencies-to-questions.ts"
   },
   "dependencies": {
     "@next/env": "15.5.2",
@@ -27,6 +30,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.543.0",
     "mongodb": "^6.20.0",
+    "nanoid": "^5.1.6",
     "next": "15.5.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
