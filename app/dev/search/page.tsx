@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -20,6 +20,7 @@ type ApiSearchResult = {
     question: string;
     options: { A: string; B: string; C: string; D: string; E?: string };
     answer: 'A' | 'B' | 'C' | 'D' | 'E' | ('A' | 'B' | 'C' | 'D' | 'E')[];
+    question_type: 'single' | 'multiple';
     explanation?: string;
   };
 };
@@ -109,7 +110,9 @@ export default function SearchDevPage() {
       });
       const json = await resp.json();
       if (!resp.ok) {
-        throw new Error(typeof json?.error === 'string' ? json.error : `Search failed (${resp.status})`);
+        throw new Error(
+          typeof json?.error === 'string' ? json.error : `Search failed (${resp.status})`
+        );
       }
       const items = Array.isArray(json?.results) ? (json.results as ApiSearchResult[]) : [];
       setResults(items);
@@ -127,7 +130,16 @@ export default function SearchDevPage() {
   };
 
   const openEdit = (item: ApiSearchResult) => {
-    const [norm] = normalizeQuestions([{ id: item.question.id, question: item.question.question, options: item.question.options, answer: item.question.answer, question_type: item.question.question_type, explanation: item.question.explanation } as ExternalQuestion]);
+    const [norm] = normalizeQuestions([
+      {
+        id: item.question.id,
+        question: item.question.question,
+        options: item.question.options,
+        answer: item.question.answer,
+        question_type: item.question.question_type,
+        explanation: item.question.explanation,
+      } as ExternalQuestion,
+    ]);
     setEditing(norm);
     setSaveError(null);
     setEditOpen(true);
@@ -149,23 +161,35 @@ export default function SearchDevPage() {
           ...(updated.choices[4] ? { E: updated.choices[4] } : {}),
         },
         answer: Array.isArray(updated.answerIndex)
-          ? (updated.answerIndex.map((i) => (['A','B','C','D','E'][i] as 'A'|'B'|'C'|'D'|'E')) as ('A'|'B'|'C'|'D'|'E')[])
-          : (['A','B','C','D','E'][updated.answerIndex] as 'A'|'B'|'C'|'D'|'E'),
+          ? (updated.answerIndex.map(
+              (i) => ['A', 'B', 'C', 'D', 'E'][i] as 'A' | 'B' | 'C' | 'D' | 'E'
+            ) as ('A' | 'B' | 'C' | 'D' | 'E')[])
+          : (['A', 'B', 'C', 'D', 'E'][updated.answerIndex] as 'A' | 'B' | 'C' | 'D' | 'E'),
         question_type: updated.questionType,
         explanation: updated.explanation,
         study: updated.study,
       };
-      const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/questions/${encodeURIComponent(updated.id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        cache: 'no-store',
-      });
+      const resp = await fetch(
+        `/api/exams/${encodeURIComponent(examId)}/questions/${encodeURIComponent(updated.id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          cache: 'no-store',
+        }
+      );
       const json = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(typeof json?.error === 'string' ? json.error : `Save failed (${resp.status})`);
+      if (!resp.ok)
+        throw new Error(
+          typeof json?.error === 'string' ? json.error : `Save failed (${resp.status})`
+        );
 
       // Update results inline
-      setResults((prev) => prev.map((r) => (r.question.id === updated.id ? { ...r, question: { ...r.question, ...json } } : r)));
+      setResults((prev) =>
+        prev.map((r) =>
+          r.question.id === updated.id ? { ...r, question: { ...r.question, ...json } } : r
+        )
+      );
       setEditOpen(false);
       setEditing(null);
     } catch (e) {
@@ -181,7 +205,9 @@ export default function SearchDevPage() {
       <div className="space-y-6">
         <Card className="p-6">
           <h2 className="text-2xl font-semibold mb-2">Search Disabled</h2>
-          <p className="text-sm text-muted-foreground">This tool is available only in development.</p>
+          <p className="text-sm text-muted-foreground">
+            This tool is available only in development.
+          </p>
         </Card>
       </div>
     );
@@ -192,13 +218,16 @@ export default function SearchDevPage() {
       <Card className="p-6">
         <h2 className="text-2xl font-semibold mb-2">Semantic Question Search (Dev)</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Query questions via vector similarity. Requires populated embeddings and a MongoDB Atlas vector index.
+          Query questions via vector similarity. Requires populated embeddings and a MongoDB Atlas
+          vector index.
         </p>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="exam-select">Exam</label>
+              <label className="text-sm font-medium" htmlFor="exam-select">
+                Exam
+              </label>
               <select
                 id="exam-select"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -206,7 +235,9 @@ export default function SearchDevPage() {
                 onChange={(e) => setExamId(e.target.value)}
                 disabled={examsLoading}
               >
-                {exams.length === 0 && <option value="">{examsLoading ? 'Loading exams…' : 'No exams found'}</option>}
+                {exams.length === 0 && (
+                  <option value="">{examsLoading ? 'Loading exams…' : 'No exams found'}</option>
+                )}
                 {exams.map((exam) => (
                   <option key={exam.examId} value={exam.examId}>
                     {exam.examTitle ? `${exam.examTitle} (${exam.examId})` : exam.examId}
@@ -217,7 +248,9 @@ export default function SearchDevPage() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium" htmlFor="query">Query</label>
+              <label className="text-sm font-medium" htmlFor="query">
+                Query
+              </label>
               <input
                 id="query"
                 type="text"
@@ -227,7 +260,9 @@ export default function SearchDevPage() {
                 onChange={(e) => setQuery(e.target.value)}
               />
               <div className="flex items-center gap-3">
-                <label className="text-sm" htmlFor="topk">Top K</label>
+                <label className="text-sm" htmlFor="topk">
+                  Top K
+                </label>
                 <input
                   id="topk"
                   type="number"
@@ -237,7 +272,9 @@ export default function SearchDevPage() {
                   onChange={(e) => setTopK(Math.min(100, Math.max(1, Number(e.target.value))))}
                   className="w-20 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
-                <Button type="button" variant="ghost" onClick={handleTrySample}>Try sample</Button>
+                <Button type="button" variant="ghost" onClick={handleTrySample}>
+                  Try sample
+                </Button>
               </div>
             </div>
           </div>
@@ -264,14 +301,20 @@ export default function SearchDevPage() {
           </div>
         )}
         {results.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No results yet. Submit a query to see matches.</p>
+          <p className="text-sm text-muted-foreground">
+            No results yet. Submit a query to see matches.
+          </p>
         ) : (
           <ul className="space-y-4">
             {results.map((item) => (
               <li key={item.question.id} className="rounded-md border border-border p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">ID: <span className="font-mono">{item.question.id}</span></p>
-                  <p className="text-sm">Score: <span className="font-mono">{item.score.toFixed(4)}</span></p>
+                  <p className="text-sm text-muted-foreground">
+                    ID: <span className="font-mono">{item.question.id}</span>
+                  </p>
+                  <p className="text-sm">
+                    Score: <span className="font-mono">{item.score.toFixed(4)}</span>
+                  </p>
                 </div>
                 <h4 className="mt-2 font-medium">{item.question.question}</h4>
                 <div className="mt-2 text-sm">
@@ -285,10 +328,15 @@ export default function SearchDevPage() {
                   </ul>
                 </div>
                 {item.question.explanation && (
-                  <p className="mt-2 text-sm text-muted-foreground"><span className="font-medium text-foreground">Explanation:</span> {item.question.explanation}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">Explanation:</span>{' '}
+                    {item.question.explanation}
+                  </p>
                 )}
                 <div className="mt-3 flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => openEdit(item)}>Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                    Edit
+                  </Button>
                 </div>
               </li>
             ))}

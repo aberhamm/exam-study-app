@@ -1,11 +1,11 @@
-"use client";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { QuizApp } from "@/components/QuizApp";
-import { usePreparedQuestions } from "@/app/usePreparedQuestions";
-import { loadExamState, isExamStateValid, clearExamState, type ExamState } from "@/lib/exam-state";
-import { loadTestSettings, type TestSettings } from "@/lib/test-settings";
-import ExamSkeleton from "@/components/ExamSkeleton";
+'use client';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { QuizApp } from '@/components/QuizApp';
+import { usePreparedQuestions } from '@/app/usePreparedQuestions';
+import { loadExamState, isExamStateValid, clearExamState, type ExamState } from '@/lib/exam-state';
+import { loadTestSettings, type TestSettings } from '@/lib/test-settings';
+import ExamSkeleton from '@/components/ExamSkeleton';
 
 type Props = {
   examId: string;
@@ -42,7 +42,11 @@ export default function ExamClient({ examId, examTitle }: Props) {
     }
     return loadTestSettings();
   });
-  const { data: preparedData, error: preparedError, loading: preparedLoading } = usePreparedQuestions(examId, testSettings, { enabled: enabledFetch });
+  const {
+    data: preparedData,
+    error: preparedError,
+    loading: preparedLoading,
+  } = usePreparedQuestions(examId, testSettings, { enabled: enabledFetch });
 
   // Ensure initial SSR/client render matches by showing skeleton until mounted
   useEffect(() => {
@@ -90,13 +94,13 @@ export default function ExamClient({ examId, examTitle }: Props) {
   const handleBackToSettings = () => {
     try {
       clearExamState();
-      router.push("/");
+      router.push('/');
     } catch {}
   };
 
   // Show skeleton while loading questions for a fresh session
   if (!initialExamState && preparedLoading) {
-    return <ExamSkeleton examTitle={initialExamState?.examTitle ?? examTitle} />;
+    return <ExamSkeleton examTitle={examTitle} />;
   }
   if (preparedError) {
     return (
@@ -116,7 +120,7 @@ export default function ExamClient({ examId, examTitle }: Props) {
   // haven't mounted yet, keep showing the skeleton so server and client
   // render the same markup.
   if (!mounted || (!initialExamState && (!preparedQuestions || preparedQuestions.length === 0))) {
-    return <ExamSkeleton examTitle={initialExamState?.examTitle ?? examTitle} />;
+    return <ExamSkeleton examTitle={examTitle} />;
   }
 
   return (

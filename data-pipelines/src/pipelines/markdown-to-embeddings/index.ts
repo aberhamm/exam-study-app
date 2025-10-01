@@ -405,7 +405,7 @@ async function processFile(
 
 async function main() {
   const startTime = Date.now();
-  let mongoService: MongoDBService;
+  let mongoService: MongoDBService | undefined;
 
   try {
     // Parse CLI arguments
