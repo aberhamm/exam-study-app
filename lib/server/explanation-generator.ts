@@ -372,69 +372,68 @@ ${chunk.text}`;
     })
     .join('\n');
 
-  const systemPrompt = `You are an "Exam Explanation Engine" specializing in explaining technical concepts and answering questions about software and technology topics.
+  const systemPrompt = `You are an Exam Explanation Engine for software/technology topics.
 
-You will be given a multiple-choice question, the correct answer, and relevant documentation excerpts with citation IDs.
+TASK
+Given: (a) one multiple-choice or true/false question, (b) the correct answer, and (c) 1-N short documentation excerpts.
+Output a concise, instructional explanation in Markdown that:
+1) teaches why the provided answer is correct,
+2) uses ONLY the provided documentation as evidence,
+3) includes at most TWO inline citations (links) to the most relevant excerpts,
+4) stays within 120-200 words,
+5) contains no chit-chat, no follow-ups, no greetings, no meta-commentary.
 
-Your task is to:
-1. Explain why the correct answer is correct based on the provided documentation
-2. Include the MOST RELEVANT citation links directly in your explanation using markdown links
-3. Choose only the 2-3 most relevant citations that directly support your explanation
-4. Format citations as markdown links: [Link text](URL) - only include if URL is available
-5. Keep the explanation concise but thorough
-6. END your explanation with a "Sources:" section listing all the sources you used
-7. If the documentation doesn't contain enough information, just say "The provided documentation does not contain enough information to explain the answer."
+HARD RULES
+- If the excerpts are insufficient to justify the answer, output exactly:
+  The provided documentation does not contain enough information to explain the answer.
+- Do NOT invent facts or rely on outside knowledge.
+- Do NOT reveal or restate the answer choices or the letter keys.
+- Do NOT mention “snippets,” “context,” or “I”.
+- Use clear headings only if helpful (e.g., **Why this is correct**).
+- Prefer quotes or paraphrases anchored to the excerpts.
+- Phrases like “according to the documentation,” “the docs state,” “as per …,” “the excerpt shows,” etc. You present **direct explanations** supported implicitly by the facts, not by referencing *where* they came from.
+- Instead of saying “as described in the documentation,” just use the documentation's content as part of your explanation.
+- Use assertive yet grounded language
+   * Use active voice: “sitecore.json defines…” rather than “is defined by…”
+   * Avoid signal phrases like “the document says” or “the docs show.”
+- Make your explanation self-contained
+   Phrase your explanation so it doesn't rely on reminding the reader of the source. The support is in the logic and evidence, not in mentioning where it came from.
 
-IMPORTANT CITATION RULES:
-- Only cite sources that directly support the explanation you're providing
-- Use the citation ID (e.g., [1], [2]) to reference specific documentation excerpts
-- Include actual clickable links in markdown format when URLs are available
-- Place citations naturally within the explanation text
-- ALWAYS end with a "Sources:" section that lists the actual sources you referenced
+FORMAT
+- Markdown only. One paragraph so simpler questions; three short paragraphs max. Breaking up long paragraphs is preferred.
+- At least 1-2 inline links to the excerpts you judge most relevant.
+- If the excerpt did not help, do not cite it.
+- If the answer is justified by common knowledge, do not cite any excerpts.
+- If the answer is ambiguous, explain the ambiguity without citing excerpts.
+
 
 SOURCES SECTION FORMAT:
 End your explanation with:
 
 **Sources:**
-- [Source Title 1](URL1) (if you used citation [1])
-- [Source Title 2](URL2) (if you used citation [2])
-- etc.
+- [Source Title 1 | Website Name](URL1) (if you used citation [1])
+- [Source Title 2 | Website Docs](URL2) (if you used citation [2])
+- etc.`;
 
-Only include sources in the Sources section that you actually referenced in your explanation.
+  const userPrompt = `Question:
+${question.prompt}
 
-Write your explanation as if you're teaching someone who wants to understand the concept, not just memorize the answer.`;
+Correct answer:
+${correctAnswerText}
 
-  const userPrompt = `Question: ${question.prompt}
-
-Answer choices:
-${question.choices
-  .map((choice, index) => `${String.fromCharCode(65 + index)}. ${choice}`)
-  .join('\n')}
-
-Correct answer: ${correctAnswerText}
-
-Relevant documentation:
+Relevant documentation excerpts (each excerpt may include a URL):
 ${contextSections}
 
 Available citations (include as markdown links when relevant):
 ${availableCitations}
 
-Please explain why the correct answer is correct using the provided documentation. Include the most relevant citations as clickable markdown links within your explanation.
-
-**Requirements:**
-- Include 2-3 most relevant citation links directly in the explanation text
-- Use markdown link format: [Description](URL) for sources with URLs
-- END with a "Sources:" section listing all sources you actually used
-- Do not add greetings, commentary, or ask follow-ups
-- Focus only on explaining why the answer is correct
-
-**Example format:**
-[Your explanation here with inline citations]
-e.g. The publishing pipeline in Content Management systems performs several tasks to ensure an accurate snapshot of content is available for publishing from the Content Management instance. These tasks include calculating additional entities to publish, calculating dependencies, and resolving dependencies. These steps are crucial for maintaining the integrity and consistency of the published content.
-[Your explanation for why the other answer choices are incorrect, if applicable]
-**Sources:**
-- [Source Title | Website Title](URL)
-- [Documentation Page Source | Official Documentation](URL)`;
+Instructions:
+Explain why the correct answer is correct using ONLY the excerpts above.
+- Keep to 80-160 words.
+- Include one to two inline citations by linking directly to the most relevant excerpt URLs.
+- Do not mention option letters, option text, “excerpts,” or “context.”
+- Do not engage in conversation or add greetings.
+`;
 
   console.info(`[generateExplanationWithLLM] System prompt length: ${systemPrompt.length}`);
   console.info(`[generateExplanationWithLLM] User prompt length: ${userPrompt.length}`);
