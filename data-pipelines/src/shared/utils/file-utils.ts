@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, renameSync } from 'fs';
 import { dirname, join, extname, basename } from 'path';
 
 export function readMarkdownFile(filePath: string): string {
@@ -61,7 +61,7 @@ export function findMarkdownFiles(inputPath: string, supportedExtensions: string
     }
 
     if (markdownFiles.length === 0) {
-      throw new Error(`No markdown files found in directory: ${inputPath}`);
+      throw new Error(`No input files found in directory: ${inputPath}`);
     }
 
     // Sort files alphabetically for consistent processing order
@@ -69,4 +69,60 @@ export function findMarkdownFiles(inputPath: string, supportedExtensions: string
   }
 
   throw new Error(`Input path is neither a file nor a directory: ${inputPath}`);
+}
+
+export function readJsonMarkdownFile(
+  filePath: string,
+  field: string = 'markdown'
+): { markdown: string; meta: Record<string, unknown> } {
+  if (!existsSync(filePath)) {
+    throw new Error(`Input file not found: ${filePath}`);
+  }
+
+  const content = readFileSync(filePath, 'utf-8');
+  if (!content.trim()) {
+    throw new Error(`Input file is empty: ${filePath}`);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new Error(`Invalid JSON in file: ${filePath}`);
+  }
+
+  if (typeof parsed !== 'object' || parsed === null) {
+    throw new Error(`JSON root must be an object: ${filePath}`);
+  }
+
+  const obj = parsed as Record<string, unknown>;
+  const value = obj[field];
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`Missing or empty '${field}' field in JSON: ${filePath}`);
+  }
+
+  const meta: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (key === field) continue;
+    meta[key] = val as unknown;
+  }
+
+  return { markdown: value, meta };
+}
+
+export function moveFileToDir(filePath: string, destDir: string): string {
+  if (!existsSync(destDir)) {
+    mkdirSync(destDir, { recursive: true });
+  }
+  const base = basename(filePath);
+  const ext = extname(base);
+  const name = base.slice(0, base.length - ext.length);
+  let destPath = join(destDir, base);
+  let counter = 1;
+  while (existsSync(destPath)) {
+    destPath = join(destDir, `${name}-processed-${counter}${ext}`);
+    counter += 1;
+  }
+  renameSync(filePath, destPath);
+  return destPath;
 }

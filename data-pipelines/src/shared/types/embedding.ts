@@ -20,10 +20,17 @@ export interface EmbeddingDocument {
   metadata?: {
     title?: string;
     description?: string;
+    url?: string;
     tags?: string[];
     createdAt: string;
     model: string;
     dimensions: number;
+    sourceBasename?: string;
+    sourceMeta?: Record<string, unknown>;
+    contentHash?: string;
+    groupId?: string;
+    headings?: string[];
+    sectionPaths?: string[];
   };
 }
 
@@ -33,4 +40,27 @@ export interface EmbeddingProcessingResult {
   error?: string;
   processingTime: number;
   chunkCount?: number;
+}
+
+export interface EmbeddingChunkDocument {
+  embedding: number[];
+  text: string;
+  sourceFile: string;
+  sourceBasename?: string;
+  groupId?: string;
+  title?: string;
+  description?: string;
+  url?: string;
+  tags?: string[];
+  sectionPath?: string;
+  nearestHeading?: string;
+  chunkIndex: number;
+  chunkTotal: number;
+  startIndex: number;
+  endIndex: number;
+  model: string;
+  dimensions: number;
+  contentHash?: string; // file-level content hash
+  chunkContentHash: string; // hash of this chunk's text
+  sourceMeta?: Record<string, unknown>;
 }

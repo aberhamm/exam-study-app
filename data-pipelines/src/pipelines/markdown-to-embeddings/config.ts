@@ -1,7 +1,13 @@
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { config as loadDotenv } from 'dotenv';
+import { fileURLToPath } from 'url';
 
-// Load environment variables from .env file
+// Load environment variables from both the workspace and the current CWD
+// 1) Load data-pipelines/.env (relative to this file)
+const moduleDir = dirname(fileURLToPath(import.meta.url));
+const workspaceEnvPath = join(moduleDir, '../../../.env');
+loadDotenv({ path: workspaceEnvPath });
+// 2) Also load CWD .env as fallback without overriding existing values
 loadDotenv();
 
 export const config = {
@@ -16,21 +22,26 @@ export const config = {
   apiKeyEnvVar: 'OPENAI_API_KEY',
 
   // File patterns
-  supportedInputExtensions: ['.md', '.markdown'],
+  supportedInputExtensions: ['.json'],
 
   // Processing configuration
-  chunkSize: 1000, // characters per chunk
-  chunkOverlap: 200, // character overlap between chunks
+  chunkSize: 2000, // characters per chunk (docs Q&A sweet spot)
+  chunkOverlap: 300, // character overlap for continuity
 };
 
+// Default JSON field containing markdown text
+export const JSON_MARKDOWN_FIELD = 'markdown';
+
 export function getPipelinePaths(pipelineName: string = config.pipelineName) {
-  const pipelineDataDir = join(process.cwd(), 'data', pipelineName);
+  // Prefer workspace-relative data dir; fall back to CWD-based if needed
+  const moduleRoot = join(moduleDir, '../../..');
+  const base = join(moduleRoot, 'data', pipelineName);
 
   return {
-    defaultInputDir: join(pipelineDataDir, 'input'),
-    defaultOutputDir: join(pipelineDataDir, 'output'),
-    defaultLogsDir: join(pipelineDataDir, 'logs'),
-    defaultTempDir: join(pipelineDataDir, 'temp'),
+    defaultInputDir: join(base, 'input'),
+    defaultOutputDir: join(base, 'output'),
+    defaultLogsDir: join(base, 'logs'),
+    defaultTempDir: join(base, 'temp'),
   };
 }
 
@@ -48,15 +59,21 @@ export function getEnvConfig() {
 }
 
 export function getMongoConfig() {
-  const uri = process.env.MONGODB_URI;
-  const database = process.env.MONGODB_DATABASE;
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  const database = process.env.MONGODB_DATABASE || process.env.MONGODB_DB;
+  const collection = process.env.EMBEDDINGS_COLLECTION || 'embeddings';
 
   if (!uri || !database) {
-    throw new Error('MONGODB_URI and MONGODB_DATABASE environment variables are required for MongoDB integration');
+    const hadUri = Boolean(uri);
+    const hadDb = Boolean(database);
+    throw new Error(
+      `MongoDB env missing (uri? ${hadUri}, database? ${hadDb}). Checked keys uri=[MONGODB_URI,MONGO_URI], db=[MONGODB_DATABASE,MONGODB_DB]`
+    );
   }
 
   return {
     uri,
     database,
+    collection,
   };
 }

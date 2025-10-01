@@ -7,12 +7,16 @@
     "build": "tsc",
     "dev": "tsx watch src/pipelines/markdown-to-json/index.ts",
     "markdown-to-json": "tsx src/pipelines/markdown-to-json/index.ts",
-    "markdown-to-embeddings": "tsx src/pipelines/markdown-to-embeddings/index.ts"
+    "markdown-to-embeddings": "tsx src/pipelines/markdown-to-embeddings/index.ts",
+    "create-embeddings-index": "tsx scripts/create-embeddings-index.ts",
+    "test-embeddings-search": "tsx scripts/test-embeddings-search.ts"
   },
   "dependencies": {
     "dotenv": "^17.2.2",
     "mongodb": "^6.20.0",
     "openai": "^4.77.2",
+    "langchain": "^0.3.11",
+    "@langchain/openai": "^0.3.15",
     "zod": "^3.24.1"
   },
   "devDependencies": {

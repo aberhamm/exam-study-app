@@ -102,6 +102,48 @@ The pipeline generates JSON files with this structure:
 }
 ```
 
+### Markdown to Embeddings (JSON input + LangChain)
+
+Converts scraped JSON pages containing a top-level `markdown` field into chunked embeddings and stores them in MongoDB.
+
+Usage:
+```bash
+# Process all JSON files in the default input directory
+pnpm markdown-to-embeddings
+
+# Process a specific JSON file
+pnpm markdown-to-embeddings data/markdown-to-embeddings/input/document.json
+
+# Specify a different JSON field and MongoDB collection
+pnpm markdown-to-embeddings --json-field body --collection my_embeddings
+
+# Help
+pnpm markdown-to-embeddings --help
+```
+If `--group` is omitted, the pipeline generates a run-scoped group id like `run_k3x9b2-1a2bcd` and prints it at start; all documents from that invocation share it.
+
+Environment Variables:
+- `OPENAI_API_KEY` (required): API key for embeddings
+- `OPENAI_EMBEDDING_MODEL` (optional): defaults to `text-embedding-3-small`
+- `EMBEDDING_DIMENSIONS` (optional): defaults to `1536`
+- `MONGODB_URI` (required): MongoDB connection string
+- `MONGODB_DATABASE` (required): Database name
+- `EMBEDDINGS_COLLECTION` (optional): Collection name (default `embeddings`)
+
+Input Format:
+- Place `.json` files under `data/markdown-to-embeddings/input/`.
+- Each JSON must include a top-level `markdown` string field. Any other top-level keys are preserved as `metadata.sourceMeta` and copied into each chunk's metadata.
+
+Behavior:
+- The pipeline uses LangChain's `MarkdownTextSplitter` with chunk size 1000 and overlap 200 to create structure-aware chunks, preserving code fences and inline code content.
+- Embeddings are generated with `@langchain/openai` and upserted as one MongoDB document per chunk (recommended for vector search). Each chunk document has a top-level `embedding` vector and top-level metadata fields suitable for vector indexing and filters.
+- Each chunk carries a `sectionPath` (e.g., `H1 > H2 > H3`) and `nearestHeading` computed from the nearest preceding markdown headings in the original source. You can also add a group identifier to all docs with `--group <name>`.
+
+Chunk document fields (high level):
+- `embedding: number[]`, `text: string`, `groupId`, `sourceFile`, `sourceBasename`, `title`, `description`, `url`, `tags[]`
+- `sectionPath`, `nearestHeading`, `chunkIndex`, `chunkTotal`, `startIndex`, `endIndex`, `model`, `dimensions`
+- `contentHash` (file-level), `chunkContentHash` (chunk-level), `sourceMeta`
+
 ## Directory Structure
 
 ```

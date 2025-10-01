@@ -43,3 +43,6 @@ next-env.d.ts
 
 # compiled data assets (source is in /data/)
 /public/data/*
+data-pipelines/data/*/input/*
+data-pipelines/data/*/output/*
+data-pipelines/data/*/logs/*
