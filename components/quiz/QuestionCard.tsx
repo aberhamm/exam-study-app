@@ -16,6 +16,11 @@ type Props = {
   onSelectAnswer: (answerIndex: number) => void;
   onSubmitMultipleAnswer: () => void;
   onOpenQuestionEditor: () => void;
+  onGenerateExplanation?: () => void;
+  isGeneratingExplanation?: boolean;
+  aiExplanation?: string;
+  onSaveExplanation?: () => void;
+  isSavingExplanation?: boolean;
 };
 
 export function QuestionCard({
@@ -27,6 +32,11 @@ export function QuestionCard({
   onSelectAnswer,
   onSubmitMultipleAnswer,
   onOpenQuestionEditor,
+  onGenerateExplanation,
+  isGeneratingExplanation,
+  aiExplanation,
+  onSaveExplanation,
+  isSavingExplanation,
 }: Props) {
   return (
     <Card className="p-6">
@@ -194,6 +204,7 @@ export function QuestionCard({
 
       {showFeedback && (
         <div className="mt-6 space-y-4">
+          {/* Default explanation */}
           {question.explanation && (
             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="font-medium text-blue-800 dark:text-blue-200 mb-2">
@@ -202,6 +213,52 @@ export function QuestionCard({
               <MarkdownContent variant="explanation">
                 {question.explanation}
               </MarkdownContent>
+            </div>
+          )}
+
+          {/* AI Explanation Generation Section */}
+          {APP_CONFIG.DEV_FEATURES_ENABLED && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="font-medium text-gray-800 dark:text-gray-200">
+                  {question.explanation ? 'Alternative AI Explanation' : 'AI Explanation'}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onGenerateExplanation}
+                  disabled={isGeneratingExplanation || !onGenerateExplanation}
+                >
+                  {isGeneratingExplanation ? 'Generating...' :
+                   question.explanation ? 'Generate Alternative' : 'Generate AI Explanation'}
+                </Button>
+              </div>
+
+              {isGeneratingExplanation && (
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Analyzing question and searching documentation...
+                </div>
+              )}
+
+              {aiExplanation && (
+                <div className="space-y-3">
+                  <MarkdownContent variant="explanation">
+                    {aiExplanation}
+                  </MarkdownContent>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onSaveExplanation}
+                      disabled={isSavingExplanation || !onSaveExplanation}
+                    >
+                      {isSavingExplanation ? 'Saving...' :
+                       question.explanation ? 'Replace Default' : 'Save as Default'}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

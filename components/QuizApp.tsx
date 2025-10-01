@@ -70,6 +70,11 @@ export function QuizApp({
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
   const successTimeoutRef = useRef<number | null>(null);
+
+  // AI Explanation state
+  const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [isSavingExplanation, setIsSavingExplanation] = useState(false);
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: initialExamState?.currentQuestionIndex || 0,
     selectedAnswers: initialExamState?.selectedAnswers || [],
@@ -355,7 +360,100 @@ export function QuizApp({
     };
 
     setQuizState(resetState);
+
+    // Clear AI explanation state
+    setAiExplanation(null);
   };
+
+  const generateExplanation = useCallback(async () => {
+    if (!currentQuestion || !examId) return;
+
+    setIsGeneratingExplanation(true);
+    setEditError(null);
+
+    try {
+      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}/explain`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ saveAsDefault: false }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to generate explanation`);
+      }
+
+      const data = await response.json();
+      setAiExplanation(data.explanation);
+
+      setEditSuccess('Explanation generated successfully!');
+      if (successTimeoutRef.current) {
+        window.clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = window.setTimeout(() => {
+        setEditSuccess(null);
+        successTimeoutRef.current = null;
+      }, 3000);
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate explanation';
+      setEditError(message);
+      console.error('Failed to generate explanation:', error);
+    } finally {
+      setIsGeneratingExplanation(false);
+    }
+  }, [currentQuestion, examId]);
+
+  const saveExplanation = useCallback(async () => {
+    if (!currentQuestion || !examId || !aiExplanation) return;
+
+    setIsSavingExplanation(true);
+    setEditError(null);
+
+    try {
+      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}/explain`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ saveAsDefault: true }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to save explanation`);
+      }
+
+      // Update the current question with the explanation
+      const updatedQuestions = questions.map(q =>
+        q.id === currentQuestion.id
+          ? { ...q, explanation: aiExplanation }
+          : q
+      );
+      setQuestions(updatedQuestions);
+
+      // Clear AI explanation state since it's now the default
+      setAiExplanation(null);
+
+      setEditSuccess('Explanation saved as default!');
+      if (successTimeoutRef.current) {
+        window.clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = window.setTimeout(() => {
+        setEditSuccess(null);
+        successTimeoutRef.current = null;
+      }, 3000);
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save explanation';
+      setEditError(message);
+      console.error('Failed to save explanation:', error);
+    } finally {
+      setIsSavingExplanation(false);
+    }
+  }, [currentQuestion, examId, aiExplanation, questions]);
   const handleTimeUp = useCallback(() => {
     finishQuiz();
   }, [finishQuiz]);
@@ -607,6 +705,11 @@ export function QuizApp({
           onSelectAnswer={selectAnswer}
           onSubmitMultipleAnswer={submitMultipleAnswer}
           onOpenQuestionEditor={openQuestionEditor}
+          onGenerateExplanation={generateExplanation}
+          isGeneratingExplanation={isGeneratingExplanation}
+          aiExplanation={aiExplanation || undefined}
+          onSaveExplanation={saveExplanation}
+          isSavingExplanation={isSavingExplanation}
         />
       )}
 
