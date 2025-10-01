@@ -23,19 +23,24 @@ export const TEST_SETTINGS = {
 
 export type QuestionTypeFilter = 'all' | 'single' | 'multiple';
 export type ExplanationFilter = 'all' | 'with-explanations' | 'without-explanations';
+export type CompetencyFilter = 'all' | string; // 'all' or competency ID
 
 export type TestSettings = {
   questionCount: number;
   questionType: QuestionTypeFilter;
   timerDuration: number; // in minutes
   explanationFilter: ExplanationFilter;
+  showCompetencies?: boolean;
+  competencyFilter?: CompetencyFilter;
 };
 
 export const DEFAULT_TEST_SETTINGS: TestSettings = {
   questionCount: TEST_SETTINGS.DEFAULT_QUESTION_COUNT,
   questionType: 'all',
   timerDuration: TEST_SETTINGS.DEFAULT_TIMER_DURATION,
-  explanationFilter: 'all'
+  explanationFilter: 'all',
+  showCompetencies: false,
+  competencyFilter: 'all'
 };
 
 // Utility functions for test settings
@@ -56,7 +61,9 @@ export function validateTestSettings(settings: Partial<TestSettings>): TestSetti
         settings.timerDuration || TEST_SETTINGS.DEFAULT_TIMER_DURATION
       )
     ),
-    explanationFilter: settings.explanationFilter || 'all'
+    explanationFilter: settings.explanationFilter || 'all',
+    showCompetencies: settings.showCompetencies ?? false,
+    competencyFilter: settings.competencyFilter || 'all'
   };
 }
 

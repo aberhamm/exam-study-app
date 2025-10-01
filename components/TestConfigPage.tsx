@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
 import { APP_CONFIG } from '@/lib/app-config';
 import { MarkdownContent } from '@/components/ui/markdown';
-import { History } from 'lucide-react';
+import { History, BookOpen } from 'lucide-react';
 import {
   TEST_SETTINGS,
   TestSettings,
@@ -45,6 +45,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [missedQuestionIds, setMissedQuestionIds] = useState<string[]>([]);
   const [starting, setStarting] = useState(false);
+  const [competencies, setCompetencies] = useState<Array<{ id: string; title: string; questionCount?: number }>>([]);
+  const [competenciesLoading, setCompetenciesLoading] = useState(false);
 
   // Configure header on mount and when exam title loads
   useEffect(() => {
@@ -130,6 +132,28 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     const ids = getMissedQuestionIds();
     setMissedQuestionIds(ids);
   }, [questions]);
+
+  // Fetch competencies for this exam
+  useEffect(() => {
+    if (!examMetadata?.examId) return;
+
+    const fetchCompetencies = async () => {
+      setCompetenciesLoading(true);
+      try {
+        const response = await fetch(`/api/exams/${examMetadata.examId}/competencies?includeStats=true`);
+        if (response.ok) {
+          const data = await response.json();
+          setCompetencies(data.competencies || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch competencies:', err);
+      } finally {
+        setCompetenciesLoading(false);
+      }
+    };
+
+    fetchCompetencies();
+  }, [examMetadata?.examId]);
 
   const missedQuestions = useMemo(() => {
     if (!questions || missedQuestionIds.length === 0) {
@@ -529,6 +553,26 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               </Button>
             </CardFooter>
           </Card>
+
+          <Card className="border-dashed bg-muted/30">
+            <CardHeader className="pt-4 sm:pt-5 pb-2 sm:pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="size-4 text-muted-foreground" />
+                <span>View all questions</span>
+              </CardTitle>
+              <CardDescription>
+                Browse and review all {questionCounts.all} questions in the exam bank.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
+              <Link
+                href={`/dev/questions/${examMetadata?.examId || 'sitecore-xmc'}`}
+                className="w-full inline-flex items-center justify-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                View all questions
+              </Link>
+            </CardFooter>
+          </Card>
         </aside>
       </div>
 
@@ -615,6 +659,81 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                     </button>
                   );
                 })}
+              </div>
+            </section>
+
+            {/* Competency Filter Selection */}
+            {competencies.length > 0 && (
+              <section className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Competency Filter</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Filter questions by competency area, or see all competencies.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <button
+                      type="button"
+                      aria-pressed={!settings.competencyFilter || settings.competencyFilter === 'all'}
+                      onClick={() => setSettings({ ...settings, competencyFilter: 'all' })}
+                      className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                        !settings.competencyFilter || settings.competencyFilter === 'all'
+                          ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                          : 'border-border hover:border-muted-foreground/40'
+                      }`}
+                    >
+                      <div className="font-medium">All Competencies</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        No filtering
+                      </div>
+                    </button>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto space-y-2 border border-border rounded-lg p-3">
+                    {competencies.map((competency) => {
+                      const isActive = settings.competencyFilter === competency.id;
+                      return (
+                        <button
+                          key={competency.id}
+                          type="button"
+                          aria-pressed={isActive}
+                          onClick={() => setSettings({ ...settings, competencyFilter: competency.id })}
+                          className={`w-full p-3 rounded-md border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                            isActive
+                              ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                              : 'border-transparent hover:border-border hover:bg-muted/50'
+                          }`}
+                        >
+                          <div className="font-medium text-sm">{competency.title}</div>
+                          {competency.questionCount !== undefined && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {competency.questionCount} question{competency.questionCount !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Show Competencies Checkbox */}
+            <section className="space-y-4">
+              <div className="flex items-start gap-3">
+                <input
+                  id="show-competencies"
+                  type="checkbox"
+                  checked={settings.showCompetencies ?? false}
+                  onChange={(e) => setSettings({ ...settings, showCompetencies: e.target.checked })}
+                  className="mt-1 h-4 w-4 rounded border-border focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                />
+                <label htmlFor="show-competencies" className="flex-1 cursor-pointer">
+                  <div className="font-medium">Show competencies on questions</div>
+                  <p className="text-sm text-muted-foreground">
+                    Display competency tags on each question during the exam
+                  </p>
+                </label>
               </div>
             </section>
 

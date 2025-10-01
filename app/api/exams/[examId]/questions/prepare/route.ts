@@ -9,6 +9,7 @@ const StartRequestZ = z.object({
   questionType: z.enum(['all', 'single', 'multiple']).default('all'),
   explanationFilter: z.enum(['all', 'with-explanations', 'without-explanations']).default('all'),
   questionCount: z.number().int().min(1).max(1000).default(50),
+  competencyFilter: z.string().optional(),
 });
 
 type RouteParams = { params: Promise<{ examId: string }> };
@@ -52,6 +53,11 @@ export async function POST(request: Request, context: RouteParams) {
       pipeline.push({ $match: { $expr: { $not: explanationExpr } } });
     }
 
+    // Filter by competency if specified
+    if (input.competencyFilter && input.competencyFilter !== 'all') {
+      pipeline.push({ $match: { competencyIds: input.competencyFilter } });
+    }
+
     // Random sample to avoid shipping all questions to the client
     pipeline.push({ $sample: { size: input.questionCount } });
     pipeline.push({
@@ -64,7 +70,9 @@ export async function POST(request: Request, context: RouteParams) {
         answer: 1,
         question_type: 1,
         explanation: 1,
+        explanationGeneratedByAI: 1,
         study: 1,
+        competencyIds: 1,
       },
     });
 
@@ -76,7 +84,9 @@ export async function POST(request: Request, context: RouteParams) {
       answer: d.answer,
       question_type: (d.question_type as 'single' | 'multiple' | undefined) ?? 'single',
       explanation: d.explanation,
+      explanationGeneratedByAI: d.explanationGeneratedByAI,
       study: d.study,
+      competencyIds: d.competencyIds,
     }));
     const normalized = normalizeQuestions(external);
 

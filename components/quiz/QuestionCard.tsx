@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StudyPanel } from '@/components/StudyPanel';
@@ -21,6 +22,8 @@ type Props = {
   aiExplanation?: string;
   onSaveExplanation?: () => void;
   isSavingExplanation?: boolean;
+  showCompetencies?: boolean;
+  examId?: string;
 };
 
 export function QuestionCard({
@@ -37,7 +40,36 @@ export function QuestionCard({
   aiExplanation,
   onSaveExplanation,
   isSavingExplanation,
+  showCompetencies,
+  examId,
 }: Props) {
+  const [competencies, setCompetencies] = useState<Array<{ id: string; title: string }>>([]);
+
+  // Fetch competencies if showCompetencies is enabled
+  useEffect(() => {
+    if (!showCompetencies || !examId || !question.competencyIds || question.competencyIds.length === 0) {
+      setCompetencies([]);
+      return;
+    }
+
+    const fetchCompetencies = async () => {
+      try {
+        const response = await fetch(`/api/exams/${examId}/competencies`);
+        if (response.ok) {
+          const data = await response.json();
+          const allCompetencies = data.competencies || [];
+          const filtered = allCompetencies.filter((c: { id: string }) =>
+            question.competencyIds?.includes(c.id)
+          );
+          setCompetencies(filtered);
+        }
+      } catch (err) {
+        console.error('Failed to fetch competencies:', err);
+      }
+    };
+
+    fetchCompetencies();
+  }, [showCompetencies, examId, question.competencyIds]);
   return (
     <Card className="p-6">
       <div>
@@ -85,10 +117,24 @@ export function QuestionCard({
             )}
           </div>
         </div>
-        <div className="text-base font-medium text-foreground">
-          {question.questionType === 'multiple'
-            ? 'Select all that apply.'
-            : 'Select one answer.'}
+        <div className="flex items-center justify-between gap-4">
+          <div className="text-base font-medium text-foreground">
+            {question.questionType === 'multiple'
+              ? 'Select all that apply.'
+              : 'Select one answer.'}
+          </div>
+          {showCompetencies && competencies.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {competencies.map((competency) => (
+                <span
+                  key={competency.id}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                >
+                  {competency.title}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

@@ -32,6 +32,7 @@ export type PrepareQuestionsRequest = {
   questionType: 'all' | 'single' | 'multiple';
   explanationFilter: 'all' | 'with-explanations' | 'without-explanations';
   questionCount: number;
+  competencyFilter?: 'all' | string; // 'all' or competency ID
 };
 
 export type PrepareQuestionsResponse = {

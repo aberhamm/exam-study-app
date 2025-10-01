@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import type { ExamSummary } from '@/types/api';
 import { useCompetencies } from '@/app/hooks/useCompetencies';
 import { ExamSelector } from '@/components/competencies/ExamSelector';
@@ -52,7 +53,15 @@ export default function CompetenciesPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Exam Competencies Manager</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-3xl font-bold text-foreground">Exam Competencies Manager</h1>
+          <Link
+            href="/"
+            className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            ← Back to Home
+          </Link>
+        </div>
         <p className="text-muted-foreground">
           Define and manage competency areas for your exams. Competencies are used to categorize
           questions and ensure balanced coverage across topics.

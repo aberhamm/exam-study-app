@@ -41,7 +41,9 @@ export function normalizeQuestions(qs: ExternalQuestion[]): NormalizedQuestion[]
       answerIndex,
       questionType,
       explanation: q.explanation,
+      explanationGeneratedByAI: q.explanationGeneratedByAI,
       study: q.study,
+      competencyIds: q.competencyIds,
     } as NormalizedQuestion;
   });
 }
@@ -69,6 +71,8 @@ export function denormalizeQuestion(question: NormalizedQuestion): ExternalQuest
     answer: answer as ExternalQuestion['answer'],
     question_type: question.questionType,
     explanation: question.explanation,
+    explanationGeneratedByAI: question.explanationGeneratedByAI,
     study: question.study,
+    competencyIds: question.competencyIds,
   };
 }

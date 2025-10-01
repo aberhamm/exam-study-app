@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type { CompetencyWithStats } from '@/app/hooks/useCompetencies';
 import { CompetencyForm } from './CompetencyForm';
 import { MarkdownContent } from '@/components/ui/markdown';
@@ -10,7 +11,7 @@ type CompetencyCardProps = {
   onUpdate: (
     competencyId: string,
     data: Partial<{ title: string; description: string; examPercentage: number }>
-  ) => Promise<void>;
+  ) => Promise<import('@/types/competency').CompetencyDocument>;
   onDelete: (competencyId: string) => Promise<void>;
 };
 
@@ -95,11 +96,23 @@ export function CompetencyCard({ competency, onUpdate, onDelete }: CompetencyCar
         <MarkdownContent>{competency.description || ''}</MarkdownContent>
       </div>
 
-      {competency.embeddingUpdatedAt && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Embedding updated: {new Date(competency.embeddingUpdatedAt).toLocaleString()}
-        </p>
-      )}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="flex gap-2">
+          {competency.questionCount !== undefined && competency.questionCount > 0 && (
+            <Link
+              href={`/dev/competencies/${competency.examId}/${competency.id}/questions`}
+              className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              View {competency.questionCount} Question{competency.questionCount !== 1 ? 's' : ''}
+            </Link>
+          )}
+        </div>
+        {competency.embeddingUpdatedAt && (
+          <p className="text-xs text-muted-foreground">
+            Embedding updated: {new Date(competency.embeddingUpdatedAt).toLocaleString()}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

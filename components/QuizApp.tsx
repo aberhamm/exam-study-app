@@ -336,6 +336,8 @@ export function QuizApp({
         showFeedback: false,
       };
       setQuizState(newState);
+      // Clear AI explanation when moving to next question
+      setAiExplanation(null);
     }
   }, [isLastQuestion, quizState, finishQuiz]);
 
@@ -710,6 +712,8 @@ export function QuizApp({
           aiExplanation={aiExplanation || undefined}
           onSaveExplanation={saveExplanation}
           isSavingExplanation={isSavingExplanation}
+          showCompetencies={testSettings.showCompetencies}
+          examId={examId}
         />
       )}
 

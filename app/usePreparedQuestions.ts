@@ -35,6 +35,7 @@ export function usePreparedQuestions(
           questionType: settings.questionType,
           explanationFilter: settings.explanationFilter,
           questionCount: settings.questionCount,
+          competencyFilter: settings.competencyFilter,
         };
         const res = await fetch(`/api/exams/${encodeURIComponent(examId)}/questions/prepare`, {
           method: 'POST',
@@ -70,7 +71,7 @@ export function usePreparedQuestions(
     return () => {
       cancelled = true;
     };
-  }, [examId, settings.questionType, settings.explanationFilter, settings.questionCount, enabled]);
+  }, [examId, settings.questionType, settings.explanationFilter, settings.questionCount, settings.competencyFilter, enabled]);
 
   return { data, error, loading } as const;
 }

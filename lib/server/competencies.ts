@@ -56,7 +56,8 @@ export async function createCompetency(input: CreateCompetencyInput): Promise<Co
     updatedAt: now,
   };
 
-  await collection.insertOne(newCompetency as CompetencyDocument & { _id?: unknown });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await collection.insertOne(newCompetency as any);
   return newCompetency;
 }
 
