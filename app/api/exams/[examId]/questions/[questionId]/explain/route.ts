@@ -78,6 +78,7 @@ export async function POST(request: Request, context: RouteParams) {
         const updatedQuestion = {
           ...questionDoc,
           explanation: result.explanation,
+          explanationGeneratedByAI: true,
         };
         await updateQuestion(examId, updatedQuestion);
         console.info(`[explain] Saved explanation as default for question ${questionId}`);

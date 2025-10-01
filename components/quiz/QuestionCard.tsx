@@ -207,8 +207,18 @@ export function QuestionCard({
           {/* Default explanation */}
           {question.explanation && (
             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="font-medium text-blue-800 dark:text-blue-200 mb-2">
-                Explanation:
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-medium text-blue-800 dark:text-blue-200">
+                  Explanation:
+                </div>
+                {question.explanationGeneratedByAI && (
+                  <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd"/>
+                    </svg>
+                    AI Generated
+                  </div>
+                )}
               </div>
               <MarkdownContent variant="explanation">
                 {question.explanation}

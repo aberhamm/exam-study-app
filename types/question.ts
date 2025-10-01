@@ -8,6 +8,7 @@ export type QuestionDocument = {
   answer: 'A' | 'B' | 'C' | 'D' | 'E' | ('A' | 'B' | 'C' | 'D' | 'E')[];
   question_type?: 'single' | 'multiple';
   explanation?: string;
+  explanationGeneratedByAI?: boolean;
   study?: StudyLink[];
   createdAt: Date;
   updatedAt: Date;

@@ -6,6 +6,7 @@ export type NormalizedQuestion = {
   answerIndex: 0 | 1 | 2 | 3 | 4 | (0 | 1 | 2 | 3 | 4)[];
   questionType: 'single' | 'multiple';
   explanation?: string;
+  explanationGeneratedByAI?: boolean;
   study?: { chunkId: string; url?: string; anchor?: string; excerpt?: string }[];
 };
 

@@ -426,10 +426,10 @@ export function QuizApp({
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to save explanation`);
       }
 
-      // Update the current question with the explanation
+      // Update the current question with the explanation and AI flag
       const updatedQuestions = questions.map(q =>
         q.id === currentQuestion.id
-          ? { ...q, explanation: aiExplanation }
+          ? { ...q, explanation: aiExplanation, explanationGeneratedByAI: true }
           : q
       );
       setQuestions(updatedQuestions);
