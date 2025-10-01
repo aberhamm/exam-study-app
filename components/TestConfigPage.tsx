@@ -513,7 +513,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               <Button
                 variant="outline"
                 onClick={() => setShowConfiguration((current) => !current)}
-                className="px-6"
+                size="lg"
+                className="px-8 py-3 text-lg"
               >
                 {showConfiguration ? 'Hide settings' : 'Adjust settings'}
               </Button>

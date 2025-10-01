@@ -1,12 +1,49 @@
+import { useState, useEffect } from 'react';
 import type { QuestionDocument } from '@/types/question';
+import { MarkdownContent } from '@/components/ui/markdown';
 
 type QuestionListItemProps = {
   question: QuestionDocument;
   index?: number;
   showIndex?: boolean;
+  showCompetencies?: boolean;
+  examId?: string;
 };
 
-export function QuestionListItem({ question, index, showIndex = true }: QuestionListItemProps) {
+export function QuestionListItem({
+  question,
+  index,
+  showIndex = true,
+  showCompetencies = false,
+  examId
+}: QuestionListItemProps) {
+  const [competencies, setCompetencies] = useState<Array<{ id: string; title: string }>>([]);
+
+  // Fetch competencies if showCompetencies is enabled
+  useEffect(() => {
+    if (!showCompetencies || !examId || !question.competencyIds || question.competencyIds.length === 0) {
+      setCompetencies([]);
+      return;
+    }
+
+    const fetchCompetencies = async () => {
+      try {
+        const response = await fetch(`/api/exams/${examId}/competencies`);
+        if (response.ok) {
+          const data = await response.json();
+          const allCompetencies = data.competencies || [];
+          const filtered = allCompetencies.filter((c: { id: string }) =>
+            question.competencyIds?.includes(c.id)
+          );
+          setCompetencies(filtered);
+        }
+      } catch (err) {
+        console.error('Failed to fetch competencies:', err);
+      }
+    };
+
+    fetchCompetencies();
+  }, [showCompetencies, examId, question.competencyIds]);
   return (
     <div className="bg-card p-6 rounded-lg border border-border hover:border-border/80 transition-colors">
       <div className="flex items-start gap-4">
@@ -16,9 +53,23 @@ export function QuestionListItem({ question, index, showIndex = true }: Question
           </div>
         )}
         <div className="flex-1">
-          <h3 className="text-lg font-medium text-foreground mb-3">
-            {question.question}
-          </h3>
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <h3 className="text-lg font-medium text-foreground flex-1">
+              {question.question}
+            </h3>
+            {showCompetencies && competencies.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {competencies.map((competency) => (
+                  <span
+                    key={competency.id}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                  >
+                    {competency.title}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="space-y-2">
             {Object.entries(question.options).map(([key, value]) => {
               const isCorrect = Array.isArray(question.answer)
@@ -50,9 +101,9 @@ export function QuestionListItem({ question, index, showIndex = true }: Question
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
                 Explanation:
               </p>
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                {question.explanation}
-              </p>
+              <div className="text-sm text-blue-800 dark:text-blue-200 prose prose-sm dark:prose-invert max-w-none prose-blue">
+                <MarkdownContent>{question.explanation}</MarkdownContent>
+              </div>
             </div>
           )}
         </div>
