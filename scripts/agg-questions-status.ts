@@ -14,20 +14,16 @@ import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
 import { MongoClient } from 'mongodb';
+import { envConfig } from '../lib/env-config.js';
 
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing ${name}`);
-  return v;
-}
 
 type Row = { _id: string; count: number; latest: Date | null };
 
 async function main() {
-  const uri = requireEnv('MONGODB_URI');
-  const dbName = requireEnv('MONGODB_DB');
-  const qName = requireEnv('MONGODB_QUESTIONS_COLLECTION');
-  const eName = requireEnv('MONGODB_QUESTION_EMBEDDINGS_COLLECTION');
+  const uri = envConfig.mongo.uri;
+  const dbName = envConfig.mongo.database;
+  const qName = envConfig.mongo.questionsCollection;
+  const eName = envConfig.mongo.questionEmbeddingsCollection;
 
   const client = new MongoClient(uri);
   await client.connect();

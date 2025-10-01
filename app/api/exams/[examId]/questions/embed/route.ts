@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isDevFeaturesEnabled } from '@/lib/feature-flags';
+import { envConfig } from '@/lib/env-config';
 import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName } from '@/lib/server/mongodb';
 
 type RouteParams = {
@@ -26,8 +26,7 @@ function buildTextForEmbedding(doc: {
 }
 
 async function createEmbeddings(inputs: string[], model: string, dimensions?: number): Promise<number[][]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('Missing OPENAI_API_KEY environment variable');
+  const apiKey = envConfig.openai.apiKey;
 
   const res = await fetch('https://api.openai.com/v1/embeddings', {
     method: 'POST',
@@ -46,7 +45,7 @@ async function createEmbeddings(inputs: string[], model: string, dimensions?: nu
 }
 
 export async function POST(request: Request, context: RouteParams) {
-  if (!isDevFeaturesEnabled()) {
+  if (!envConfig.features.devFeaturesEnabled) {
     return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   }
 
@@ -142,9 +141,8 @@ export async function POST(request: Request, context: RouteParams) {
       });
     }
 
-    const model = process.env.QUESTIONS_EMBEDDING_MODEL || 'text-embedding-3-small';
-    const dimsStr = process.env.QUESTIONS_EMBEDDING_DIMENSIONS;
-    const dimensions = dimsStr ? Number(dimsStr) : undefined;
+    const model = envConfig.openai.embeddingModel;
+    const dimensions = envConfig.openai.embeddingDimensions;
 
     const texts = candidates.map((c) => buildTextForEmbedding(c));
     // Batch calls to embeddings API (max 16 per batch)

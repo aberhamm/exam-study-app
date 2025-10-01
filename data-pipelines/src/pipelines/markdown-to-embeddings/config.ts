@@ -45,35 +45,24 @@ export function getPipelinePaths(pipelineName: string = config.pipelineName) {
   };
 }
 
-export function getEnvConfig() {
-  const apiKey = process.env[config.apiKeyEnvVar];
-  if (!apiKey) {
-    throw new Error(`${config.apiKeyEnvVar} environment variable is required`);
-  }
+export async function getEnvConfig() {
+  // Dynamic import to avoid import issues in this ESM module
+  const { envConfig } = await import('../../../../lib/env-config.js');
 
   return {
-    apiKey,
-    model: process.env.OPENAI_EMBEDDING_MODEL || config.defaultModel,
-    dimensions: process.env.EMBEDDING_DIMENSIONS ? parseInt(process.env.EMBEDDING_DIMENSIONS, 10) : config.defaultEmbeddingDimensions,
+    apiKey: envConfig.openai.apiKey,
+    model: envConfig.openai.embeddingModel,
+    dimensions: envConfig.openai.embeddingDimensions,
   };
 }
 
-export function getMongoConfig() {
-  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
-  const database = process.env.MONGODB_DATABASE || process.env.MONGODB_DB;
-  const collection = process.env.EMBEDDINGS_COLLECTION || 'embeddings';
-
-  if (!uri || !database) {
-    const hadUri = Boolean(uri);
-    const hadDb = Boolean(database);
-    throw new Error(
-      `MongoDB env missing (uri? ${hadUri}, database? ${hadDb}). Checked keys uri=[MONGODB_URI,MONGO_URI], db=[MONGODB_DATABASE,MONGODB_DB]`
-    );
-  }
+export async function getMongoConfig() {
+  // Dynamic import to avoid import issues in this ESM module
+  const { envConfig } = await import('../../../../lib/env-config.js');
 
   return {
-    uri,
-    database,
-    collection,
+    uri: envConfig.mongo.uri,
+    database: envConfig.mongo.database,
+    collection: envConfig.pipeline.embeddingsCollection,
   };
 }

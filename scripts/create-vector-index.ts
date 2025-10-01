@@ -9,17 +9,8 @@ import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
 import { MongoClient } from 'mongodb';
+import { envConfig } from '../lib/env-config.js';
 
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing ${name}`);
-  return v;
-}
-
-function getEnv(name: string, fallback?: string): string | undefined {
-  const v = process.env[name];
-  return v ?? fallback;
-}
 
 type Args = {
   indexName?: string;
@@ -48,14 +39,14 @@ function parseArgs(): Args {
 async function main() {
   const { indexName: cliIndex, dims: cliDims, similarity: cliSim, update } = parseArgs();
 
-  const uri = requireEnv('MONGODB_URI');
-  const dbName = requireEnv('MONGODB_DB');
-  const collection = getEnv('MONGODB_QUESTION_EMBEDDINGS_COLLECTION', 'question_embeddings')!;
-  const indexName = cliIndex || getEnv('MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX', 'question_embedding')!;
+  const uri = envConfig.mongo.uri;
+  const dbName = envConfig.mongo.database;
+  const collection = envConfig.mongo.questionEmbeddingsCollection;
+  const indexName = cliIndex || envConfig.mongo.questionEmbeddingsVectorIndex;
   const dims = typeof cliDims === 'number' && !Number.isNaN(cliDims)
     ? cliDims
     : (() => {
-        const s = getEnv('QUESTIONS_EMBEDDING_DIMENSIONS');
+        const s = envConfig.openai.embeddingDimensions.toString();
         const n = s ? Number(s) : 1536;
         return Number.isNaN(n) ? 1536 : n;
       })();

@@ -23,6 +23,7 @@ import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
 import { MongoClient } from 'mongodb';
+import { envConfig } from '../lib/env-config.js';
 
 type QuestionDoc = {
   id: string;
@@ -36,16 +37,6 @@ type QuestionDoc = {
   embeddingUpdatedAt?: Date;
 };
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing ${name} environment variable`);
-  return value;
-}
-
-function getEnv(name: string, fallback?: string): string | undefined {
-  const v = process.env[name];
-  return v ?? fallback;
-}
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -72,7 +63,7 @@ function buildTextForEmbedding(q: QuestionDoc): string {
 }
 
 async function createEmbeddings(inputs: string[], model: string, dimensions?: number): Promise<number[][]> {
-  const apiKey = requireEnv('OPENAI_API_KEY');
+  const apiKey = envConfig.openai.apiKey;
   const url = 'https://api.openai.com/v1/embeddings';
   const body: Record<string, unknown> = { model, input: inputs };
   if (dimensions) body.dimensions = dimensions;
@@ -95,14 +86,13 @@ async function createEmbeddings(inputs: string[], model: string, dimensions?: nu
 
 async function main() {
   const { exam, limit, recompute, batch } = parseArgs();
-  const model = getEnv('QUESTIONS_EMBEDDING_MODEL', 'text-embedding-3-small')!;
-  const dimsStr = getEnv('QUESTIONS_EMBEDDING_DIMENSIONS');
-  const dimensions = dimsStr ? Number(dimsStr) : undefined;
+  const model = envConfig.openai.embeddingModel;
+  const dimensions = envConfig.openai.embeddingDimensions;
 
-  const uri = requireEnv('MONGODB_URI');
-  const dbName = requireEnv('MONGODB_DB');
-  const questionsColName = requireEnv('MONGODB_QUESTIONS_COLLECTION');
-  const embeddingsColName = requireEnv('MONGODB_QUESTION_EMBEDDINGS_COLLECTION');
+  const uri = envConfig.mongo.uri;
+  const dbName = envConfig.mongo.database;
+  const questionsColName = envConfig.mongo.questionsCollection;
+  const embeddingsColName = envConfig.mongo.questionEmbeddingsCollection;
 
   const client = new MongoClient(uri);
   await client.connect();

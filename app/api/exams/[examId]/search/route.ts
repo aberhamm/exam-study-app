@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isDevFeaturesEnabled } from '@/lib/feature-flags';
+import { envConfig } from '@/lib/env-config';
 import { searchSimilarQuestions } from '@/lib/server/questions-search';
 
 type RouteParams = {
@@ -15,16 +15,11 @@ type SearchBody = {
 };
 
 async function embedQuery(query: string): Promise<number[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('Missing OPENAI_API_KEY environment variable');
-  const model = process.env.QUESTIONS_EMBEDDING_MODEL || 'text-embedding-3-small';
-  const dims = process.env.QUESTIONS_EMBEDDING_DIMENSIONS;
+  const apiKey = envConfig.openai.apiKey;
+  const model = envConfig.openai.embeddingModel;
+  const dimensions = envConfig.openai.embeddingDimensions;
 
-  const body: Record<string, unknown> = { model, input: query };
-  if (dims) {
-    const n = Number(dims);
-    if (!Number.isNaN(n)) body.dimensions = n;
-  }
+  const body: Record<string, unknown> = { model, input: query, dimensions };
 
   const resp = await fetch('https://api.openai.com/v1/embeddings', {
     method: 'POST',
@@ -49,7 +44,7 @@ export async function POST(request: Request, context: RouteParams) {
     examId = params.examId;
 
     // Controlled via dev feature flag
-    if (!isDevFeaturesEnabled()) {
+    if (!envConfig.features.devFeaturesEnabled) {
       return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
     }
 
@@ -72,11 +67,16 @@ export async function POST(request: Request, context: RouteParams) {
         return NextResponse.json({ error: 'Provide either query or embedding' }, { status: 400 });
       }
       // If no OpenAI key configured, gracefully return empty results
-      if (!process.env.OPENAI_API_KEY) {
+      try {
+        const apiKey = envConfig.openai.apiKey;
+        if (!apiKey) {
+          throw new Error('API key not available');
+        }
+      } catch {
         console.warn(`[search] Missing OPENAI_API_KEY; returning empty results. examId=${examId} topK=${topK}`);
         return NextResponse.json({ examId, topK, count: 0, results: [] }, { headers: { 'Cache-Control': 'no-store' } });
       }
-      console.info(`[search] Creating query embedding via OpenAI model=${process.env.QUESTIONS_EMBEDDING_MODEL || 'text-embedding-3-small'} dims=${process.env.QUESTIONS_EMBEDDING_DIMENSIONS || 'default'} examId=${examId} topK=${topK}`);
+      console.info(`[search] Creating query embedding via OpenAI model=${envConfig.openai.embeddingModel} dims=${envConfig.openai.embeddingDimensions} examId=${examId} topK=${topK}`);
       embedding = await embedQuery(query);
       if (!embedding || embedding.length === 0) {
         console.warn('[search] Received empty embedding from provider.');

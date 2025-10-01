@@ -250,7 +250,7 @@ async function processFile(
   embeddingsClient: OpenAIEmbeddings,
   logger: Logger,
   args: CliArgs,
-  envConfig: ReturnType<typeof getEnvConfig>,
+  envConfig: Awaited<ReturnType<typeof getEnvConfig>>,
   mongoService: MongoDBService,
   outputDir: string,
   defaultGroup: string
@@ -424,7 +424,7 @@ async function main() {
     logger.info('Starting markdown-to-embeddings pipeline', { args });
 
     // Get environment configuration for embeddings
-    const envConfig = getEnvConfig();
+    const envConfig = await getEnvConfig();
     logger.info('Environment configuration loaded', {
       model: envConfig.model,
       dimensions: envConfig.dimensions,
@@ -438,7 +438,7 @@ async function main() {
 
     // Initialize MongoDB service (always required)
     try {
-      const mongoEnv = getMongoConfig();
+      const mongoEnv = await getMongoConfig();
       const collection = args.collection || mongoEnv.collection;
       mongoService = createMongoDBService(mongoEnv.uri, mongoEnv.database, collection);
       await mongoService.connect();

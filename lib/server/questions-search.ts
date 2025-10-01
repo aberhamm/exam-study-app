@@ -1,5 +1,6 @@
 import type { Collection, Document } from 'mongodb';
 import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName } from '@/lib/server/mongodb';
+import { envConfig } from '@/lib/env-config';
 import type { QuestionDocument } from '@/types/question';
 
 export type SimilarQuestion = {
@@ -22,14 +23,12 @@ export async function searchSimilarQuestions(
   queryEmbedding: number[],
   topK: number = 10
 ): Promise<SimilarQuestion[]> {
-  const indexName = process.env.MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX
-    || process.env.MONGODB_QUESTIONS_VECTOR_INDEX
-    || 'question_embedding';
+  const indexName = envConfig.mongo.questionEmbeddingsVectorIndex;
   const embCol = await getEmbeddingsCollection();
   const questionsCol = await getQuestionsCollection();
 
   try {
-    if (process.env.NODE_ENV === 'development') {
+    if (envConfig.app.isDevelopment) {
       console.info(`[vectorSearch] index=${indexName} examId=${examId} topK=${topK} candidates=${Math.max(100, topK * 5)}`);
     }
     // MongoDB Atlas Vector Search pipeline
@@ -87,7 +86,7 @@ export async function searchSimilarQuestions(
     }
 
     // Fallback path: if join returned 0, fetch questions by id from raw hits
-    if (process.env.NODE_ENV === 'development') {
+    if (envConfig.app.isDevelopment) {
       try {
         const count = await embCol.countDocuments({ examId });
         const sample = await embCol.findOne({ examId }, { projection: { _id: 0, embedding: 1 } });

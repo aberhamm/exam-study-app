@@ -146,7 +146,7 @@ async function main() {
     logger.info('Starting markdown-to-json pipeline', { args });
 
     // Get environment configuration
-    const envConfig = getEnvConfig();
+    const envConfig = await getEnvConfig();
     logger.info('Environment configuration loaded', { model: envConfig.model });
 
     // Determine input path (use default if not provided)

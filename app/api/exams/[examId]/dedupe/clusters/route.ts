@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isDevFeaturesEnabled } from '@/lib/feature-flags';
+import { envConfig } from '@/lib/env-config';
 import { getDb, getQuestionEmbeddingsCollectionName, getQuestionsCollectionName, getQuestionClustersCollectionName } from '@/lib/server/mongodb';
 import { clusterQuestionsBySimilarity, type SimilarityPair } from '@/lib/server/clustering';
 import type { Document } from 'mongodb';
@@ -23,7 +23,7 @@ export async function GET(request: Request, context: RouteParams) {
     const params = await context.params;
     examId = params.examId;
 
-    if (!isDevFeaturesEnabled()) {
+    if (!envConfig.features.devFeaturesEnabled) {
       return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
     }
 
@@ -112,7 +112,7 @@ export async function POST(request: Request, context: RouteParams) {
     const params = await context.params;
     examId = params.examId;
 
-    if (!isDevFeaturesEnabled()) {
+    if (!envConfig.features.devFeaturesEnabled) {
       return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
     }
 
@@ -178,9 +178,7 @@ async function generateSimilarityPairs(
   const db = await getDb();
   const embCol = db.collection<Document>(getQuestionEmbeddingsCollectionName());
 
-  const indexName = process.env.MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX
-    || process.env.MONGODB_QUESTIONS_VECTOR_INDEX
-    || 'question_embedding';
+  const indexName = envConfig.mongo.questionEmbeddingsVectorIndex;
 
   const pairs = new Map<string, SimilarityPair>();
 

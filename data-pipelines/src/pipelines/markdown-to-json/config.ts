@@ -29,14 +29,12 @@ export function getPipelinePaths(pipelineName: string = config.pipelineName) {
   };
 }
 
-export function getEnvConfig() {
-  const apiKey = process.env[config.apiKeyEnvVar];
-  if (!apiKey) {
-    throw new Error(`${config.apiKeyEnvVar} environment variable is required`);
-  }
+export async function getEnvConfig() {
+  // Dynamic import to avoid import issues in this ESM module
+  const { envConfig } = await import('../../../../lib/env-config.js');
 
   return {
-    apiKey,
-    model: process.env.OPENROUTER_MODEL || config.defaultModel,
+    apiKey: envConfig.pipeline.openrouterApiKey,
+    model: envConfig.pipeline.openrouterModel,
   };
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isDevFeaturesEnabled } from '@/lib/feature-flags';
+import { envConfig } from '@/lib/env-config';
 import { getDb, getQuestionEmbeddingsCollectionName, getQuestionsCollectionName, getDedupePairsCollectionName } from '@/lib/server/mongodb';
 import type { Document } from 'mongodb';
 import type { QuestionDocument } from '@/types/question';
@@ -26,7 +26,7 @@ export async function POST(request: Request, context: RouteParams) {
     const params = await context.params;
     examId = params.examId;
 
-    if (!isDevFeaturesEnabled()) {
+    if (!envConfig.features.devFeaturesEnabled) {
       return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
     }
 
@@ -49,9 +49,7 @@ export async function POST(request: Request, context: RouteParams) {
       return NextResponse.json({ examId, count: 0, pairs: [] }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
-    const indexName = process.env.MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX
-      || process.env.MONGODB_QUESTIONS_VECTOR_INDEX
-      || 'question_embedding';
+    const indexName = envConfig.mongo.questionEmbeddingsVectorIndex;
 
     const pairs = new Map<string, { aId: string; bId: string; score: number }>();
 
@@ -112,7 +110,7 @@ export async function POST(request: Request, context: RouteParams) {
         if (ignoreSet.has(key)) pairs.delete(key);
       }
     } catch {
-      if (process.env.NODE_ENV === 'development') {
+      if (envConfig.app.isDevelopment) {
         console.warn('[dedupe] flags collection unavailable; skipping ignore filter');
       }
     }
