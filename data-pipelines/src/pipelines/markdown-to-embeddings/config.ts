@@ -22,11 +22,14 @@ export const config = {
   apiKeyEnvVar: 'OPENAI_API_KEY',
 
   // File patterns
-  supportedInputExtensions: ['.json'],
+  supportedInputExtensions: ['.json', '.md', '.markdown'],
 
   // Processing configuration
   chunkSize: 2000, // characters per chunk (docs Q&A sweet spot)
   chunkOverlap: 300, // character overlap for continuity
+
+  // URL configuration
+  defaultBaseUrl: 'https://developers.sitecore.com', // Base URL for relative paths
 };
 
 // Default JSON field containing markdown text

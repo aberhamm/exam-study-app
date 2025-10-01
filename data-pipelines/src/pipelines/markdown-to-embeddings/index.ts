@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
-import { basename, join } from 'path';
+import { basename, join, extname } from 'path';
 import { createHash } from 'crypto';
 import { Logger } from '../../shared/utils/logger.js';
 import {
   readJsonMarkdownFile,
+  readMarkdownFileWithMeta,
+  extractUrlFromPath,
   findMarkdownFiles,
   moveFileToDir,
 } from '../../shared/utils/file-utils.js';
@@ -18,7 +20,7 @@ import {
 import { EMBEDDING_CONFIG } from './prompts.js';
 import { createMongoDBService, MongoDBService } from '../../shared/services/mongodb.js';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { MarkdownTextSplitter } from 'langchain/text_splitter';
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import type {
   EmbeddingChunkDocument,
   TextChunk,
@@ -34,6 +36,7 @@ interface CliArgs {
   jsonField?: string;
   collection?: string;
   group?: string;
+  baseUrl?: string;
 }
 
 function parseArgs(): CliArgs {
@@ -44,12 +47,13 @@ function parseArgs(): CliArgs {
 Usage: pnpm markdown-to-embeddings [input-path] [options]
 
 Arguments:
-  input-path              Path to a JSON file or directory of JSON files (default: data-pipelines/data/markdown-to-embeddings/input/)
+  input-path              Path to a JSON/Markdown file or directory (default: data-pipelines/data/markdown-to-embeddings/input/)
 
 Options:
   --json-field <name>     JSON field that contains markdown (default: ${JSON_MARKDOWN_FIELD})
   --collection <name>     MongoDB collection to use (default: env EMBEDDINGS_COLLECTION or 'embeddings')
   --group <name>          Optional group identifier applied to all documents
+  --base-url <url>        Base URL for markdown files (default: ${config.defaultBaseUrl})
   --title <title>         Optional title metadata (single file only)
   --description <desc>    Optional description metadata (single file only)
   --tags <tag1,tag2>      Optional comma-separated tags (single file only)
@@ -66,20 +70,21 @@ Environment Variables:
 
 Notes:
   - If --group is omitted, a run-scoped id like run_<token> is generated per invocation and printed at start.
+  - For markdown files, URLs are generated from file paths: pages/learn/foo.md -> https://base-url/pages/learn/foo
 
 
 Examples:
   # Process all files in default input directory
   pnpm markdown-to-embeddings
 
+  # Process markdown files with custom base URL
+  pnpm markdown-to-embeddings --base-url https://docs.example.com
+
   # Process single file
   pnpm markdown-to-embeddings data/markdown-to-embeddings/input/document.json
 
-  # Process all files in specific directory
-  pnpm markdown-to-embeddings data/markdown-to-embeddings/input/
-
-  # Specify a different JSON field and collection
-  pnpm markdown-to-embeddings --json-field body --collection my_embeddings
+  # Process all files in specific directory with group
+  pnpm markdown-to-embeddings data/markdown-to-embeddings/input/ --group production-docs
 `);
     process.exit(0);
   }
@@ -119,6 +124,9 @@ Examples:
         break;
       case '--group':
         parsedArgs.group = value;
+        break;
+      case '--base-url':
+        parsedArgs.baseUrl = value;
         break;
       default:
         throw new Error(`Unknown flag: ${flag}`);
@@ -214,10 +222,17 @@ function attachSectionPathsToChunks(chunks: TextChunk[], markdown: string) {
 }
 
 async function chunkTextWithLangChain(content: string): Promise<TextChunk[]> {
-  const splitter = new MarkdownTextSplitter({
-    chunkSize: config.chunkSize,
-    chunkOverlap: config.chunkOverlap,
+  // Use RecursiveCharacterTextSplitter with markdown-aware separators
+  // This tries to split at natural boundaries in order:
+  // 1. Headings (##, ###, etc.)
+  // 2. Paragraphs (\n\n)
+  // 3. Sentences
+  // 4. Words
+  const splitter = RecursiveCharacterTextSplitter.fromLanguage('markdown', {
+    chunkSize: 1500,      // Slightly smaller for more focused chunks
+    chunkOverlap: 200,    // Good overlap to maintain context between chunks
   });
+
   const docs = await splitter.createDocuments([content]);
   const chunks: TextChunk[] = [];
   let searchStart = 0;
@@ -253,24 +268,53 @@ async function processFile(
   envConfig: Awaited<ReturnType<typeof getEnvConfig>>,
   mongoService: MongoDBService,
   outputDir: string,
-  defaultGroup: string
+  defaultGroup: string,
+  baseInputDir: string
 ): Promise<{ success: boolean; chunkCount?: number; error?: string; mongoId?: string }> {
   try {
     const groupId = args.group || defaultGroup;
     logger.info('Processing file', { inputFile, groupId });
 
-    // Read JSON file and extract markdown + metadata
-    const { markdown, meta } = readJsonMarkdownFile(
-      inputFile,
-      args.jsonField || JSON_MARKDOWN_FIELD
-    );
-    const maybeObj = meta as Record<string, unknown>;
-    const nestedMeta =
-      maybeObj && typeof maybeObj['metadata'] === 'object' && maybeObj['metadata'] !== null
-        ? (maybeObj['metadata'] as Record<string, unknown>)
-        : undefined;
-    const sourceMeta: Record<string, unknown> = nestedMeta || maybeObj || {};
-    logger.info('JSON file read successfully', { inputFile, contentLength: markdown.length });
+    // Determine file type and read appropriately
+    const fileExt = extname(inputFile).toLowerCase();
+    let markdown: string;
+    let sourceMeta: Record<string, unknown>;
+
+    if (fileExt === '.json') {
+      // Read JSON file and extract markdown + metadata
+      const { markdown: md, meta } = readJsonMarkdownFile(
+        inputFile,
+        args.jsonField || JSON_MARKDOWN_FIELD
+      );
+      markdown = md;
+      const maybeObj = meta as Record<string, unknown>;
+      const nestedMeta =
+        maybeObj && typeof maybeObj['metadata'] === 'object' && maybeObj['metadata'] !== null
+          ? (maybeObj['metadata'] as Record<string, unknown>)
+          : undefined;
+      sourceMeta = nestedMeta || maybeObj || {};
+      logger.info('JSON file read successfully', { inputFile, contentLength: markdown.length });
+    } else if (fileExt === '.md' || fileExt === '.markdown') {
+      // Read markdown file with frontmatter
+      const { markdown: md, meta } = readMarkdownFileWithMeta(inputFile);
+      markdown = md;
+      sourceMeta = meta;
+
+      // Extract URL from file path if not provided in metadata
+      if (!sourceMeta.url) {
+        // Use CLI arg, fallback to default
+        const baseUrl = args.baseUrl || config.defaultBaseUrl;
+        sourceMeta.url = extractUrlFromPath(inputFile, baseInputDir, baseUrl);
+      }
+
+      logger.info('Markdown file read successfully', {
+        inputFile,
+        contentLength: markdown.length,
+        extractedUrl: sourceMeta.url
+      });
+    } else {
+      throw new Error(`Unsupported file type: ${fileExt}`);
+    }
 
     // Chunk the original markdown (preserves headings for context)
     const chunks = await chunkTextWithLangChain(markdown);
@@ -495,7 +539,8 @@ async function main() {
         envConfig,
         mongoService,
         paths.defaultOutputDir,
-        defaultGroup
+        defaultGroup,
+        paths.defaultInputDir
       );
       results.push({ inputFile, ...result });
 
