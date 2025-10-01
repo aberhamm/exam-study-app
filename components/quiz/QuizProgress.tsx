@@ -46,6 +46,10 @@ export function QuizProgress({
             style={{
               width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`,
             }}
+            role="progressbar"
+            aria-valuenow={currentQuestionIndex + 1}
+            aria-valuemin={0}
+            aria-valuemax={totalQuestions}
           />
         </div>
       </div>
