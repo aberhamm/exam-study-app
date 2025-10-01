@@ -404,13 +404,13 @@ FORMAT
 - At least 1-2 inline links to the excerpts you judge most relevant.
 - If the excerpt did not help, do not cite it.
 - If the answer is justified by common knowledge, do not cite any excerpts.
-- If the answer is ambiguous, explain the ambiguity without citing excerpts.
+- If the answer is ambiguous, explain why the other possibly likely answers are wrong without citing excerpts.
 
 
 SOURCES SECTION FORMAT:
 End your explanation with:
 
-**Sources:**
+_Sources:_
 - [Source Title 1 | Website Name](URL1) (if you used citation [1])
 - [Source Title 2 | Website Docs](URL2) (if you used citation [2])
 - etc.`;
