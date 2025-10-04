@@ -26,7 +26,7 @@ import { MongoClient } from 'mongodb';
 import { envConfig } from '../lib/env-config.js';
 
 type QuestionDoc = {
-  id: string;
+  _id: import('mongodb').ObjectId;
   examId: string;
   question: string;
   options: { A: string; B: string; C: string; D: string; E?: string };
@@ -108,7 +108,7 @@ async function main() {
       // Simple path: all questions (optionally filtered by exam)
       const filter: Record<string, unknown> = {};
       if (exam) filter.examId = exam;
-      const cursor = col.find(filter, { projection: { embedding: 0, embeddingModel: 0, embeddingUpdatedAt: 0 } }).sort({ examId: 1, id: 1 });
+      const cursor = col.find(filter, { projection: { embedding: 0, embeddingModel: 0, embeddingUpdatedAt: 0 } }).sort({ examId: 1, _id: 1 });
       for await (const doc of cursor) {
         toProcess.push(doc);
         if (typeof limit === 'number' && toProcess.length >= limit) break;
@@ -120,16 +120,16 @@ async function main() {
       pipeline.push({
         $lookup: {
           from: embeddingsColName,
-          let: { qid: '$id', qexam: '$examId' },
+          let: { qid: '$_id', qexam: '$examId' },
           pipeline: [
-            { $match: { $expr: { $and: [ { $eq: ['$id', '$$qid'] }, { $eq: ['$examId', '$$qexam'] } ] } } },
-            { $project: { _id: 0, id: 1 } },
+            { $match: { $expr: { $and: [ { $eq: ['$question_id', '$$qid'] }, { $eq: ['$examId', '$$qexam'] } ] } } },
+            { $project: { _id: 0, question_id: 1 } },
           ],
           as: 'e',
         },
       });
       pipeline.push({ $match: { e: { $size: 0 } } });
-      pipeline.push({ $project: { _id: 0, id: 1, examId: 1, question: 1, options: 1, answer: 1, explanation: 1 } });
+      pipeline.push({ $project: { _id: 1, examId: 1, question: 1, options: 1, answer: 1, explanation: 1 } });
       if (typeof limit === 'number') pipeline.push({ $limit: limit });
 
       const missing = await col.aggregate<QuestionDoc>(pipeline).toArray();
@@ -144,13 +144,14 @@ async function main() {
       const embeddings = await createEmbeddings(inputs, model, dimensions);
       const now = new Date();
 
-      const ops = batchDocs.map((doc, idx) =>
-        embCol.updateOne(
-          { examId: doc.examId, id: doc.id },
+      const ops = batchDocs.map((doc, idx) => {
+        const questionId = doc._id;
+        return embCol.updateOne(
+          { examId: doc.examId, question_id: questionId },
           {
             $setOnInsert: {
               createdAt: now,
-              id: doc.id,
+              question_id: questionId,
               examId: doc.examId,
             },
             $set: {
@@ -159,10 +160,13 @@ async function main() {
               embeddingUpdatedAt: now,
               updatedAt: now,
             },
+            $unset: {
+              id: '', // Remove old id field if it exists
+            },
           },
           { upsert: true }
-        )
-      );
+        );
+      });
       await Promise.all(ops);
       console.log(`Processed ${Math.min(i + batchDocs.length, toProcess.length)} / ${toProcess.length}`);
     }

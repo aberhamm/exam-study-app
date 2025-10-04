@@ -83,7 +83,7 @@ Mode: ${update ? 'update if exists' : 'create if absent'}
         fields: {
           // Fields used in $vectorSearch.filter must be indexed as 'token'
           examId: { type: 'token' },
-          id: { type: 'token' },
+          question_id: { type: 'token' },
           embedding: { type: 'knnVector', dimensions: dims, similarity },
         },
       },
