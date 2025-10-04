@@ -40,6 +40,8 @@ async function getQuestionsCollection(): Promise<Collection<QuestionDocument>> {
   await Promise.allSettled([
     collection.createIndex({ examId: 1 }, { name: 'examId_1' }),
     collection.createIndex(textIndex, { name: 'question_text' }),
+    // Index for filtering questions by competency
+    collection.createIndex({ examId: 1, competencyIds: 1 }, { name: 'examId_competencyIds' }),
   ]);
 
   return collection;

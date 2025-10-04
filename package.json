@@ -20,7 +20,8 @@
     "remove:legacy-questions": "tsx scripts/remove-legacy-embedded-questions.ts",
     "create:competencies-index": "tsx scripts/create-competencies-vector-index.ts",
     "embed:competencies": "tsx scripts/embed-competencies.ts",
-    "assign:competencies": "tsx scripts/assign-competencies-to-questions.ts"
+    "assign:competencies": "tsx scripts/assign-competencies-to-questions.ts",
+    "sync:competencies": "tsx scripts/sync-competency-references.ts"
   },
   "dependencies": {
     "@next/env": "15.5.2",

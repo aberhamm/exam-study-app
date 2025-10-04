@@ -11,6 +11,10 @@ const customJestConfig = {
   moduleNameMapper: {
     // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
     '^@/(.*)$': '<rootDir>/$1',
+    // Mock ESM modules to avoid import issues in tests
+    '^mongodb$': '<rootDir>/__tests__/__mocks__/mongodb.js',
+    '^bson$': '<rootDir>/__tests__/__mocks__/bson.js',
+    '^nanoid$': '<rootDir>/__tests__/__mocks__/nanoid.js',
   },
   testEnvironment: 'jest-environment-jsdom',
   collectCoverageFrom: [
@@ -25,6 +29,9 @@ const customJestConfig = {
   ],
   testMatch: [
     '**/__tests__/**/*.(test|spec).{js,jsx,ts,tsx}',
+  ],
+  transformIgnorePatterns: [
+    '/node_modules/(?!(bson|mongodb|@mongodb-js)/)',
   ],
 }
 

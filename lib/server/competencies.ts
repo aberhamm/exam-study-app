@@ -52,6 +52,7 @@ export async function createCompetency(input: CreateCompetencyInput): Promise<Co
     title: input.title,
     description: input.description,
     examPercentage: input.examPercentage,
+    questionCount: 0, // Initialize denormalized count
     createdAt: now,
     updatedAt: now,
   };
@@ -104,10 +105,35 @@ export async function updateCompetency(
   return rest;
 }
 
+/**
+ * Delete a competency
+ *
+ * This function implements cascading delete to maintain data integrity:
+ * 1. Deletes the competency
+ * 2. Automatically removes the competency ID from all questions that reference it
+ *
+ * No orphaned references are left behind - everything is cleaned up automatically!
+ */
 export async function deleteCompetency(competencyId: string, examId: string): Promise<boolean> {
-  const collection = await getCompetenciesCollection();
-  const result = await collection.deleteOne({ id: competencyId, examId });
-  return result.deletedCount > 0;
+  const db = await getDb();
+  const competenciesCol = await getCompetenciesCollection();
+  const questionsCol = db.collection(envConfig.mongo.questionsCollection);
+
+  // Delete the competency and remove it from all questions in a consistent manner
+  const competencyResult = await competenciesCol.deleteOne({ id: competencyId, examId });
+
+  if (competencyResult.deletedCount > 0) {
+    // Cascading delete: Remove this competency ID from all questions that reference it
+    await questionsCol.updateMany(
+      { examId, competencyIds: competencyId },
+      {
+        $pull: { competencyIds: competencyId } as any,
+        $set: { updatedAt: new Date() },
+      }
+    );
+  }
+
+  return competencyResult.deletedCount > 0;
 }
 
 export type CompetencyStats = {

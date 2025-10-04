@@ -4,6 +4,7 @@ export type CompetencyDocument = {
   title: string;
   description: string;
   examPercentage: number;
+  questionCount?: number; // Denormalized count of questions assigned to this competency
   embedding?: number[];
   embeddingModel?: string;
   embeddingUpdatedAt?: Date;

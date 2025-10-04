@@ -106,6 +106,50 @@ export async function searchSimilarCompetencies(
   }
 }
 
+/**
+ * Helper function to update competency question counts
+ *
+ * This maintains the denormalized `questionCount` field on competencies.
+ * Called automatically by assignCompetenciesToQuestion and unassignCompetenciesFromQuestion.
+ *
+ * @param examId - The exam ID
+ * @param competenciesToIncrement - Array of competency IDs to increment count
+ * @param competenciesToDecrement - Array of competency IDs to decrement count
+ */
+async function updateCompetencyQuestionCounts(
+  examId: string,
+  competenciesToIncrement: string[],
+  competenciesToDecrement: string[]
+): Promise<void> {
+  const competenciesCol = await getCompetenciesCollection();
+
+  // Increment counts for newly assigned competencies
+  if (competenciesToIncrement.length > 0) {
+    await competenciesCol.updateMany(
+      { examId, id: { $in: competenciesToIncrement } },
+      { $inc: { questionCount: 1 }, $set: { updatedAt: new Date() } }
+    );
+  }
+
+  // Decrement counts for unassigned competencies
+  if (competenciesToDecrement.length > 0) {
+    await competenciesCol.updateMany(
+      { examId, id: { $in: competenciesToDecrement } },
+      { $inc: { questionCount: -1 }, $set: { updatedAt: new Date() } }
+    );
+  }
+}
+
+/**
+ * Assign competencies to a question
+ *
+ * This function automatically maintains sync by:
+ * 1. Updating the question's competencyIds
+ * 2. Incrementing questionCount for newly assigned competencies
+ * 3. Decrementing questionCount for removed competencies
+ *
+ * No manual sync needed - everything happens automatically!
+ */
 export async function assignCompetenciesToQuestion(
   questionId: string,
   examId: string,
@@ -118,6 +162,20 @@ export async function assignCompetenciesToQuestion(
     throw new Error('Invalid question ID format');
   }
 
+  // Get current competency assignments to calculate the diff
+  const currentQuestion = await questionsCol.findOne(
+    { _id: new ObjectId(questionId), examId },
+    { projection: { competencyIds: 1 } }
+  );
+
+  const currentCompetencyIds = currentQuestion?.competencyIds || [];
+  const newCompetencyIds = competencyIds;
+
+  // Calculate which competencies are being added and removed
+  const competenciesToAdd = newCompetencyIds.filter(id => !currentCompetencyIds.includes(id));
+  const competenciesToRemove = currentCompetencyIds.filter(id => !newCompetencyIds.includes(id));
+
+  // Update the question
   await questionsCol.updateOne(
     { _id: new ObjectId(questionId), examId },
     {
@@ -127,8 +185,20 @@ export async function assignCompetenciesToQuestion(
       },
     }
   );
+
+  // Update denormalized counts in competencies
+  await updateCompetencyQuestionCounts(examId, competenciesToAdd, competenciesToRemove);
 }
 
+/**
+ * Unassign all competencies from a question
+ *
+ * This function automatically maintains sync by:
+ * 1. Clearing the question's competencyIds
+ * 2. Decrementing questionCount for all previously assigned competencies
+ *
+ * No manual sync needed - everything happens automatically!
+ */
 export async function unassignCompetenciesFromQuestion(
   questionId: string,
   examId: string
@@ -140,6 +210,15 @@ export async function unassignCompetenciesFromQuestion(
     throw new Error('Invalid question ID format');
   }
 
+  // Get current competency assignments to decrement their counts
+  const currentQuestion = await questionsCol.findOne(
+    { _id: new ObjectId(questionId), examId },
+    { projection: { competencyIds: 1 } }
+  );
+
+  const currentCompetencyIds = currentQuestion?.competencyIds || [];
+
+  // Update the question
   await questionsCol.updateOne(
     { _id: new ObjectId(questionId), examId },
     {
@@ -149,4 +228,7 @@ export async function unassignCompetenciesFromQuestion(
       },
     }
   );
+
+  // Decrement counts for all previously assigned competencies
+  await updateCompetencyQuestionCounts(examId, [], currentCompetencyIds);
 }
