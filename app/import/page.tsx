@@ -9,6 +9,7 @@ import { useHeader } from '@/contexts/HeaderContext';
 import { ExternalQuestionsImportZ } from '@/lib/validation';
 import { APP_CONFIG } from '@/lib/app-config';
 import type { ExamSummary } from '@/types/api';
+import { DevNavigation } from '@/components/DevNavigation';
 
 const jsonBeautify = (value: unknown): string => {
   try {
@@ -56,6 +57,7 @@ export default function ImportQuestionsPage() {
           Home
         </Link>
       ),
+      rightContent: <DevNavigation currentPage="import" />,
     });
     return () => {
       resetConfig();

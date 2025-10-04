@@ -8,6 +8,7 @@ import { useHeader } from '@/contexts/HeaderContext';
 import { APP_CONFIG } from '@/lib/app-config';
 import { MarkdownContent } from '@/components/ui/markdown';
 import { History, BookOpen } from 'lucide-react';
+import { DevNavigation } from '@/components/DevNavigation';
 import {
   TEST_SETTINGS,
   TestSettings,
@@ -59,27 +60,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
           <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border border-amber-300/50">
             Dev
           </span>
-          <Link href="/import" className="text-sm text-muted-foreground hover:text-foreground">
-            Import
-          </Link>
-          <Link href="/dev/search" className="text-sm text-muted-foreground hover:text-foreground">
-            Search
-          </Link>
-          <Link
-            href="/dev/dedupe"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            Dedupe
-          </Link>
-          <Link
-            href="/dev/competencies"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            Competencies
-          </Link>
-          <Link href="/dev/docs" className="text-sm text-muted-foreground hover:text-foreground">
-            Docs
-          </Link>
+          <DevNavigation />
         </div>
       ) : null,
       visible: true,

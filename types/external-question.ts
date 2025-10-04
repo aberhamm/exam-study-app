@@ -29,6 +29,7 @@ export type ExamDetail = {
   examId?: string;
   examTitle?: string;
   welcomeConfig?: WelcomeConfig;
+  documentGroups?: string[];
   questions: ExternalQuestion[];
 };
 

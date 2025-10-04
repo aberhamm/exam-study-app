@@ -111,7 +111,8 @@ async function createEmbedding(text: string): Promise<number[]> {
 
 async function searchDocumentChunks(
   queryEmbedding: number[],
-  topK: number = envConfig.pipeline.maxContextChunks
+  topK: number = envConfig.pipeline.maxContextChunks,
+  groupIds?: string[]
 ): Promise<DocumentChunk[]> {
   // Circuit breaker check
   if (circuitBreakerUntil && Date.now() < circuitBreakerUntil) {
@@ -128,10 +129,16 @@ async function searchDocumentChunks(
   const numCandidates = Math.min(topK * candidateMultiplier, maxCandidates);
 
   if (featureFlags.debugRetrieval) {
-    console.info(`[searchDocumentChunks] topK=${topK}, candidates=${numCandidates}, dimensions=${queryEmbedding.length}`);
+    console.info(`[searchDocumentChunks] topK=${topK}, candidates=${numCandidates}, dimensions=${queryEmbedding.length}, groupIds=${groupIds?.join(',') || 'all'}`);
   }
 
   try {
+    // Build filter based on groupIds
+    let filter: Record<string, unknown> | undefined;
+    if (groupIds && groupIds.length > 0) {
+      filter = { groupId: { $in: groupIds } };
+    }
+
     // Step 1: Vector search for IDs and scores only
     const vectorPipeline = [
       {
@@ -141,6 +148,7 @@ async function searchDocumentChunks(
           path: 'embedding',
           numCandidates,
           limit: topK,
+          ...(filter ? { filter } : {}),
         },
       },
       {
@@ -388,12 +396,13 @@ Explain why the correct answer is correct using ONLY the excerpts above.
 }
 
 export async function generateQuestionExplanation(
-  question: NormalizedQuestion
+  question: NormalizedQuestion,
+  documentGroups?: string[]
 ): Promise<ExplanationResult> {
   const questionHash = hashText(question.id);
 
   if (featureFlags.debugRetrieval) {
-    console.info(`[generateQuestionExplanation] Starting for question ${questionHash}`);
+    console.info(`[generateQuestionExplanation] Starting for question ${questionHash}, documentGroups=${documentGroups?.join(',') || 'all'}`);
   }
 
   try {
@@ -406,7 +415,7 @@ export async function generateQuestionExplanation(
     }
 
     // Search for relevant document chunks
-    const documentChunks = await searchDocumentChunks(queryEmbedding);
+    const documentChunks = await searchDocumentChunks(queryEmbedding, envConfig.pipeline.maxContextChunks, documentGroups);
 
     // Deduplicate and clamp chunks
     const processedChunks = deduplicateAndClampChunks(documentChunks);

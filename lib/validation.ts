@@ -48,6 +48,7 @@ export const ExamDetailZ = z.object({
   examId: z.string().optional().default('sitecore-xmc'),
   examTitle: z.string().optional().default('Sitecore XM Cloud'),
   welcomeConfig: WelcomeConfigZ.optional(),
+  documentGroups: z.array(z.string()).optional(),
   questions: z.array(ExternalQuestionZ),
 });
 
@@ -83,10 +84,14 @@ export const CompetencyUpdateZ = z.object({
 // Utility: non-throwing structural coercion from loose input into ExamDetail-like shape
 // Intended to be followed by ExamDetailZ.parse(...) for strict validation.
 export function coerceExamDetail(input: unknown): ExamDetail {
-  const file = (input ?? {}) as Partial<ExamDetail> & { questions?: unknown };
+  const file = (input ?? {}) as Partial<ExamDetail> & { questions?: unknown; documentGroups?: unknown };
 
   const questionsIn = Array.isArray(file.questions) ? (file.questions as unknown[]) : [];
   const questions: ExternalQuestion[] = questionsIn.map((q) => coerceExternalQuestion(q));
+
+  const documentGroups = Array.isArray(file.documentGroups)
+    ? (file.documentGroups as string[]).filter((g): g is string => typeof g === 'string')
+    : undefined;
 
   return {
     examId: typeof (file as Partial<ExamDetail> & { examId?: unknown }).examId === 'string'
@@ -96,6 +101,7 @@ export function coerceExamDetail(input: unknown): ExamDetail {
       ? (file as Partial<ExamDetail> & { examTitle?: string }).examTitle
       : undefined,
     welcomeConfig: (file as Partial<ExamDetail>).welcomeConfig,
+    documentGroups,
     questions,
   };
 }

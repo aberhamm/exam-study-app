@@ -41,6 +41,11 @@ export async function POST(request: Request, context: RouteParams) {
       body = {};
     }
 
+    // Get the exam to access documentGroups
+    const { fetchExamById } = await import('@/lib/server/exams');
+    const exam = await fetchExamById(examId);
+    const documentGroups = exam?.documentGroups;
+
     // Get the question from database
     const questionDoc = await getQuestionById(examId, questionId);
     if (!questionDoc) {
@@ -54,7 +59,7 @@ export async function POST(request: Request, context: RouteParams) {
     const [normalizedQuestion] = normalizeQuestions([questionDoc]);
 
     // Generate the explanation
-    console.info(`[explain] Generating explanation for question ${questionId} in exam ${examId}`);
+    console.info(`[explain] Generating explanation for question ${questionId} in exam ${examId}, documentGroups=${documentGroups?.join(',') || 'all'}`);
     console.info(`[explain] Question details:`, {
       id: normalizedQuestion.id,
       prompt: normalizedQuestion.prompt.substring(0, 100) + '...',
@@ -63,7 +68,7 @@ export async function POST(request: Request, context: RouteParams) {
       choicesCount: normalizedQuestion.choices.length,
     });
 
-    const result = await generateQuestionExplanation(normalizedQuestion);
+    const result = await generateQuestionExplanation(normalizedQuestion, documentGroups);
 
     console.info(`[explain] Generated explanation result:`, {
       explanationLength: result.explanation.length,

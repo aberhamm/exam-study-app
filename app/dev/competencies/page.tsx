@@ -8,8 +8,11 @@ import { ExamSelector } from '@/components/competencies/ExamSelector';
 import { CompetencyForm } from '@/components/competencies/CompetencyForm';
 import { CompetencyList } from '@/components/competencies/CompetencyList';
 import { CompetencyListSkeleton } from '@/components/competencies/CompetencySkeleton';
+import { DevNavigation } from '@/components/DevNavigation';
+import { useHeader } from '@/contexts/HeaderContext';
 
 export default function CompetenciesPage() {
+  const { setConfig, resetConfig } = useHeader();
   const [exams, setExams] = useState<ExamSummary[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [examsLoading, setExamsLoading] = useState(true);
@@ -24,6 +27,20 @@ export default function CompetenciesPage() {
     deleteCompetency,
     refetch,
   } = useCompetencies(selectedExamId, true);
+
+  useEffect(() => {
+    setConfig({
+      visible: true,
+      variant: 'full',
+      leftContent: (
+        <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+          Home
+        </Link>
+      ),
+      rightContent: <DevNavigation currentPage="competencies" />,
+    });
+    return () => resetConfig();
+  }, [resetConfig, setConfig]);
 
   useEffect(() => {
     async function fetchExams() {
@@ -51,17 +68,9 @@ export default function CompetenciesPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="space-y-6">
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-3xl font-bold text-foreground">Exam Competencies Manager</h1>
-          <Link
-            href="/"
-            className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            ← Back to Home
-          </Link>
-        </div>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Exam Competencies Manager</h1>
         <p className="text-muted-foreground">
           Define and manage competency areas for your exams. Competencies are used to categorize
           questions and ensure balanced coverage across topics.

@@ -11,6 +11,7 @@ import { QuestionEditorDialog } from '@/components/QuestionEditorDialog';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { ExternalQuestion } from '@/types/external-question';
 import { normalizeQuestions } from '@/lib/normalize';
+import { DevNavigation } from '@/components/DevNavigation';
 
 type ApiQuestionResult = {
   score: number;
@@ -74,16 +75,7 @@ export default function SearchDevPage() {
           Home
         </Link>
       ),
-      rightContent: (
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/import" className="text-sm text-muted-foreground hover:text-foreground">
-            Import Questions
-          </Link>
-          <Link href="/dev/dedupe" className="text-sm text-muted-foreground hover:text-foreground">
-            Dedupe
-          </Link>
-        </div>
-      ),
+      rightContent: <DevNavigation currentPage="search" />,
     });
     return () => {
       resetConfig();

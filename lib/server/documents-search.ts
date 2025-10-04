@@ -16,14 +16,24 @@ async function getDocumentEmbeddingsCollection(): Promise<Collection<Document>> 
 export async function searchSimilarDocuments(
   queryEmbedding: number[],
   topK: number = 10,
-  groupId?: string
+  groupIds?: string | string[]
 ): Promise<SimilarDocument[]> {
   const indexName = envConfig.mongo.documentEmbeddingsVectorIndex;
   const embCol = await getDocumentEmbeddingsCollection();
 
   try {
     if (envConfig.app.isDevelopment) {
-      console.info(`[documentVectorSearch] index=${indexName} groupId=${groupId || 'all'} topK=${topK} candidates=${Math.max(100, topK * 5)}`);
+      console.info(`[documentVectorSearch] index=${indexName} groupIds=${Array.isArray(groupIds) ? groupIds.join(',') : groupIds || 'all'} topK=${topK} candidates=${Math.max(100, topK * 5)}`);
+    }
+
+    // Build filter based on groupIds
+    let filter: Document | undefined;
+    if (groupIds) {
+      if (Array.isArray(groupIds) && groupIds.length > 0) {
+        filter = { groupId: { $in: groupIds } };
+      } else if (typeof groupIds === 'string') {
+        filter = { groupId: groupIds };
+      }
     }
 
     // Vector search pipeline
@@ -35,7 +45,7 @@ export async function searchSimilarDocuments(
           path: 'embedding',
           numCandidates: Math.max(100, topK * 5),
           limit: topK,
-          ...(groupId ? { filter: { groupId } } : {}),
+          ...(filter ? { filter } : {}),
         },
       },
       {
@@ -78,7 +88,7 @@ export async function searchSimilarDocuments(
     return results;
   } catch (error) {
     // If vector search is unavailable, return empty result
-    console.warn(`[documentVectorSearch] Failed or unsupported; returning empty results. index=${indexName} groupId=${groupId || 'all'} topK=${topK}`, error);
+    console.warn(`[documentVectorSearch] Failed or unsupported; returning empty results. index=${indexName} groupIds=${Array.isArray(groupIds) ? groupIds.join(',') : groupIds || 'all'} topK=${topK}`, error);
     return [];
   }
 }

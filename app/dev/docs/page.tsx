@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useHeader } from '@/contexts/HeaderContext';
 import { APP_CONFIG } from '@/lib/app-config';
+import { DevNavigation } from '@/components/DevNavigation';
 
 export default function DocsPage() {
   const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
@@ -19,6 +20,7 @@ export default function DocsPage() {
           Home
         </Link>
       ),
+      rightContent: <DevNavigation currentPage="docs" />,
     });
     return () => resetConfig();
   }, [resetConfig, setConfig]);

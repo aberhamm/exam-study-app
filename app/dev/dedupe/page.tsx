@@ -12,6 +12,7 @@ import type { ExternalQuestion } from '@/types/external-question';
 import { normalizeQuestions } from '@/lib/normalize';
 import { QuestionEditorDialog } from '@/components/QuestionEditorDialog';
 import type { QuestionCluster } from '@/types/clusters';
+import { DevNavigation } from '@/components/DevNavigation';
 
 type PairItem = {
   score: number;
@@ -55,11 +56,7 @@ export default function DedupeDevPage() {
           Home
         </Link>
       ),
-      rightContent: (
-        <Link href="/import" className="text-sm text-muted-foreground hover:text-foreground">
-          Import Questions
-        </Link>
-      ),
+      rightContent: <DevNavigation currentPage="dedupe" />,
     });
     return () => {
       resetConfig();

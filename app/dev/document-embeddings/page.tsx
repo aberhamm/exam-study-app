@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
 import { APP_CONFIG } from '@/lib/app-config';
+import { DevNavigation } from '@/components/DevNavigation';
 
 export default function DocumentEmbeddingsDevPage() {
   const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
@@ -20,6 +21,7 @@ export default function DocumentEmbeddingsDevPage() {
           Home
         </Link>
       ),
+      rightContent: <DevNavigation currentPage="document-embeddings" />,
     });
     return () => resetConfig();
   }, [resetConfig, setConfig]);
