@@ -56,6 +56,7 @@ export const mongoConfig = {
   // Vector index names (hardcoded)
   questionEmbeddingsVectorIndex: 'question_embeddings_vector_index',
   competenciesVectorIndex: 'competencies_vector_index',
+  documentEmbeddingsVectorIndex: 'embedding_vector',
 } as const;
 
 /**

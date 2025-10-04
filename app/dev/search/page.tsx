@@ -12,7 +12,7 @@ import type { NormalizedQuestion } from '@/types/normalized';
 import type { ExternalQuestion } from '@/types/external-question';
 import { normalizeQuestions } from '@/lib/normalize';
 
-type ApiSearchResult = {
+type ApiQuestionResult = {
   score: number;
   question: {
     id: string;
@@ -25,6 +25,24 @@ type ApiSearchResult = {
   };
 };
 
+type ApiDocumentResult = {
+  score: number;
+  document: {
+    text: string;
+    sourceFile?: string;
+    sourceBasename?: string;
+    groupId?: string;
+    title?: string;
+    description?: string;
+    url?: string;
+    tags?: string[];
+    sectionPath?: string;
+    nearestHeading?: string;
+    chunkIndex?: number;
+    chunkTotal?: number;
+  };
+};
+
 export default function SearchDevPage() {
   const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
   const { setConfig, resetConfig } = useHeader();
@@ -33,12 +51,15 @@ export default function SearchDevPage() {
   const [examsLoading, setExamsLoading] = useState(true);
   const [examsError, setExamsError] = useState<string | null>(null);
 
+  const [searchType, setSearchType] = useState<'questions' | 'documents'>('questions');
   const [examId, setExamId] = useState('');
+  const [groupId, setGroupId] = useState('');
   const [query, setQuery] = useState('');
   const [topK, setTopK] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<ApiSearchResult[]>([]);
+  const [questionResults, setQuestionResults] = useState<ApiQuestionResult[]>([]);
+  const [documentResults, setDocumentResults] = useState<ApiDocumentResult[]>([]);
   const [editing, setEditing] = useState<NormalizedQuestion | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -93,29 +114,49 @@ export default function SearchDevPage() {
   }, [DEV]);
 
   const canSubmit = useMemo(() => {
-    return !!examId && query.trim().length > 0 && !submitting;
-  }, [examId, query, submitting]);
+    if (searchType === 'questions') {
+      return !!examId && query.trim().length > 0 && !submitting;
+    }
+    return query.trim().length > 0 && !submitting;
+  }, [searchType, examId, query, submitting]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    setResults([]);
+    setQuestionResults([]);
+    setDocumentResults([]);
 
     try {
-      const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, topK }),
-      });
-      const json = await resp.json();
-      if (!resp.ok) {
-        throw new Error(
-          typeof json?.error === 'string' ? json.error : `Search failed (${resp.status})`
-        );
+      if (searchType === 'questions') {
+        const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, topK }),
+        });
+        const json = await resp.json();
+        if (!resp.ok) {
+          throw new Error(
+            typeof json?.error === 'string' ? json.error : `Search failed (${resp.status})`
+          );
+        }
+        const items = Array.isArray(json?.results) ? (json.results as ApiQuestionResult[]) : [];
+        setQuestionResults(items);
+      } else {
+        const resp = await fetch('/api/search/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, topK, groupId: groupId || undefined }),
+        });
+        const json = await resp.json();
+        if (!resp.ok) {
+          throw new Error(
+            typeof json?.error === 'string' ? json.error : `Search failed (${resp.status})`
+          );
+        }
+        const items = Array.isArray(json?.results) ? (json.results as ApiDocumentResult[]) : [];
+        setDocumentResults(items);
       }
-      const items = Array.isArray(json?.results) ? (json.results as ApiSearchResult[]) : [];
-      setResults(items);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
     } finally {
@@ -129,7 +170,7 @@ export default function SearchDevPage() {
     }
   };
 
-  const openEdit = (item: ApiSearchResult) => {
+  const openEdit = (item: ApiQuestionResult) => {
     const [norm] = normalizeQuestions([
       {
         id: item.question.id,
@@ -185,7 +226,7 @@ export default function SearchDevPage() {
         );
 
       // Update results inline
-      setResults((prev) =>
+      setQuestionResults((prev) =>
         prev.map((r) =>
           r.question.id === updated.id ? { ...r, question: { ...r.question, ...json } } : r
         )
@@ -216,36 +257,77 @@ export default function SearchDevPage() {
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <h2 className="text-2xl font-semibold mb-2">Semantic Question Search (Dev)</h2>
+        <h2 className="text-2xl font-semibold mb-2">Semantic Search (Dev)</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Query questions via vector similarity. Requires populated embeddings and a MongoDB Atlas
+          Search questions or documents via vector similarity. Requires populated embeddings and a MongoDB Atlas
           vector index.
         </p>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="exam-select">
-                Exam
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Search Type</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  value="questions"
+                  checked={searchType === 'questions'}
+                  onChange={(e) => setSearchType(e.target.value as 'questions' | 'documents')}
+                />
+                <span className="text-sm">Questions</span>
               </label>
-              <select
-                id="exam-select"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                value={examId}
-                onChange={(e) => setExamId(e.target.value)}
-                disabled={examsLoading}
-              >
-                {exams.length === 0 && (
-                  <option value="">{examsLoading ? 'Loading exams…' : 'No exams found'}</option>
-                )}
-                {exams.map((exam) => (
-                  <option key={exam.examId} value={exam.examId}>
-                    {exam.examTitle ? `${exam.examTitle} (${exam.examId})` : exam.examId}
-                  </option>
-                ))}
-              </select>
-              {examsError && <p className="text-sm text-destructive">{examsError}</p>}
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  value="documents"
+                  checked={searchType === 'documents'}
+                  onChange={(e) => setSearchType(e.target.value as 'questions' | 'documents')}
+                />
+                <span className="text-sm">Documents</span>
+              </label>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {searchType === 'questions' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="exam-select">
+                  Exam
+                </label>
+                <select
+                  id="exam-select"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={examId}
+                  onChange={(e) => setExamId(e.target.value)}
+                  disabled={examsLoading}
+                >
+                  {exams.length === 0 && (
+                    <option value="">{examsLoading ? 'Loading exams…' : 'No exams found'}</option>
+                  )}
+                  {exams.map((exam) => (
+                    <option key={exam.examId} value={exam.examId}>
+                      {exam.examTitle ? `${exam.examTitle} (${exam.examId})` : exam.examId}
+                    </option>
+                  ))}
+                </select>
+                {examsError && <p className="text-sm text-destructive">{examsError}</p>}
+              </div>
+            )}
+            {searchType === 'documents' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="group-input">
+                  Group ID <span className="text-muted-foreground">(optional)</span>
+                </label>
+                <input
+                  id="group-input"
+                  type="text"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Filter by group ID…"
+                  value={groupId}
+                  onChange={(e) => setGroupId(e.target.value)}
+                />
+              </div>
+            )}
 
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium" htmlFor="query">
@@ -300,13 +382,19 @@ export default function SearchDevPage() {
             {saveError}
           </div>
         )}
-        {results.length === 0 ? (
+        {searchType === 'questions' && questionResults.length === 0 && (
           <p className="text-sm text-muted-foreground">
             No results yet. Submit a query to see matches.
           </p>
-        ) : (
+        )}
+        {searchType === 'documents' && documentResults.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No results yet. Submit a query to see matches.
+          </p>
+        )}
+        {searchType === 'questions' && questionResults.length > 0 && (
           <ul className="space-y-4">
-            {results.map((item) => (
+            {questionResults.map((item) => (
               <li key={item.question.id} className="rounded-md border border-border p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
@@ -338,6 +426,58 @@ export default function SearchDevPage() {
                     Edit
                   </Button>
                 </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {searchType === 'documents' && documentResults.length > 0 && (
+          <ul className="space-y-4">
+            {documentResults.map((item, idx) => (
+              <li key={`${item.document.sourceFile}-${item.document.chunkIndex}-${idx}`} className="rounded-md border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {item.document.sourceBasename || item.document.sourceFile}
+                    {item.document.chunkIndex !== undefined && ` (chunk ${item.document.chunkIndex}/${item.document.chunkTotal})`}
+                  </p>
+                  <p className="text-sm">
+                    Score: <span className="font-mono">{item.score.toFixed(4)}</span>
+                  </p>
+                </div>
+                {item.document.title && (
+                  <h4 className="mt-2 font-semibold">{item.document.title}</h4>
+                )}
+                {item.document.sectionPath && (
+                  <p className="text-sm text-muted-foreground">
+                    Section: {item.document.sectionPath}
+                  </p>
+                )}
+                {item.document.nearestHeading && (
+                  <p className="text-sm text-muted-foreground">
+                    Heading: {item.document.nearestHeading}
+                  </p>
+                )}
+                <p className="mt-2 text-sm whitespace-pre-wrap">{item.document.text}</p>
+                {item.document.url && (
+                  <p className="mt-2 text-sm">
+                    <a href={item.document.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      {item.document.url}
+                    </a>
+                  </p>
+                )}
+                {item.document.tags && item.document.tags.length > 0 && (
+                  <div className="mt-2 flex gap-2 flex-wrap">
+                    {item.document.tags.map((tag) => (
+                      <span key={tag} className="text-xs bg-muted px-2 py-1 rounded">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {item.document.groupId && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Group: <span className="font-mono">{item.document.groupId}</span>
+                  </p>
+                )}
               </li>
             ))}
           </ul>

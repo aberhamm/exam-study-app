@@ -42,3 +42,7 @@ export function getDedupePairsCollectionName(): string {
 export function getQuestionClustersCollectionName(): string {
   return envConfig.mongo.questionClustersCollection;
 }
+
+export function getDocumentEmbeddingsCollectionName(): string {
+  return 'document_embeddings';
+}
