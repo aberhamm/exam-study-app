@@ -112,9 +112,14 @@ export async function assignCompetenciesToQuestion(
   competencyIds: string[]
 ): Promise<void> {
   const questionsCol = await getQuestionsCollection();
+  const { ObjectId } = await import('mongodb');
+
+  if (!ObjectId.isValid(questionId)) {
+    throw new Error('Invalid question ID format');
+  }
 
   await questionsCol.updateOne(
-    { id: questionId, examId },
+    { _id: new ObjectId(questionId), examId },
     {
       $set: {
         competencyIds,
@@ -129,9 +134,14 @@ export async function unassignCompetenciesFromQuestion(
   examId: string
 ): Promise<void> {
   const questionsCol = await getQuestionsCollection();
+  const { ObjectId } = await import('mongodb');
+
+  if (!ObjectId.isValid(questionId)) {
+    throw new Error('Invalid question ID format');
+  }
 
   await questionsCol.updateOne(
-    { id: questionId, examId },
+    { _id: new ObjectId(questionId), examId },
     {
       $set: {
         competencyIds: [],

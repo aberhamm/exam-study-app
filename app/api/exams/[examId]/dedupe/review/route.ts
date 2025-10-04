@@ -43,11 +43,14 @@ export async function GET(_request: Request, context: RouteParams) {
       }, new Set<string>())
     );
 
+    const { ObjectId } = await import('mongodb');
+    const objectIds = ids.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
+
     const docs = await qCol
-      .find({ examId, id: { $in: ids } }, { projection: { _id: 0 } })
+      .find({ examId, _id: { $in: objectIds } })
       .toArray();
-    const byId = new Map<string, QuestionDocument>();
-    for (const d of docs) byId.set(d.id, d);
+    const byId = new Map<string, QuestionDocument & { id: string }>();
+    for (const d of docs) byId.set(d._id.toString(), { ...d, id: d._id.toString() });
 
     const pairs: Pair[] = [];
     for (const f of flags) {

@@ -1,9 +1,10 @@
-import type { Collection, IndexSpecification } from 'mongodb';
+import type { Collection, IndexSpecification, ObjectId } from 'mongodb';
 import type { ExternalQuestion, ExamDetail } from '@/types/external-question';
 import type { QuestionDocument, QuestionWithId } from '@/types/question';
 import { getDb, getExamsCollectionName, getQuestionsCollectionName } from './mongodb';
 import { generateQuestionId } from '@/lib/normalize';
 import { DuplicateQuestionIdsError, ExamNotFoundError } from '@/lib/server/exams';
+import { ObjectId as MongoObjectId } from 'mongodb';
 
 type ExamDocument = ExamDetail & {
   _id?: unknown;
@@ -17,10 +18,10 @@ function sanitizeStudy(value: unknown): ExternalQuestion['study'] | undefined {
   return Array.isArray(value) ? (value as ExternalQuestion['study']) : undefined;
 }
 
-function mapQuestionDocToExternal(q: QuestionDocument): ExternalQuestion & { id: string } {
-  const { id, question, options, answer, question_type, explanation, study } = q;
+function mapQuestionDocToExternal(q: QuestionDocument & { _id: ObjectId }): ExternalQuestion & { id: string } {
+  const { _id, question, options, answer, question_type, explanation, study } = q;
   return {
-    id,
+    id: _id.toString(),
     question,
     options,
     answer,
@@ -37,7 +38,6 @@ async function getQuestionsCollection(): Promise<Collection<QuestionDocument>> {
   // Ensure indexes exist (idempotent)
   const textIndex = { question: 'text' } as unknown as IndexSpecification;
   await Promise.allSettled([
-    collection.createIndex({ examId: 1, id: 1 }, { unique: true, name: 'unique_examId_id' }),
     collection.createIndex({ examId: 1 }, { name: 'examId_1' }),
     collection.createIndex(textIndex, { name: 'question_text' }),
   ]);
@@ -71,24 +71,11 @@ export async function addExamQuestions(
     throw new ExamNotFoundError(examId);
   }
 
-  // Load existing ids for this exam
-  const existingIds = new Set<string>();
-  // From new questions collection
-  const existing = collection.find({ examId }, { projection: { id: 1 } });
-  for await (const doc of existing) existingIds.add(doc.id);
-
   const toInsert: QuestionWithId[] = [];
-  const duplicates: string[] = [];
 
   for (const q of questions) {
-    const id = generateQuestionId(q);
-    if (existingIds.has(id) || toInsert.some((x) => x.id === id)) {
-      duplicates.push(id);
-      continue;
-    }
     const now = new Date();
     toInsert.push({
-      id,
       examId,
       question: q.question,
       options: q.options,
@@ -101,10 +88,6 @@ export async function addExamQuestions(
     });
   }
 
-  if (duplicates.length > 0) {
-    throw new DuplicateQuestionIdsError(duplicates);
-  }
-
   if (toInsert.length === 0) return [];
 
   await collection.insertMany(toInsert, { ordered: true });
@@ -114,19 +97,23 @@ export async function addExamQuestions(
 
 export async function updateQuestion(
   examId: string,
+  questionId: string,
   question: QuestionWithId,
 ): Promise<QuestionWithId | null> {
   const collection = await getQuestionsCollection();
 
+  if (!MongoObjectId.isValid(questionId)) {
+    return null;
+  }
+
   const result = await collection.updateOne(
-    { examId, id: question.id },
+    { _id: new MongoObjectId(questionId), examId },
     { $set: { ...question, updatedAt: new Date() } }
   );
 
   if (result.matchedCount === 0) {
     return null;
   }
-
 
   return { ...question };
 }
@@ -257,7 +244,12 @@ export async function getExamCacheTag(examId: string): Promise<string> {
   return tag;
 }
 
-export async function getQuestionById(examId: string, id: string): Promise<QuestionDocument | null> {
+export async function getQuestionById(examId: string, questionId: string): Promise<(QuestionDocument & { _id: ObjectId }) | null> {
   const collection = await getQuestionsCollection();
-  return collection.findOne({ examId, id });
+
+  if (!MongoObjectId.isValid(questionId)) {
+    return null;
+  }
+
+  return collection.findOne({ _id: new MongoObjectId(questionId), examId }) as Promise<(QuestionDocument & { _id: ObjectId }) | null>;
 }

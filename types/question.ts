@@ -1,7 +1,7 @@
 import type { StudyLink } from './external-question';
 
 export type QuestionDocument = {
-  id: string;
+  // Note: MongoDB _id is the primary identifier, mapped to 'id' in external API responses
   examId: string;
   question: string;
   options: { A: string; B: string; C: string; D: string; E?: string };

@@ -80,7 +80,7 @@ export async function POST(request: Request, context: RouteParams) {
           explanation: result.explanation,
           explanationGeneratedByAI: true,
         };
-        await updateQuestion(examId, updatedQuestion);
+        await updateQuestion(examId, questionId, updatedQuestion);
         console.info(`[explain] Saved explanation as default for question ${questionId}`);
       } catch (updateError) {
         console.error(`[explain] Failed to save explanation as default:`, updateError);

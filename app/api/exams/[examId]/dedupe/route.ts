@@ -122,11 +122,14 @@ export async function POST(request: Request, context: RouteParams) {
       return acc;
     }, new Set<string>());
 
+    const { ObjectId } = await import('mongodb');
+    const objectIds = Array.from(neededIds).filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
+
     const questions = await qCol
-      .find({ examId, id: { $in: Array.from(neededIds) } }, { projection: { _id: 0 } })
+      .find({ examId, _id: { $in: objectIds } })
       .toArray();
-    const byId = new Map<string, QuestionDocument>();
-    for (const q of questions) byId.set(q.id, q);
+    const byId = new Map<string, QuestionDocument & { id: string }>();
+    for (const q of questions) byId.set(q._id.toString(), { ...q, id: q._id.toString() });
 
     const resultPairs: Pair[] = [];
     for (const { aId, bId, score } of pairs.values()) {

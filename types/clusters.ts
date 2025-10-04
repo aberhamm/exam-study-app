@@ -10,7 +10,7 @@ export type QuestionCluster = {
   status: 'pending' | 'approved_duplicates' | 'approved_variants' | 'split';
   createdAt: Date;
   updatedAt: Date;
-  questions?: QuestionDocument[];
+  questions?: (QuestionDocument & { id: string })[];
 };
 
 export type ClusterDocument = QuestionCluster & {

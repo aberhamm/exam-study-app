@@ -22,13 +22,32 @@ export default function ExamSkeleton({ examTitle }: Props) {
 
   return (
     <div className="space-y-6" aria-busy="true" aria-live="polite">
-      {/* Top Bar: Timer + Progress */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-6 w-24 rounded bg-muted animate-pulse" />
-          <div className="h-6 w-16 rounded bg-muted animate-pulse" />
+      {/* Exam Title Header */}
+      {examTitle && (
+        <div className="text-center lg:text-left">
+          <h1 className="text-2xl font-bold">{examTitle}</h1>
         </div>
-        <div className="flex-1 h-2 bg-muted rounded animate-pulse" />
+      )}
+
+      {/* Mobile Header Actions */}
+      <div className="md:hidden flex justify-between items-center text-sm">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-20 rounded bg-muted animate-pulse" />
+          <span className="text-muted-foreground">•</span>
+          <div className="h-6 w-24 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="h-8 w-32 rounded bg-muted animate-pulse" />
+      </div>
+
+      {/* Timer + Progress */}
+      <div className="flex items-center justify-between gap-6">
+        <div className="flex-shrink-0 w-1/4">
+          <div className="h-6 w-24 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="flex-grow">
+          <div className="h-6 w-32 mx-auto rounded bg-muted animate-pulse mb-2" />
+          <div className="w-full h-2 bg-muted rounded animate-pulse" />
+        </div>
       </div>
 
       {/* Question Card */}

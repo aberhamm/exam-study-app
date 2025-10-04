@@ -9,8 +9,11 @@ type PaginationData = {
   totalPages: number;
 };
 
+// Question with id field for API responses
+type QuestionWithId = QuestionDocument & { id: string };
+
 type QuestionListProps = {
-  questions: QuestionDocument[];
+  questions: QuestionWithId[];
   showIndex?: boolean;
   emptyMessage?: string;
   showCompetencies?: boolean;

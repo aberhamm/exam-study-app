@@ -22,7 +22,7 @@ type PaginationData = {
 export default function CompetencyQuestionsPage({ params }: PageProps) {
   const { examId, competencyId } = use(params);
   const [competency, setCompetency] = useState<CompetencyDocument | null>(null);
-  const [questions, setQuestions] = useState<QuestionDocument[]>([]);
+  const [questions, setQuestions] = useState<(QuestionDocument & { id: string })[]>([]);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);

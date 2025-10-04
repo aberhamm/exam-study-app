@@ -29,11 +29,10 @@ export async function GET(request: Request, context: RouteParams) {
     // Get total count for pagination metadata
     const total = await col.countDocuments(filter);
 
-    const questions = await col
+    const docs = await col
       .find(filter, {
         projection: {
-          _id: 0,
-          id: 1,
+          _id: 1,
           examId: 1,
           question: 1,
           options: 1,
@@ -50,6 +49,21 @@ export async function GET(request: Request, context: RouteParams) {
       .skip(skip)
       .limit(validLimit)
       .toArray();
+
+    // Map _id to id for API response
+    const questions = docs.map(doc => ({
+      id: doc._id.toString(),
+      examId: doc.examId,
+      question: doc.question,
+      options: doc.options,
+      answer: doc.answer,
+      question_type: doc.question_type,
+      explanation: doc.explanation,
+      explanationGeneratedByAI: doc.explanationGeneratedByAI,
+      competencyIds: doc.competencyIds,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }));
 
     return NextResponse.json(
       {

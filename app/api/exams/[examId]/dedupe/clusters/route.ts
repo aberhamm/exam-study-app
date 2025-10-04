@@ -76,7 +76,7 @@ export async function GET(request: Request, context: RouteParams) {
 
     // Save clusters to database
     const now = new Date();
-    const clusterDocs: ClusterDocument[] = clusters.map(cluster => ({
+    const clusterDocs = clusters.map(cluster => ({
       ...cluster,
       examId,
       status: 'pending' as const,
@@ -91,7 +91,7 @@ export async function GET(request: Request, context: RouteParams) {
     }
 
     // Populate with question data
-    const populatedClusters = await populateClustersWithQuestions(clusterDocs, examId);
+    const populatedClusters = await populateClustersWithQuestions(clusterDocs as ClusterDocument[], examId);
 
     return NextResponse.json({
       examId,
@@ -141,7 +141,7 @@ export async function POST(request: Request, context: RouteParams) {
     // Save clusters to database
     const clustersCol = db.collection<ClusterDocument>(getQuestionClustersCollectionName());
     const now = new Date();
-    const clusterDocs: ClusterDocument[] = clusters.map(cluster => ({
+    const clusterDocs = clusters.map(cluster => ({
       ...cluster,
       examId,
       status: 'pending' as const,
@@ -156,7 +156,7 @@ export async function POST(request: Request, context: RouteParams) {
     }
 
     // Populate with question data
-    const populatedClusters = await populateClustersWithQuestions(clusterDocs, examId);
+    const populatedClusters = await populateClustersWithQuestions(clusterDocs as ClusterDocument[], examId);
 
     return NextResponse.json({
       examId,
@@ -236,13 +236,18 @@ async function populateClustersWithQuestions(
   }
 
   // Fetch all questions
+  const { ObjectId } = await import('mongodb');
+  const objectIds = Array.from(allQuestionIds)
+    .filter(id => ObjectId.isValid(id))
+    .map(id => new ObjectId(id));
+
   const questions = await qCol
-    .find({ examId, id: { $in: Array.from(allQuestionIds) } }, { projection: { _id: 0 } })
+    .find({ examId, _id: { $in: objectIds } })
     .toArray();
 
-  const questionMap = new Map<string, QuestionDocument>();
+  const questionMap = new Map<string, QuestionDocument & { id: string }>();
   for (const q of questions) {
-    questionMap.set(q.id, q);
+    questionMap.set(q._id.toString(), { ...q, id: q._id.toString() });
   }
 
   // Populate clusters with questions

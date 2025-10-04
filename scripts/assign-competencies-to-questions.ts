@@ -24,7 +24,7 @@
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import { envConfig } from '../lib/env-config.js';
 import { searchSimilarCompetencies } from '../lib/server/competency-assignment.js';
 
@@ -35,7 +35,7 @@ type QuestionEmbeddingDoc = {
 };
 
 type QuestionDoc = {
-  id: string;
+  _id: ObjectId;
   examId: string;
   competencyIds?: string[];
 };
@@ -124,15 +124,15 @@ async function main() {
     for (const question of questionsToProcess) {
       processed++;
 
-      // Get question embedding
+      // Get question embedding using _id
       const embeddingDoc = await embeddingsCol.findOne(
-        { id: question.id, examId: question.examId },
+        { questionId: question._id },
         { projection: { embedding: 1 } }
       );
 
       if (!embeddingDoc?.embedding || embeddingDoc.embedding.length === 0) {
         console.log(
-          `[${processed}/${questionsToProcess.length}] Question ${question.id}: No embedding found, skipping`
+          `[${processed}/${questionsToProcess.length}] Question ${question._id.toString()}: No embedding found, skipping`
         );
         skipped++;
         continue;
@@ -152,15 +152,15 @@ async function main() {
 
       if (competencyIds.length === 0) {
         console.log(
-          `[${processed}/${questionsToProcess.length}] Question ${question.id}: No competencies above threshold ${threshold}, skipping`
+          `[${processed}/${questionsToProcess.length}] Question ${question._id.toString()}: No competencies above threshold ${threshold}, skipping`
         );
         skipped++;
         continue;
       }
 
-      // Assign competencies to question
+      // Assign competencies to question using _id
       await questionsCol.updateOne(
-        { id: question.id, examId: question.examId },
+        { _id: question._id, examId: question.examId },
         {
           $set: {
             competencyIds,
@@ -175,7 +175,7 @@ async function main() {
         .join(', ');
 
       console.log(
-        `[${processed}/${questionsToProcess.length}] Question ${question.id}: Assigned ${competencyIds.length} competenc${competencyIds.length === 1 ? 'y' : 'ies'} - ${scores}`
+        `[${processed}/${questionsToProcess.length}] Question ${question._id.toString()}: Assigned ${competencyIds.length} competenc${competencyIds.length === 1 ? 'y' : 'ies'} - ${scores}`
       );
       assigned++;
     }

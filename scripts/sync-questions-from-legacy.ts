@@ -115,7 +115,6 @@ async function main() {
           if (!dryRun) {
             const now = new Date();
             await questionsCol.insertOne({
-              id,
               examId,
               question: q.question,
               options: q.options,
