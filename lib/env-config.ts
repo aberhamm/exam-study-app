@@ -84,13 +84,9 @@ export const openaiConfig = {
  * Data pipeline configuration
  */
 export const pipelineConfig = {
-  get embeddingsCollection(): string {
-    return process.env.EMBEDDINGS_COLLECTION || 'embeddings';
-  },
-
-  get vectorIndexName(): string {
-    return process.env.VECTOR_INDEX_NAME || 'embedding_vector';
-  },
+  // Collection names (hardcoded - these are schema/structural, not environment-specific)
+  documentEmbeddingsCollection: 'document_embeddings',
+  documentEmbeddingsVectorIndex: 'embedding_vector',
 
   get openrouterApiKey(): string {
     const apiKey = process.env.OPENROUTER_API_KEY;

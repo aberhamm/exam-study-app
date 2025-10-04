@@ -66,6 +66,6 @@ export async function getMongoConfig() {
   return {
     uri: envConfig.mongo.uri,
     database: envConfig.mongo.database,
-    collection: envConfig.pipeline.embeddingsCollection,
+    collection: envConfig.pipeline.documentEmbeddingsCollection,
   };
 }

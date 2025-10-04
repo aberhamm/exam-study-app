@@ -16,7 +16,7 @@ export class MongoDBService {
 
   constructor(private config: MongoConfig) {
     this.client = new MongoClient(config.uri);
-    this.collectionName = config.collectionName || 'embeddings';
+    this.collectionName = config.collectionName || 'document_embeddings';
   }
 
   async connect(): Promise<void> {
@@ -242,7 +242,7 @@ export class MongoDBService {
       throw new Error('Database not connected');
     }
 
-    const collection = this.db.collection('embeddings');
+    const collection = this.db.collection(this.collectionName);
     const documents = await collection.find({}).toArray();
 
     return documents.map(doc => ({
@@ -263,7 +263,7 @@ export class MongoDBService {
       throw new Error('Database not connected');
     }
 
-    const collection = this.db.collection('embeddings');
+    const collection = this.db.collection(this.collectionName);
 
     const [totalDocuments, aggregationResult] = await Promise.all([
       collection.countDocuments(),
@@ -294,6 +294,6 @@ export class MongoDBService {
   }
 }
 
-export function createMongoDBService(uri: string, database: string, collectionName: string = 'embeddings'): MongoDBService {
+export function createMongoDBService(uri: string, database: string, collectionName: string = 'document_embeddings'): MongoDBService {
   return new MongoDBService({ uri, database, collectionName });
 }

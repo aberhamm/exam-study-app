@@ -51,7 +51,6 @@ Arguments:
 
 Options:
   --json-field <name>     JSON field that contains markdown (default: ${JSON_MARKDOWN_FIELD})
-  --collection <name>     MongoDB collection to use (default: env EMBEDDINGS_COLLECTION or 'embeddings')
   --group <name>          Optional group identifier applied to all documents
   --base-url <url>        Base URL for markdown files (default: ${config.defaultBaseUrl})
   --title <title>         Optional title metadata (single file only)
@@ -66,7 +65,6 @@ Environment Variables:
   EMBEDDING_DIMENSIONS    Optional: Embedding dimensions (default: ${config.defaultEmbeddingDimensions})
   MONGODB_URI             Required: MongoDB connection URI
   MONGODB_DATABASE        Required: MongoDB database name
-  EMBEDDINGS_COLLECTION   Optional: MongoDB collection name (default: 'embeddings')
 
 Notes:
   - If --group is omitted, a run-scoped id like run_<token> is generated per invocation and printed at start.
@@ -118,9 +116,6 @@ Examples:
         break;
       case '--json-field':
         parsedArgs.jsonField = value;
-        break;
-      case '--collection':
-        parsedArgs.collection = value;
         break;
       case '--group':
         parsedArgs.group = value;
@@ -483,13 +478,12 @@ async function main() {
     // Initialize MongoDB service (always required)
     try {
       const mongoEnv = await getMongoConfig();
-      const collection = args.collection || mongoEnv.collection;
-      mongoService = createMongoDBService(mongoEnv.uri, mongoEnv.database, collection);
+      mongoService = createMongoDBService(mongoEnv.uri, mongoEnv.database, mongoEnv.collection);
       await mongoService.connect();
       logger.info('MongoDB service connected', {
         uri: mongoEnv.uri,
         database: mongoEnv.database,
-        collection,
+        collection: mongoEnv.collection,
       });
     } catch (mongoError) {
       logger.error('Failed to connect to MongoDB', {

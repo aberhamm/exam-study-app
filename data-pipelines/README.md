@@ -128,7 +128,9 @@ Environment Variables:
 - `EMBEDDING_DIMENSIONS` (optional): defaults to `1536`
 - `MONGODB_URI` (required): MongoDB connection string
 - `MONGODB_DATABASE` (required): Database name
-- `EMBEDDINGS_COLLECTION` (optional): Collection name (default `embeddings`)
+
+Collection:
+- Documents are stored in the `document_embeddings` collection (hardcoded)
 
 Input Format:
 - Place `.json` files under `data/markdown-to-embeddings/input/`.

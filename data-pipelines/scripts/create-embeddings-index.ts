@@ -1,15 +1,14 @@
 /**
- * Create/update indexes for the embeddings chunk collection.
+ * Create/update indexes for the document_embeddings collection.
  * - B-tree indexes (including unique dedupe index)
  * - Atlas Search vector index on top-level `embedding`
  *
  * Usage (from data-pipelines/):
- *   pnpm tsx scripts/create-embeddings-index.ts [--collection <name>] [--dims <n>] [--similarity <cosine|euclidean|dotProduct>] [--index <name>] [--update]
+ *   pnpm tsx scripts/create-embeddings-index.ts [--dims <n>] [--similarity <cosine|euclidean|dotProduct>] [--index <name>] [--update]
  *
  * Env:
  *   MONGODB_URI or MONGO_URI
  *   MONGODB_DATABASE or MONGODB_DB
- *   EMBEDDINGS_COLLECTION (default: embeddings)
  */
 import { config as loadDotenv } from 'dotenv';
 import { join, dirname } from 'path';
@@ -22,7 +21,6 @@ loadDotenv({ path: join(moduleDir, '../.env'), quiet: true });
 loadDotenv({ quiet: true });
 
 type Args = {
-  collection?: string;
   dims?: number;
   similarity?: 'cosine' | 'euclidean' | 'dotProduct';
   indexName?: string;
@@ -34,13 +32,12 @@ function parseArgs(): Args {
   const out: Args = {};
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === '--collection') out.collection = args[++i];
-    else if (a === '--dims') out.dims = Number(args[++i]);
+    if (a === '--dims') out.dims = Number(args[++i]);
     else if (a === '--similarity') out.similarity = args[++i] as Args['similarity'];
     else if (a === '--index') out.indexName = args[++i];
     else if (a === '--update') out.update = true;
     else if (a === '--help' || a === '-h') {
-      console.log('Usage: pnpm tsx scripts/create-embeddings-index.ts [--collection <name>] [--dims <n>] [--similarity <cosine|euclidean|dotProduct>] [--index <name>] [--update]');
+      console.log('Usage: pnpm tsx scripts/create-embeddings-index.ts [--dims <n>] [--similarity <cosine|euclidean|dotProduct>] [--index <name>] [--update]');
       process.exit(0);
     }
   }
@@ -58,10 +55,10 @@ function requireEnv(name: string, alt?: string): string {
 }
 
 async function main() {
-  const { collection: cliCollection, dims: cliDims, similarity: cliSim, indexName: cliIndex, update } = parseArgs();
+  const { dims: cliDims, similarity: cliSim, indexName: cliIndex, update } = parseArgs();
   const uri = requireEnv('MONGODB_URI', 'MONGO_URI');
   const database = requireEnv('MONGODB_DATABASE', 'MONGODB_DB');
-  const collection = cliCollection || process.env.EMBEDDINGS_COLLECTION || 'embeddings';
+  const collection = 'document_embeddings';
   const dims = typeof cliDims === 'number' && !Number.isNaN(cliDims) ? cliDims : (process.env.EMBEDDING_DIMENSIONS ? Number(process.env.EMBEDDING_DIMENSIONS) : 1536);
   const similarity = cliSim || 'cosine';
   const indexName = cliIndex || 'embedding_vector';

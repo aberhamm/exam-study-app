@@ -1,9 +1,9 @@
 /**
- * Test vector search against the embeddings collection.
+ * Test vector search against the document_embeddings collection.
  * Embeds a query, runs a vector search, and prints top matches.
  *
  * Usage (from data-pipelines/):
- *   pnpm tsx scripts/test-embeddings-search.ts --query "your text" [--k 5] [--group <id>] [--collection <name>] [--index <name>]
+ *   pnpm tsx scripts/test-embeddings-search.ts --query "your text" [--k 5] [--group <id>] [--index <name>]
  */
 import { config as loadDotenv } from 'dotenv';
 import { join, dirname } from 'path';
@@ -21,7 +21,6 @@ type Args = {
   query?: string;
   k?: number;
   group?: string;
-  collection?: string;
   index?: string;
   format?: Format;
   fetch?: number; // candidate pool size
@@ -36,14 +35,13 @@ function parseArgs(): Args {
     if (a === '--query') out.query = args[++i];
     else if (a === '--k') out.k = Number(args[++i]);
     else if (a === '--group') out.group = args[++i];
-    else if (a === '--collection') out.collection = args[++i];
     else if (a === '--index') out.index = args[++i];
     else if (a === '--format') out.format = args[++i] as Format;
     else if (a === '--fetch') out.fetch = Number(args[++i]);
     else if (a === '--hybrid') out.hybrid = true;
     else if (a === '--mmr') out.mmr = Number(args[++i]);
     else if (a === '--help' || a === '-h') {
-      console.log('Usage: pnpm tsx scripts/test-embeddings-search.ts --query "your text" [--k 5] [--fetch 40] [--hybrid] [--mmr 0.7] [--group <id>] [--collection <name>] [--index <name>] [--format compact|json]');
+      console.log('Usage: pnpm tsx scripts/test-embeddings-search.ts --query "your text" [--k 5] [--fetch 40] [--hybrid] [--mmr 0.7] [--group <id>] [--index <name>] [--format compact|json]');
       process.exit(0);
     }
   }
@@ -60,11 +58,11 @@ function requireEnv(name: string, alt?: string): string {
 }
 
 async function main() {
-  const { query, k: cliK, group, collection: cliCol, index: cliIndex, format, fetch: cliFetch, hybrid, mmr } = parseArgs();
+  const { query, k: cliK, group, index: cliIndex, format, fetch: cliFetch, hybrid, mmr } = parseArgs();
   if (!query) throw new Error('Missing --query');
   const uri = requireEnv('MONGODB_URI', 'MONGO_URI');
   const database = requireEnv('MONGODB_DATABASE', 'MONGODB_DB');
-  const collection = cliCol || process.env.EMBEDDINGS_COLLECTION || 'embeddings';
+  const collection = 'document_embeddings';
   const indexName = cliIndex || 'embedding_vector';
   const k = typeof cliK === 'number' && !Number.isNaN(cliK) ? cliK : 5;
   const fetchN = typeof cliFetch === 'number' && !Number.isNaN(cliFetch) ? cliFetch : Math.max(30, k * 6);

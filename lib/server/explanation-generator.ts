@@ -74,7 +74,7 @@ async function retryWithBackoff<T>(
 
 async function getEmbeddingsCollection(): Promise<Collection<EmbeddingChunkDocument>> {
   const db = await getDb();
-  return db.collection<EmbeddingChunkDocument>(envConfig.pipeline.embeddingsCollection);
+  return db.collection<EmbeddingChunkDocument>(envConfig.pipeline.documentEmbeddingsCollection);
 }
 
 async function createEmbedding(text: string): Promise<number[]> {
@@ -122,7 +122,7 @@ async function searchDocumentChunks(
   }
 
   const embeddingsCol = await getEmbeddingsCollection();
-  const indexName = envConfig.pipeline.vectorIndexName;
+  const indexName = envConfig.pipeline.documentEmbeddingsVectorIndex;
   const candidateMultiplier = envConfig.pipeline.candidateMultiplier;
   const maxCandidates = envConfig.pipeline.maxCandidates;
   const numCandidates = Math.min(topK * candidateMultiplier, maxCandidates);
