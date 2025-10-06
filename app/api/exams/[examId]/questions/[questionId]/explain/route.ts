@@ -68,7 +68,7 @@ export async function POST(request: Request, context: RouteParams) {
       choicesCount: normalizedQuestion.choices.length,
     });
 
-    const result = await generateQuestionExplanation(normalizedQuestion, documentGroups);
+    const result = await generateQuestionExplanation(normalizedQuestion, documentGroups, questionDoc.embedding);
 
     console.info(`[explain] Generated explanation result:`, {
       explanationLength: result.explanation.length,

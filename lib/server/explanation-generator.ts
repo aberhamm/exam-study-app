@@ -95,7 +95,6 @@ async function createEmbedding(text: string): Promise<number[]> {
     });
 
     if (!resp.ok) {
-      const text = await resp.text();
       throw new Error(`OpenAI embeddings error ${resp.status}`);
     }
 
@@ -397,31 +396,74 @@ Explain why the correct answer is correct using ONLY the excerpts above.
 
 export async function generateQuestionExplanation(
   question: NormalizedQuestion,
-  documentGroups?: string[]
+  documentGroups?: string[],
+  questionEmbedding?: number[]
 ): Promise<ExplanationResult> {
   const questionHash = hashText(question.id);
 
   if (featureFlags.debugRetrieval) {
-    console.info(`[generateQuestionExplanation] Starting for question ${questionHash}, documentGroups=${documentGroups?.join(',') || 'all'}`);
+    console.info(`[generateQuestionExplanation] Starting for question ${questionHash}, documentGroups=${documentGroups?.join(',') || 'all'}, hasEmbedding=${!!questionEmbedding}`);
   }
 
   try {
-    // Create embedding for the question text
-    const questionText = `${question.prompt} ${question.choices.join(' ')}`;
-    const queryEmbedding = await createEmbedding(questionText);
-
-    if (featureFlags.debugRetrieval) {
-      console.info(`[generateQuestionExplanation] Created embedding (${queryEmbedding.length}d) for question ${questionHash}`);
+    // Use provided embedding or create one for the question text
+    let queryEmbedding: number[];
+    if (questionEmbedding && questionEmbedding.length > 0) {
+      queryEmbedding = questionEmbedding;
+      if (featureFlags.debugRetrieval) {
+        console.info(`[generateQuestionExplanation] Using provided embedding (${queryEmbedding.length}d) for question ${questionHash}`);
+      }
+    } else {
+      const questionText = `${question.prompt} ${question.choices.join(' ')}`;
+      queryEmbedding = await createEmbedding(questionText);
+      if (featureFlags.debugRetrieval) {
+        console.info(`[generateQuestionExplanation] Created embedding (${queryEmbedding.length}d) for question ${questionHash}`);
+      }
     }
 
-    // Search for relevant document chunks
-    const documentChunks = await searchDocumentChunks(queryEmbedding, envConfig.pipeline.maxContextChunks, documentGroups);
+    // Retrieve more chunks per search than final limit to ensure best results survive deduplication
+    const chunksPerSearch = Math.ceil(envConfig.pipeline.maxContextChunks * 1.5);
 
-    // Deduplicate and clamp chunks
-    const processedChunks = deduplicateAndClampChunks(documentChunks);
+    // Search for relevant document chunks using question embedding
+    const questionChunks = await searchDocumentChunks(queryEmbedding, chunksPerSearch, documentGroups);
+
+    // Extract correct answer text and create embedding for it
+    const correctAnswerText = Array.isArray(question.answerIndex)
+      ? question.answerIndex.map((idx) => question.choices[idx]).filter(Boolean).join(' ')
+      : question.choices[question.answerIndex];
+
+    if (!correctAnswerText) {
+      throw new Error('Unable to extract correct answer text');
+    }
 
     if (featureFlags.debugRetrieval) {
-      console.info(`[generateQuestionExplanation] Processed ${processedChunks.length} chunks (from ${documentChunks.length})`);
+      console.info(`[generateQuestionExplanation] Correct answer text: ${correctAnswerText.substring(0, 100)}`);
+    }
+
+    const answerEmbedding = await createEmbedding(correctAnswerText);
+
+    if (featureFlags.debugRetrieval) {
+      console.info(`[generateQuestionExplanation] Created answer embedding (${answerEmbedding.length}d) for question ${questionHash}`);
+    }
+
+    // Search for relevant document chunks using answer embedding
+    const answerChunks = await searchDocumentChunks(answerEmbedding, chunksPerSearch, documentGroups);
+
+    // Merge chunks from both searches and sort by score (highest first)
+    const allChunks = [...questionChunks, ...answerChunks].sort((a, b) => b.score - a.score);
+
+    if (featureFlags.debugRetrieval) {
+      console.info(`[generateQuestionExplanation] Combined ${questionChunks.length} question chunks + ${answerChunks.length} answer chunks = ${allChunks.length} total`);
+      if (allChunks.length > 0) {
+        console.info(`[generateQuestionExplanation] Score range: ${allChunks[0].score.toFixed(4)} to ${allChunks[allChunks.length - 1].score.toFixed(4)}`);
+      }
+    }
+
+    // Deduplicate and clamp chunks (now sorted by relevance)
+    const processedChunks = deduplicateAndClampChunks(allChunks);
+
+    if (featureFlags.debugRetrieval) {
+      console.info(`[generateQuestionExplanation] Processed ${processedChunks.length} chunks (from ${allChunks.length})`);
     }
 
     // Generate explanation using LLM

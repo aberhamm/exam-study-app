@@ -127,9 +127,9 @@ export async function deleteCompetency(competencyId: string, examId: string): Pr
     await questionsCol.updateMany(
       { examId, competencyIds: competencyId },
       {
-        $pull: { competencyIds: competencyId } as any,
+        $pull: { competencyIds: competencyId },
         $set: { updatedAt: new Date() },
-      }
+      } as any // eslint-disable-line @typescript-eslint/no-explicit-any
     );
   }
 
