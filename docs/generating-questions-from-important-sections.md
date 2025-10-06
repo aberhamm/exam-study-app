@@ -4,11 +4,11 @@ This guide explains how to automatically generate exam questions from sections m
 
 ## Overview
 
-The workflow consists of three steps:
+The workflow consists of three main steps:
 
 1. **Extract** important sections from markdown documentation
 2. **Generate** exam questions using AI (via OpenRouter)
-3. **Import** generated questions into MongoDB
+3. **Import** generated questions into MongoDB (with optional post-processing)
 
 ## Prerequisites
 
@@ -97,22 +97,56 @@ Example:
 
 ## Step 3: Import Questions
 
-Use the existing import API to add questions to your exam:
+### Using the Web UI (Recommended)
+
+Navigate to [`/import`](http://localhost:3000/import) and:
+
+1. Select your exam from the dropdown
+2. Paste the contents of `data/important-questions-flat.json`
+3. Check the optional processing boxes:
+   - ☑ **Generate embeddings** - Creates vector embeddings for semantic search
+   - ☑ **Auto-assign competencies** - Uses AI to assign related competencies
+
+4. Click "Import Questions"
+
+The UI will show progress for each step:
+- ✓ Imported N questions
+- ✓ Generated N embeddings
+- ✓ Assigned competencies to N questions
+
+### Using the API
 
 ```bash
-# Via API
+# Basic import (no post-processing)
 curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/questions/import" \
   -H "Content-Type: application/json" \
   -d @data/important-questions-flat.json
 
-# Or use the web UI at /import
+# Then manually process (optional)
+curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/questions/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "questionIds": ["id1", "id2", "id3"],
+    "generateEmbeddings": true,
+    "assignCompetencies": true,
+    "competencyOptions": {
+      "topN": 1,
+      "threshold": 0.5,
+      "overwrite": false
+    }
+  }'
 ```
 
-The questions will be:
-- Validated against your schema
-- Assigned stable IDs
-- Added to the questions collection
-- Available immediately in your quiz app
+### What Happens During Import
+
+1. **Import** - Questions are validated and inserted into the database
+2. **Embeddings** (if enabled) - Vector embeddings created for each question
+3. **Competencies** (if enabled) - AI finds similar competencies and assigns them automatically
+
+Note: Competency assignment requires:
+- Embeddings to exist (generated in step 2)
+- Competencies defined in your database
+- Vector index configured on the competencies collection
 
 ## Customization
 
@@ -162,31 +196,57 @@ Edit `scripts/generate-questions-from-important.ts` to customize:
 
 ## Example Workflow
 
+### Complete Workflow (CLI + UI)
+
 ```bash
-# 1. Extract important sections
+# 1. Extract important sections from docs
 pnpm extract:important
+# Output: Found 31 important sections
 
-# 2. Review what was found
-cat data/important-sections.json | jq 'length'
-# Output: 7
+# 2. Review what was found (optional)
+cat data/important-sections.json
+# Shows: source file, title, context, content for each section
 
-# 3. Generate questions (test with 2 first)
-pnpm generate:important-questions --limit 2
+# 3. Generate questions (test with a few first)
+pnpm generate:important-questions --limit 5
+# Output: Generated 8-15 questions from 5 sections
 
-# 4. Review generated questions
-cat data/important-questions-flat.json | jq 'length'
-# Output: 3-6 (depending on AI output)
+# 4. Review generated questions (optional)
+cat data/important-questions-flat.json
+# Shows: question, options, answer, explanation for each
 
-# 5. Import to database
+# 5. Import via web UI
+# Navigate to http://localhost:3000/import
+# - Paste contents of data/important-questions-flat.json
+# - Select exam: "sitecore-xmc"
+# - Check: ☑ Generate embeddings
+# - Check: ☑ Auto-assign competencies
+# - Click "Import Questions"
+# Result: Questions imported, embeddings created, competencies assigned
+
+# 6. Generate remaining questions
+pnpm generate:important-questions
+# Processes all 31 sections
+
+# 7. Import the rest
+# Repeat step 5 with updated data/important-questions-flat.json
+```
+
+### Quick Workflow (CLI Only)
+
+```bash
+# Extract and generate
+pnpm extract:important
+pnpm generate:important-questions
+
+# Import via API (no post-processing)
 curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/questions/import" \
   -H "Content-Type: application/json" \
   -d @data/important-questions-flat.json
 
-# 6. Generate the rest
-pnpm generate:important-questions
-
-# 7. Import all
-# Repeat step 5 with full dataset
+# Manually run embeddings and competencies
+pnpm embed:questions --exam sitecore-xmc
+pnpm assign:competencies --exam sitecore-xmc
 ```
 
 ## Integration with Existing Questions

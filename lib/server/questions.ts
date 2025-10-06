@@ -2,8 +2,7 @@ import type { Collection, IndexSpecification, ObjectId } from 'mongodb';
 import type { ExternalQuestion, ExamDetail } from '@/types/external-question';
 import type { QuestionDocument, QuestionWithId } from '@/types/question';
 import { getDb, getExamsCollectionName, getQuestionsCollectionName } from './mongodb';
-import { generateQuestionId } from '@/lib/normalize';
-import { DuplicateQuestionIdsError, ExamNotFoundError } from '@/lib/server/exams';
+import { ExamNotFoundError } from '@/lib/server/exams';
 import { ObjectId as MongoObjectId } from 'mongodb';
 
 type ExamDocument = ExamDetail & {
@@ -60,10 +59,12 @@ export async function listQuestionsByExam(examId: string): Promise<QuestionDocum
     .toArray();
 }
 
+export type QuestionInsertResult = QuestionWithId & { _id: ObjectId };
+
 export async function addExamQuestions(
   examId: string,
   questions: ExternalQuestion[],
-): Promise<QuestionWithId[]> {
+): Promise<QuestionInsertResult[]> {
   const collection = await getQuestionsCollection();
 
   // Validate exam exists
@@ -92,9 +93,15 @@ export async function addExamQuestions(
 
   if (toInsert.length === 0) return [];
 
-  await collection.insertMany(toInsert, { ordered: true });
+  const result = await collection.insertMany(toInsert, { ordered: true });
 
-  return toInsert;
+  // Return inserted documents with their _id values
+  const insertedWithIds = toInsert.map((doc, index) => ({
+    ...doc,
+    _id: result.insertedIds[index],
+  }));
+
+  return insertedWithIds;
 }
 
 export async function updateQuestion(

@@ -34,8 +34,16 @@ export async function POST(request: Request, context: RouteContext) {
     const payload = ExternalQuestionsImportZ.parse(body);
     const inserted = await addExamQuestions(examId, payload.questions);
 
+    // Return question IDs for post-processing
+    const questionIds = inserted.map((q) => q._id.toString());
+
     return NextResponse.json(
-      { examId, questions: inserted, insertedCount: inserted.length },
+      {
+        examId,
+        questions: inserted,
+        insertedCount: inserted.length,
+        questionIds,
+      },
       {
         status: 201,
         headers: { 'Cache-Control': 'no-store' },

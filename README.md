@@ -239,10 +239,19 @@ pnpm extract:important
 # 2. Generate questions using AI (OpenRouter)
 pnpm generate:important-questions
 
-# 3. Import via API or web UI at /import
+# 3. Import via web UI at /import
+# - Paste the generated questions
+# - Optionally enable embeddings and competency assignment
+# - Questions are processed automatically
 ```
 
 See the detailed guide: [Generating Questions from Important Sections](./docs/generating-questions-from-important-sections.md)
+
+**Features:**
+- Extracts 31+ important sections from documentation
+- Generates 1-3 high-quality questions per section
+- Optional auto-embedding generation
+- Optional AI-powered competency assignment
 
 ### Importing Additional Questions
 

@@ -23,12 +23,24 @@ type ImportSuccess = {
   examId: string;
   insertedCount: number;
   questions: Array<{ id: string; question: string }>;
+  questionIds: string[];
 };
 
 type ImportError = {
   message: string;
   details?: string;
   duplicates?: string[];
+};
+
+type ProcessingStatus = {
+  running: boolean;
+  step?: 'embeddings' | 'competencies';
+  message?: string;
+  error?: string;
+  embeddingsGenerated?: number;
+  embeddingsFailed?: number;
+  competenciesAssigned?: number;
+  competenciesFailed?: number;
 };
 
 export default function ImportQuestionsPage() {
@@ -45,8 +57,9 @@ export default function ImportQuestionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<ImportSuccess | null>(null);
   const [submitError, setSubmitError] = useState<ImportError | null>(null);
-  const [embedAfterImport, setEmbedAfterImport] = useState(true);
-  const [embeddingStatus, setEmbeddingStatus] = useState<{ running: boolean; message?: string; error?: string } | null>(null);
+  const [generateEmbeddings, setGenerateEmbeddings] = useState(false);
+  const [assignCompetencies, setAssignCompetencies] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null);
 
   useEffect(() => {
     setConfig({
@@ -159,32 +172,54 @@ export default function ImportQuestionsPage() {
       }
 
       const inserted = Array.isArray(json?.questions) ? (json.questions as Array<{ id: string; question: string }>) : [];
+      const questionIds = Array.isArray(json?.questionIds) ? (json.questionIds as string[]) : [];
       const result: ImportSuccess = {
         examId: json?.examId ?? selectedExamId,
         insertedCount: Number(json?.insertedCount) || inserted.length,
         questions: inserted.map((q) => ({ id: q.id, question: q.question })),
+        questionIds,
       };
       setSuccess(result);
       setRawInput('');
 
-      if (embedAfterImport && result.insertedCount > 0) {
+      // Post-import processing if requested
+      if ((generateEmbeddings || assignCompetencies) && questionIds.length > 0) {
         try {
-          setEmbeddingStatus({ running: true, message: 'Generating embeddings for inserted questions…' });
-          const resp = await fetch(`/api/exams/${encodeURIComponent(result.examId)}/questions/embed`, {
+          setProcessingStatus({ running: true, step: 'embeddings', message: 'Processing questions...' });
+
+          const processResp = await fetch(`/api/exams/${encodeURIComponent(result.examId)}/questions/process`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids: result.questions.map(q => q.id) }),
+            body: JSON.stringify({
+              questionIds,
+              generateEmbeddings,
+              assignCompetencies,
+              competencyOptions: {
+                topN: 1,
+                threshold: 0.5,
+                overwrite: false,
+              },
+            }),
           });
-          const embedJson = await resp.json().catch(() => ({}));
-          if (!resp.ok) {
-            const msg = typeof embedJson?.error === 'string' ? embedJson.error : 'Embedding failed';
-            setEmbeddingStatus({ running: false, error: msg });
+
+          const processJson = await processResp.json().catch(() => ({}));
+
+          if (!processResp.ok) {
+            const msg = typeof processJson?.error === 'string' ? processJson.error : 'Processing failed';
+            setProcessingStatus({ running: false, error: msg });
           } else {
-            const embedded = Number(embedJson?.embedded) || 0;
-            setEmbeddingStatus({ running: false, message: `Embeddings complete for ${embedded} question(s).` });
+            const summary = processJson?.summary || {};
+            setProcessingStatus({
+              running: false,
+              message: 'Processing complete',
+              embeddingsGenerated: summary.embeddingsGenerated,
+              embeddingsFailed: summary.embeddingsFailed,
+              competenciesAssigned: summary.competenciesAssigned,
+              competenciesFailed: summary.competenciesFailed,
+            });
           }
         } catch (err) {
-          setEmbeddingStatus({ running: false, error: err instanceof Error ? err.message : 'Embedding failed' });
+          setProcessingStatus({ running: false, error: err instanceof Error ? err.message : 'Processing failed' });
         }
       }
     } catch (error) {
@@ -264,15 +299,42 @@ export default function ImportQuestionsPage() {
             </details>
           )}
 
-          <div className="flex items-center gap-2">
-            <input
-              id="embed-after"
-              type="checkbox"
-              className="h-4 w-4"
-              checked={embedAfterImport}
-              onChange={(e) => setEmbedAfterImport(e.target.checked)}
-            />
-            <label htmlFor="embed-after" className="text-sm">Embed questions after import (dev)</label>
+          <div className="space-y-3 border-t pt-4">
+            <p className="text-sm font-medium">Post-import processing (optional)</p>
+
+            <div className="flex items-start gap-2">
+              <input
+                id="generate-embeddings"
+                type="checkbox"
+                className="h-4 w-4 mt-0.5"
+                checked={generateEmbeddings}
+                onChange={(e) => setGenerateEmbeddings(e.target.checked)}
+              />
+              <label htmlFor="generate-embeddings" className="text-sm">
+                <div className="font-medium">Generate embeddings</div>
+                <div className="text-xs text-muted-foreground">Create vector embeddings for imported questions (required for competency assignment and semantic search)</div>
+              </label>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <input
+                id="assign-competencies"
+                type="checkbox"
+                className="h-4 w-4 mt-0.5"
+                checked={assignCompetencies}
+                onChange={(e) => {
+                  setAssignCompetencies(e.target.checked);
+                  // Auto-enable embeddings if competencies are requested
+                  if (e.target.checked && !generateEmbeddings) {
+                    setGenerateEmbeddings(true);
+                  }
+                }}
+              />
+              <label htmlFor="assign-competencies" className="text-sm">
+                <div className="font-medium">Auto-assign competencies</div>
+                <div className="text-xs text-muted-foreground">Use vector similarity to assign related competencies (requires embeddings)</div>
+              </label>
+            </div>
           </div>
 
           {submitError && (
@@ -287,10 +349,41 @@ export default function ImportQuestionsPage() {
 
           {success && (
             <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-700">
-              <p className="font-medium">Imported {success.insertedCount} question{success.insertedCount === 1 ? '' : 's'} into {success.examId}.</p>
+              <p className="font-medium">✓ Imported {success.insertedCount} question{success.insertedCount === 1 ? '' : 's'} into {success.examId}</p>
+
+              {processingStatus && (
+                <div className="mt-3 space-y-2 text-xs">
+                  {processingStatus.running && (
+                    <p className="flex items-center gap-2">
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent"></span>
+                      {processingStatus.message}
+                    </p>
+                  )}
+
+                  {!processingStatus.running && !processingStatus.error && (
+                    <div className="space-y-1">
+                      {processingStatus.embeddingsGenerated !== undefined && (
+                        <p>✓ Generated {processingStatus.embeddingsGenerated} embedding{processingStatus.embeddingsGenerated === 1 ? '' : 's'}
+                          {processingStatus.embeddingsFailed ? ` (${processingStatus.embeddingsFailed} failed)` : ''}
+                        </p>
+                      )}
+                      {processingStatus.competenciesAssigned !== undefined && (
+                        <p>✓ Assigned competencies to {processingStatus.competenciesAssigned} question{processingStatus.competenciesAssigned === 1 ? '' : 's'}
+                          {processingStatus.competenciesFailed ? ` (${processingStatus.competenciesFailed} failed)` : ''}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {processingStatus.error && (
+                    <p className="text-red-600">✗ {processingStatus.error}</p>
+                  )}
+                </div>
+              )}
+
               {success.questions.length > 0 && (
-                <details className="mt-2">
-                  <summary className="cursor-pointer">View inserted IDs</summary>
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-xs">View imported questions</summary>
                   <ul className="mt-2 space-y-1">
                     {success.questions.map((question) => (
                       <li key={question.id} className="font-mono text-xs">
@@ -299,11 +392,6 @@ export default function ImportQuestionsPage() {
                     ))}
                   </ul>
                 </details>
-              )}
-              {embeddingStatus && (
-                <div className={`mt-2 ${embeddingStatus.error ? 'text-red-600' : 'text-emerald-700'}`}>
-                  {embeddingStatus.running ? 'Embedding…' : embeddingStatus.error || embeddingStatus.message}
-                </div>
               )}
             </div>
           )}
