@@ -77,6 +77,7 @@ export async function PATCH(request: Request, context: RouteParams) {
       answer: payload.answer,
       question_type: payload.question_type ?? 'single',
       explanation: payload.explanation,
+      explanationGeneratedByAI: payload.explanationGeneratedByAI,
       study: payload.study,
       updatedAt: new Date(),
     };
@@ -99,6 +100,7 @@ export async function PATCH(request: Request, context: RouteParams) {
       answer: doc.answer,
       question_type: doc.question_type,
       explanation: doc.explanation,
+      explanationGeneratedByAI: doc.explanationGeneratedByAI,
       study: doc.study,
     };
 

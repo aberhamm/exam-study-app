@@ -376,10 +376,6 @@ export function QuizApp({
     try {
       const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}/explain`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ saveAsDefault: false }),
       });
 
       if (!response.ok) {
@@ -388,9 +384,23 @@ export function QuizApp({
       }
 
       const data = await response.json();
-      setAiExplanation(data.explanation);
 
-      setEditSuccess('Explanation generated successfully!');
+      // If auto-saved (no existing explanation), update questions state
+      if (data.savedAsDefault) {
+        const updatedQuestions = questions.map(q =>
+          q.id === currentQuestion.id
+            ? { ...q, explanation: data.explanation, explanationGeneratedByAI: true }
+            : q
+        );
+        setQuestions(updatedQuestions);
+        setAiExplanation(null); // Clear AI explanation since it's now the default
+        setEditSuccess('Explanation generated and saved as default!');
+      } else {
+        // Has existing explanation, show in AI section for user to decide
+        setAiExplanation(data.explanation);
+        setEditSuccess('Explanation generated! Click "Replace Default" to save.');
+      }
+
       if (successTimeoutRef.current) {
         window.clearTimeout(successTimeoutRef.current);
       }
@@ -406,7 +416,7 @@ export function QuizApp({
     } finally {
       setIsGeneratingExplanation(false);
     }
-  }, [currentQuestion, examId]);
+  }, [currentQuestion, examId, questions]);
 
   const saveExplanation = useCallback(async () => {
     if (!currentQuestion || !examId || !aiExplanation) return;
@@ -415,12 +425,20 @@ export function QuizApp({
     setEditError(null);
 
     try {
-      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}/explain`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ saveAsDefault: true }),
+      // Build updated question with new explanation and AI flag
+      const updatedQuestion: NormalizedQuestion = {
+        ...currentQuestion,
+        explanation: aiExplanation,
+        explanationGeneratedByAI: true,
+      };
+
+      // Use PATCH endpoint to update the question
+      const payload = denormalizeQuestion(updatedQuestion);
+      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
       });
 
       if (!response.ok) {

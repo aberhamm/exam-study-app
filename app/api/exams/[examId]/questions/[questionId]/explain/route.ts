@@ -11,9 +11,7 @@ type RouteParams = {
   }>;
 };
 
-type ExplainRequestBody = {
-  saveAsDefault?: boolean;
-};
+// No request body needed - endpoint only generates explanations
 
 export async function POST(request: Request, context: RouteParams) {
   let examId = 'unknown';
@@ -30,15 +28,6 @@ export async function POST(request: Request, context: RouteParams) {
         { error: 'Explanation generation is not available' },
         { status: 403 }
       );
-    }
-
-    // Parse request body
-    let body: ExplainRequestBody | null = null;
-    try {
-      body = (await request.json()) as ExplainRequestBody;
-    } catch {
-      // Empty body is fine, we'll use defaults
-      body = {};
     }
 
     // Get the exam to access documentGroups
@@ -76,8 +65,11 @@ export async function POST(request: Request, context: RouteParams) {
       sources: result.sources.map(s => ({ sourceFile: s.sourceFile, title: s.title, hasUrl: !!s.url })),
     });
 
-    // If saveAsDefault is true, update the question in the database
-    if (body?.saveAsDefault) {
+    // Auto-save if no existing explanation
+    let savedAsDefault = false;
+    const hasExistingExplanation = questionDoc.explanation && questionDoc.explanation.trim().length > 0;
+
+    if (!hasExistingExplanation) {
       try {
         const { updateQuestion } = await import('@/lib/server/questions');
         const updatedQuestion = {
@@ -86,10 +78,11 @@ export async function POST(request: Request, context: RouteParams) {
           explanationGeneratedByAI: true,
         };
         await updateQuestion(examId, questionId, updatedQuestion);
-        console.info(`[explain] Saved explanation as default for question ${questionId}`);
+        savedAsDefault = true;
+        console.info(`[explain] Auto-saved explanation as default for question ${questionId} (no existing explanation)`);
       } catch (updateError) {
-        console.error(`[explain] Failed to save explanation as default:`, updateError);
-        // Don't fail the whole request if saving fails
+        console.error(`[explain] Failed to auto-save explanation:`, updateError);
+        // Don't fail the request if saving fails, just don't set savedAsDefault
       }
     }
 
@@ -97,7 +90,7 @@ export async function POST(request: Request, context: RouteParams) {
       success: true,
       explanation: result.explanation,
       sources: result.sources,
-      savedAsDefault: body?.saveAsDefault || false,
+      savedAsDefault,
     }, {
       headers: { 'Cache-Control': 'no-store' }
     });
