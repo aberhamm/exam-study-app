@@ -1,0 +1,86 @@
+[
+  {
+    "question": "When following best practices for commit messages in a Sitecore XM Cloud project, which of the following statements is correct?",
+    "options": {
+      "A": "Commit messages should follow the seven rules outlined in 'The Seven Rules of a Great Commit Message' guide",
+      "B": "Commit messages can be informal and do not need to follow any specific format",
+      "C": "Only major feature commits need detailed messages",
+      "D": "Commit messages are optional when working with XM Cloud"
+    },
+    "answer": "A",
+    "question_type": "single",
+    "explanation": "According to the Branching Strategy documentation, following 'The Seven Rules of a Great Commit Message' is considered an important best practice. The documentation specifically references this guide as authoritative for commit message rules. Options B, C, and D are incorrect as they contradict the established best practice of having consistent, well-structured commit messages following the seven rules guide."
+  },
+  {
+    "question": "When implementing a JSS component that uses Tailwind CSS, what is the recommended best practice for handling component styling?",
+    "options": {
+      "A": "Wrap JSS dependencies and styles in a higher-order component to handle both normal and empty-field states",
+      "B": "Apply Tailwind classes directly to JSS components without any wrapper",
+      "C": "Use inline styles instead of Tailwind classes for JSS components",
+      "D": "Create separate style sheets for normal and empty-field states"
+    },
+    "answer": "A",
+    "question_type": "single",
+    "explanation": "According to Component Design Best Practices, wrapping JSS dependencies is crucial for ensuring proper style application in both normal and empty-field editing states. This is especially important when using CSS frameworks like Tailwind. Option A is correct because it follows this best practice by encapsulating the styling logic in a wrapper component. Option B is incorrect as direct usage can lead to inconsistent styling in different states. Option C contradicts the recommended use of CSS frameworks like Tailwind. Option D creates unnecessary complexity and maintenance overhead compared to using a wrapper component."
+  },
+  {
+    "question": "When working with Tailwind CSS in Sitecore XM Cloud components, what is a key consideration for proper styling implementation?",
+    "options": {
+      "A": "Ensuring proper props handling and CSS framework integration at the component level",
+      "B": "Always using inline styles instead of Tailwind classes",
+      "C": "Avoiding CSS frameworks altogether in Sitecore components",
+      "D": "Converting all Tailwind classes to traditional CSS before deployment"
+    },
+    "answer": "A",
+    "question_type": "single",
+    "explanation": "According to the Component Design Best Practices documentation, proper handling of props and CSS framework integration is particularly important when using CSS frameworks like Tailwind. Option A is correct because it emphasizes the critical relationship between component props and CSS framework implementation. Option B contradicts Tailwind's utility-first approach, Option C goes against the documented support for CSS frameworks, and Option D misunderstands how Tailwind should be used in Sitecore XM Cloud components."
+  },
+  {
+    "question": "When creating a new component in Sitecore XM Cloud, what is the correct way to export the component's main function?",
+    "options": {
+      "A": "Export a named function called 'Default' without using default export",
+      "B": "Use export default function Default()",
+      "C": "Use export default Component",
+      "D": "Use module.exports = Default"
+    },
+    "answer": "A",
+    "question_type": "single",
+    "explanation": "According to the documentation, it's crucial to export a named function called 'Default' WITHOUT using the JavaScript 'default export' statement. This specific approach is required to support Headless Variants functionality. Using default export (options B and C) would prevent proper Headless Variant support. Option D uses CommonJS module syntax which is not the recommended approach for modern Sitecore XM Cloud components."
+  },
+  {
+    "question": "Which of the following statements are true regarding component exports in Sitecore XM Cloud? (Select all that apply)",
+    "options": {
+      "A": "Components should export a function named 'Default'",
+      "B": "Avoiding default export is necessary for Headless Variants support",
+      "C": "The export approach doesn't affect Headless Variants functionality",
+      "D": "Default export is the recommended approach"
+    },
+    "answer": ["A", "B"],
+    "question_type": "multiple",
+    "explanation": "The documentation emphasizes two key points: 1) Components should export a function named 'Default' (A is correct), and 2) This specific export approach, avoiding default export, is important for Headless Variants support (B is correct). Option C is incorrect because the export approach does directly affect Headless Variants functionality. Option D is incorrect as default export is specifically not recommended."
+  },
+  {
+    "question": "When working with environment variables in a Sitecore JSS project using Github Codespaces, which file should you temporarily modify due to a known bug?",
+    "options": {
+      "A": ".env",
+      "B": ".env.local",
+      "C": ".env.development",
+      "D": ".env.production"
+    },
+    "answer": "A",
+    "question_type": "single",
+    "explanation": "Due to a current bug in JSS, the .env.local file is not being recognized properly. The documentation explicitly states that as a workaround, developers should directly modify the .env file instead. However, it's important to note that these changes should not be committed to source control. Once the bug is fixed (tracked in JSS PR #1741), .env.local will be the proper file to use for local environment configurations."
+  },
+  {
+    "question": "Which statements are true regarding environment variable configuration in JSS? (Select all that apply)",
+    "options": {
+      "A": "Changes to the .env file should not be committed to source control",
+      "B": "The .env.local file is currently affected by a known bug",
+      "C": "The .env.local file will be the recommended approach once the bug is fixed",
+      "D": "Environment variables cannot be configured in JSS projects"
+    },
+    "answer": ["A", "B", "C"],
+    "question_type": "multiple",
+    "explanation": "The documentation highlights several key points about environment variable handling in JSS: there is a current bug affecting .env.local file recognition (B), developers should modify .env directly but not commit these changes (A), and .env.local will be the proper solution once the bug is fixed (C). Option D is incorrect as environment variables can be configured in JSS projects - the issue is specifically about which file to use for configuration."
+  }
+]

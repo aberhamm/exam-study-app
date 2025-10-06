@@ -85,6 +85,8 @@ pnpm remove:legacy-questions     # Remove embedded questions from exams
 pnpm embed:questions [flags]     # Generate/refresh question embeddings
 pnpm migrate:embeddings [flags]  # Move embeddings into their own collection
 pnpm status:questions            # Summarize counts and latest update timestamps
+pnpm extract:important           # Extract important sections from documentation
+pnpm generate:important-questions [flags]  # Generate questions from important sections using AI
 ```
 
 See detailed script docs and use cases in docs/scripts.md.
@@ -104,6 +106,10 @@ OPENAI_API_KEY=your-openai-key
 QUESTIONS_EMBEDDING_MODEL=text-embedding-3-small
 # QUESTIONS_EMBEDDING_DIMENSIONS=1536
 MONGODB_QUESTION_EMBEDDINGS_COLLECTION=question_embeddings
+
+# For AI question generation (optional)
+OPENROUTER_API_KEY=your-openrouter-key
+OPENROUTER_MODEL=google/gemini-2.0-flash-exp:free
 ```
 
 When running against MongoDB Atlas, supply the SRV connection string (e.g. `mongodb+srv://user:pass@cluster.mongodb.net`) and ensure your IP is allow-listed.
@@ -221,6 +227,22 @@ Client usage:
 - Resuming an in-progress exam bypasses the endpoint and uses the saved snapshot from localStorage.
 
 
+
+### Generating Questions from Important Documentation Sections
+
+You can automatically generate exam questions from sections marked as "Important" in your documentation:
+
+```bash
+# 1. Extract important sections from markdown docs
+pnpm extract:important
+
+# 2. Generate questions using AI (OpenRouter)
+pnpm generate:important-questions
+
+# 3. Import via API or web UI at /import
+```
+
+See the detailed guide: [Generating Questions from Important Sections](./docs/generating-questions-from-important-sections.md)
 
 ### Importing Additional Questions
 
@@ -353,6 +375,7 @@ Detailed documentation is available in the `/docs` directory:
 - [Architecture Overview](./docs/architecture.md)
 - [Component Documentation](./docs/components.md)
 - [API & Data Structures](./docs/api-data.md)
+- [Generating Questions from Important Sections](./docs/generating-questions-from-important-sections.md)
 
 ## Contributing
 

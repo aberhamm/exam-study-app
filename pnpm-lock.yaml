@@ -35,6 +35,9 @@ importers:
       next:
         specifier: 15.5.2
         version: 15.5.2(@babel/core@7.28.4)(react-dom@19.1.0)(react@19.1.0)
+      openai:
+        specifier: ^4.77.2
+        version: 4.104.0(zod@3.25.76)
       react:
         specifier: 19.1.0
         version: 19.1.0
