@@ -61,7 +61,7 @@ export async function GET(request: Request, context: RouteParams) {
 
     // Load all embeddings for the exam
     const embeddingDocs = await embCol
-      .find({ examId }, { projection: { _id: 0, id: 1, examId: 1, embedding: 1 } })
+      .find({ examId }, { projection: { _id: 0, question_id: 1, examId: 1, embedding: 1 } })
       .toArray();
 
     if (embeddingDocs.length === 0) {
@@ -69,7 +69,7 @@ export async function GET(request: Request, context: RouteParams) {
     }
 
     // Generate similarity pairs
-    const pairs = await generateSimilarityPairs(embeddingDocs as unknown as Array<{ id: string; examId: string; embedding?: number[] }>, examId, threshold);
+    const pairs = await generateSimilarityPairs(embeddingDocs as unknown as Array<{ question_id: unknown; examId: string; embedding?: number[] }>, examId, threshold);
 
     // Cluster the pairs
     const clusters = clusterQuestionsBySimilarity(pairs, minClusterSize, threshold);
@@ -125,7 +125,7 @@ export async function POST(request: Request, context: RouteParams) {
 
     // Load all embeddings for the exam
     const embeddingDocs = await embCol
-      .find({ examId }, { projection: { _id: 0, id: 1, examId: 1, embedding: 1 } })
+      .find({ examId }, { projection: { _id: 0, question_id: 1, examId: 1, embedding: 1 } })
       .toArray();
 
     if (embeddingDocs.length === 0) {
@@ -133,7 +133,7 @@ export async function POST(request: Request, context: RouteParams) {
     }
 
     // Generate similarity pairs
-    const pairs = await generateSimilarityPairs(embeddingDocs as unknown as Array<{ id: string; examId: string; embedding?: number[] }>, examId, threshold);
+    const pairs = await generateSimilarityPairs(embeddingDocs as unknown as Array<{ question_id: unknown; examId: string; embedding?: number[] }>, examId, threshold);
 
     // Cluster the pairs
     const clusters = clusterQuestionsBySimilarity(pairs, minClusterSize, threshold);
@@ -171,7 +171,7 @@ export async function POST(request: Request, context: RouteParams) {
 }
 
 async function generateSimilarityPairs(
-  embeddingDocs: Array<{ id: string; examId: string; embedding?: number[] }>,
+  embeddingDocs: Array<{ question_id: unknown; examId: string; embedding?: number[] }>,
   examId: string,
   threshold: number
 ): Promise<SimilarityPair[]> {
@@ -185,7 +185,8 @@ async function generateSimilarityPairs(
   // For each embedding, search nearest neighbors
   for (const doc of embeddingDocs) {
     const queryEmbedding = doc.embedding;
-    const qid = doc.id;
+    const questionId = doc.question_id;
+    const qid = questionId ? String(questionId) : '';
     if (!Array.isArray(queryEmbedding) || queryEmbedding.length === 0 || !qid) continue;
 
     const pipeline: Document[] = [
@@ -199,16 +200,17 @@ async function generateSimilarityPairs(
           filter: { examId },
         },
       },
-      { $project: { _id: 0, id: 1, examId: 1, score: { $meta: 'vectorSearchScore' } } },
+      { $project: { _id: 0, question_id: 1, examId: 1, score: { $meta: 'vectorSearchScore' } } },
     ];
 
-    const hits = await embCol.aggregate<{ id: string; score: number }>(pipeline).toArray();
+    const hits = await embCol.aggregate<{ question_id: unknown; score: number }>(pipeline).toArray();
     for (const hit of hits) {
-      if (!hit || !hit.id || hit.id === qid) continue;
+      const hitId = hit.question_id ? String(hit.question_id) : '';
+      if (!hitId || hitId === qid) continue;
       const score = typeof hit.score === 'number' ? hit.score : 0;
       if (score < threshold) continue;
 
-      const [aId, bId] = [qid, hit.id].sort();
+      const [aId, bId] = [qid, hitId].sort();
       const key = `${aId}::${bId}`;
       const existing = pairs.get(key);
       if (!existing || score > existing.score) {
@@ -235,19 +237,45 @@ async function populateClustersWithQuestions(
     }
   }
 
-  // Fetch all questions
+  // Separate old string IDs from new ObjectId strings
   const { ObjectId } = await import('mongodb');
-  const objectIds = Array.from(allQuestionIds)
-    .filter(id => ObjectId.isValid(id))
-    .map(id => new ObjectId(id));
+  const objectIds: typeof ObjectId.prototype[] = [];
+  const stringIds: string[] = [];
 
-  const questions = await qCol
-    .find({ examId, _id: { $in: objectIds } })
-    .toArray();
+  for (const id of allQuestionIds) {
+    // New ObjectId strings are 24 hex characters
+    if (ObjectId.isValid(id) && /^[0-9a-f]{24}$/i.test(id)) {
+      objectIds.push(new ObjectId(id));
+    } else {
+      // Old string IDs like "q-1enjk1b"
+      stringIds.push(id);
+    }
+  }
 
+  // Fetch questions by BOTH _id (ObjectId) and id (string)
+  const query: any = { examId };
+  if (objectIds.length > 0 && stringIds.length > 0) {
+    query.$or = [
+      { _id: { $in: objectIds } },
+      { id: { $in: stringIds } }
+    ];
+  } else if (objectIds.length > 0) {
+    query._id = { $in: objectIds };
+  } else if (stringIds.length > 0) {
+    query.id = { $in: stringIds };
+  }
+
+  const questions = await qCol.find(query).toArray();
+
+  // Map by BOTH _id string and id string for lookup
   const questionMap = new Map<string, QuestionDocument & { id: string }>();
   for (const q of questions) {
-    questionMap.set(q._id.toString(), { ...q, id: q._id.toString() });
+    const idStr = q._id.toString();
+    questionMap.set(idStr, { ...q, id: idStr });
+    // Also map by old string ID if it exists
+    if (q.id && typeof q.id === 'string') {
+      questionMap.set(q.id, { ...q, id: idStr });
+    }
   }
 
   // Populate clusters with questions

@@ -39,9 +39,9 @@ export async function POST(request: Request, context: RouteParams) {
     const embCol = db.collection<Document>(getQuestionEmbeddingsCollectionName());
     const qCol = db.collection<QuestionDocument>(getQuestionsCollectionName());
 
-    // Load all embeddings for the exam (id + embedding only)
+    // Load all embeddings for the exam (question_id + embedding only)
     const embeddingDocs = await embCol
-      .find({ examId }, { projection: { _id: 0, id: 1, examId: 1, embedding: 1 } })
+      .find({ examId }, { projection: { _id: 0, question_id: 1, examId: 1, embedding: 1 } })
       .toArray();
 
     // Early exit if nothing to analyze
@@ -56,7 +56,8 @@ export async function POST(request: Request, context: RouteParams) {
     // For each embedding, search nearest neighbors and accumulate high-similarity pairs
     for (const doc of embeddingDocs) {
       const queryEmbedding = (doc as { embedding?: unknown }).embedding as number[] | undefined;
-      const qid = (doc as { id?: unknown }).id as string;
+      const questionId = (doc as { question_id?: unknown }).question_id;
+      const qid = questionId ? String(questionId) : '';
       if (!Array.isArray(queryEmbedding) || queryEmbedding.length === 0 || !qid) continue;
 
       const pipeline: Document[] = [
@@ -70,15 +71,16 @@ export async function POST(request: Request, context: RouteParams) {
             filter: { examId },
           },
         },
-        { $project: { _id: 0, id: 1, examId: 1, score: { $meta: 'vectorSearchScore' } } },
+        { $project: { _id: 0, question_id: 1, examId: 1, score: { $meta: 'vectorSearchScore' } } },
       ];
 
-      const hits = await embCol.aggregate<{ id: string; score: number }>(pipeline).toArray();
+      const hits = await embCol.aggregate<{ question_id: unknown; score: number }>(pipeline).toArray();
       for (const hit of hits) {
-        if (!hit || !hit.id || hit.id === qid) continue;
+        const hitId = hit.question_id ? String(hit.question_id) : '';
+        if (!hitId || hitId === qid) continue;
         const score = typeof hit.score === 'number' ? hit.score : 0;
         if (score < threshold) continue;
-        const [aId, bId] = [qid, hit.id].sort();
+        const [aId, bId] = [qid, hitId].sort();
         const key = `${aId}::${bId}`;
         const existing = pairs.get(key);
         if (!existing || score > existing.score) {

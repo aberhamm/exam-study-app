@@ -1,5 +1,7 @@
+import type { ObjectId } from 'mongodb';
+
 export type QuestionEmbeddingDocument = {
-  id: string; // question id
+  question_id: ObjectId; // MongoDB _id of the question
   examId: string;
   embedding: number[];
   embeddingModel: string;
