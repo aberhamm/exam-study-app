@@ -102,20 +102,23 @@ The pipeline generates JSON files with this structure:
 }
 ```
 
-### Markdown to Embeddings (JSON input + LangChain)
+### Markdown to Embeddings (Markdown/JSON + LangChain)
 
-Converts scraped JSON pages containing a top-level `markdown` field into chunked embeddings and stores them in MongoDB.
+Converts markdown content from either JSON files (with a `markdown` field) or native markdown files into chunked embeddings and stores them in MongoDB.
 
 Usage:
 ```bash
-# Process all JSON files in the default input directory
+# Process all files in the default input directory
 pnpm markdown-to-embeddings
 
 # Process a specific JSON file
 pnpm markdown-to-embeddings data/markdown-to-embeddings/input/document.json
 
-# Specify a different JSON field and MongoDB collection
-pnpm markdown-to-embeddings --json-field body --collection my_embeddings
+# Process a markdown file with custom base URL
+pnpm markdown-to-embeddings pages/learn/guide.md --base-url https://docs.example.com
+
+# Specify a different JSON field and group identifier
+pnpm markdown-to-embeddings --json-field body --group production-docs
 
 # Help
 pnpm markdown-to-embeddings --help
@@ -127,17 +130,17 @@ Environment Variables:
 - `OPENAI_EMBEDDING_MODEL` (optional): defaults to `text-embedding-3-small`
 - `EMBEDDING_DIMENSIONS` (optional): defaults to `1536`
 - `MONGODB_URI` (required): MongoDB connection string
-- `MONGODB_DATABASE` (required): Database name
+- `MONGODB_DB` (required): Database name
 
 Collection:
-- Documents are stored in the `document_embeddings` collection (hardcoded)
+- Documents are stored in the `document_embeddings` collection (configured in `lib/env-config.ts`)
 
 Input Format:
-- Place `.json` files under `data/markdown-to-embeddings/input/`.
-- Each JSON must include a top-level `markdown` string field. Any other top-level keys are preserved as `metadata.sourceMeta` and copied into each chunk's metadata.
+- **JSON files** (`.json`): Must include a top-level `markdown` string field (configurable via `--json-field`). Other top-level keys are preserved as `metadata.sourceMeta`.
+- **Markdown files** (`.md`, `.markdown`): Native markdown with optional frontmatter for metadata (title, description, tags, etc.). URLs are auto-generated from file paths relative to `--base-url`.
 
 Behavior:
-- The pipeline uses LangChain's `MarkdownTextSplitter` with chunk size 1000 and overlap 200 to create structure-aware chunks, preserving code fences and inline code content.
+- The pipeline uses LangChain's `RecursiveCharacterTextSplitter` in markdown mode with chunk size 1500 and overlap 200 to create structure-aware chunks, preserving code fences and inline code content.
 - Embeddings are generated with `@langchain/openai` and upserted as one MongoDB document per chunk (recommended for vector search). Each chunk document has a top-level `embedding` vector and top-level metadata fields suitable for vector indexing and filters.
 - Each chunk carries a `sectionPath` (e.g., `H1 > H2 > H3`) and `nearestHeading` computed from the nearest preceding markdown headings in the original source. You can also add a group identifier to all docs with `--group <name>`.
 
