@@ -216,22 +216,8 @@ export function QuizApp({
     }
   }, [currentQuestion]);
 
-  useEffect(() => {
-    if (!currentQuestion || !quizState.showFeedback) {
-      return;
-    }
-
-    if (scoredQuestionsRef.current.has(currentQuestion.id)) {
-      return;
-    }
-
-    const selected = quizState.selectedAnswers[quizState.currentQuestionIndex] ?? null;
-    const outcome = evaluateAnswer(currentQuestion, selected);
-    if (outcome === 'correct' || outcome === 'incorrect') {
-      recordQuestionResult(currentQuestion.id, outcome);
-      scoredQuestionsRef.current.add(currentQuestion.id);
-    }
-  }, [currentQuestion, quizState.showFeedback, quizState.selectedAnswers, quizState.currentQuestionIndex, evaluateAnswer]);
+  // Note: Question results are now tracked immediately in selectAnswer() and submitMultipleAnswer()
+  // This ensures the metrics are recorded as soon as the user answers, not in a delayed effect
 
   // Note: Disabled localStorage persistence since questions are randomized
   // Loading a saved state wouldn't match the current question order
@@ -305,6 +291,15 @@ export function QuizApp({
         // For single choice, show feedback immediately
         newSelectedAnswers[quizState.currentQuestionIndex] = answerIndex;
 
+        // Record the result immediately
+        if (!scoredQuestionsRef.current.has(currentQuestion.id)) {
+          const outcome = evaluateAnswer(currentQuestion, answerIndex);
+          if (outcome === 'correct' || outcome === 'incorrect') {
+            recordQuestionResult(currentQuestion.id, outcome);
+            scoredQuestionsRef.current.add(currentQuestion.id);
+          }
+        }
+
         const newState = {
           ...quizState,
           selectedAnswers: newSelectedAnswers,
@@ -313,18 +308,30 @@ export function QuizApp({
         setQuizState(newState);
       }
     },
-    [questions, quizState]
+    [questions, quizState, evaluateAnswer]
   );
 
   const submitMultipleAnswer = useCallback(() => {
     if (!questions || quizState.showFeedback) return;
+
+    const currentQuestion = questions[quizState.currentQuestionIndex];
+    const selected = quizState.selectedAnswers[quizState.currentQuestionIndex] ?? null;
+
+    // Record the result immediately
+    if (!scoredQuestionsRef.current.has(currentQuestion.id)) {
+      const outcome = evaluateAnswer(currentQuestion, selected);
+      if (outcome === 'correct' || outcome === 'incorrect') {
+        recordQuestionResult(currentQuestion.id, outcome);
+        scoredQuestionsRef.current.add(currentQuestion.id);
+      }
+    }
 
     const newState = {
       ...quizState,
       showFeedback: true,
     };
     setQuizState(newState);
-  }, [questions, quizState]);
+  }, [questions, quizState, evaluateAnswer]);
 
   const nextQuestion = useCallback(() => {
     if (isLastQuestion) {

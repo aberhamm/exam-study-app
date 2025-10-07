@@ -10,6 +10,7 @@ export async function GET(request: Request, context: RouteParams) {
     const examId = params.examId;
     const { searchParams } = new URL(request.url);
     const competencyId = searchParams.get('competencyId');
+    const idsParam = searchParams.get('ids');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
@@ -22,6 +23,18 @@ export async function GET(request: Request, context: RouteParams) {
     const col = db.collection<QuestionDocument>(getQuestionsCollectionName());
 
     const filter: Record<string, unknown> = { examId };
+
+    // Filter by specific question IDs if provided
+    if (idsParam) {
+      try {
+        const ids = JSON.parse(decodeURIComponent(idsParam)) as string[];
+        const { ObjectId } = await import('mongodb');
+        filter._id = { $in: ids.map(id => new ObjectId(id)) };
+      } catch (e) {
+        console.error('Failed to parse ids parameter:', e);
+      }
+    }
+
     if (competencyId) {
       filter.competencyIds = competencyId;
     }
@@ -65,6 +78,12 @@ export async function GET(request: Request, context: RouteParams) {
       updatedAt: doc.updatedAt,
     }));
 
+    // When fetching specific IDs, return questions directly without pagination
+    if (idsParam) {
+      return NextResponse.json(questions, { headers: { 'Cache-Control': 'no-store' } });
+    }
+
+    // Otherwise return with pagination metadata
     return NextResponse.json(
       {
         questions,

@@ -109,9 +109,21 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
   const { questionType, questionCount } = settings;
 
+  // Load missed question IDs on mount and when returning to this page
   useEffect(() => {
     const ids = getMissedQuestionIds();
     setMissedQuestionIds(ids);
+
+    // Also refresh when the page becomes visible (user returns from exam)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const updatedIds = getMissedQuestionIds();
+        setMissedQuestionIds(updatedIds);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [questions]);
 
   // Fetch competencies for this exam
@@ -135,14 +147,6 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
     fetchCompetencies();
   }, [examMetadata?.examId]);
-
-  const missedQuestions = useMemo(() => {
-    if (!questions || missedQuestionIds.length === 0) {
-      return [] as NormalizedQuestion[];
-    }
-    const missedSet = new Set(missedQuestionIds);
-    return questions.filter((question) => missedSet.has(question.id));
-  }, [questions, missedQuestionIds]);
 
   // Validate and adjust settings when questions load
   useEffect(() => {
@@ -353,19 +357,36 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   };
 
   const handleStartMissedQuestions = async () => {
-    if (!questions) return;
-    if (missedQuestions.length === 0) return;
-
-    const practiceSettings: TestSettings = {
-      ...settings,
-      questionType: 'all',
-      explanationFilter: 'all',
-      questionCount: missedQuestions.length,
-    };
+    if (!examMetadata?.examId || missedQuestionIds.length === 0) return;
 
     try {
       setStarting(true);
+
+      // Fetch the missed questions from the API
+      const idsParam = encodeURIComponent(JSON.stringify(missedQuestionIds));
+      const response = await fetch(`/api/exams/${examMetadata.examId}/questions?ids=${idsParam}`);
+
+      if (!response.ok) {
+        console.error('Failed to fetch missed questions');
+        return;
+      }
+
+      const rawQuestions = await response.json();
+
+      // Normalize the questions
+      const { normalizeQuestions } = await import('@/lib/normalize');
+      const missedQuestions = normalizeQuestions(rawQuestions);
+
+      const practiceSettings: TestSettings = {
+        ...settings,
+        questionType: 'all',
+        explanationFilter: 'all',
+        questionCount: missedQuestions.length,
+      };
+
       await onStartTest(practiceSettings, { overrideQuestions: missedQuestions });
+    } catch (err) {
+      console.error('Failed to start missed questions review:', err);
     } finally {
       setStarting(false);
     }
@@ -517,18 +538,18 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 <span>Practice missed questions</span>
               </CardTitle>
               <CardDescription>
-                {missedQuestions.length > 0
-                  ? `You have ${missedQuestions.length} question${
-                      missedQuestions.length === 1 ? '' : 's'
+                {missedQuestionIds.length > 0
+                  ? `You have ${missedQuestionIds.length} question${
+                      missedQuestionIds.length === 1 ? '' : 's'
                     } you missed before.`
-                  : 'No missed questions yet. We’ll track any incorrect answers for review.'}
+                  : "No missed questions yet. We'll track any incorrect answers for review."}
               </CardDescription>
             </CardHeader>
             <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
               <Button
                 type="button"
                 onClick={handleStartMissedQuestions}
-                disabled={missedQuestions.length === 0 || starting}
+                disabled={missedQuestionIds.length === 0 || starting}
                 className="w-full"
               >
                 {starting ? 'Loading questions…' : 'Review missed questions'}
