@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchExamDetail, getExamCacheTag } from '@/lib/server/questions';
 import { ExamDetailZ, coerceExamDetail } from '@/lib/validation';
 import type { ExamDetailResponse } from '@/types/api';
+import type { WelcomeConfig } from '@/types/normalized';
 import { envConfig } from '@/lib/env-config';
 
 type RouteParams = {
@@ -12,6 +13,8 @@ type RouteParams = {
 
 type ExamPatchBody = {
   documentGroups?: string[];
+  examTitle?: string;
+  welcomeConfig?: Partial<WelcomeConfig>;
 };
 
 export async function GET(request: Request, context: RouteParams) {
@@ -79,10 +82,22 @@ export async function PATCH(request: Request, context: RouteParams) {
     if (body?.documentGroups !== undefined) {
       updateFields.documentGroups = body.documentGroups;
     }
+    if (body?.examTitle !== undefined) {
+      updateFields.examTitle = body.examTitle;
+    }
+    if (body?.welcomeConfig !== undefined) {
+      // Merge welcomeConfig with existing config
+      const currentExam = await collection.findOne({ examId }, { projection: { welcomeConfig: 1 } });
+      const existingConfig = (currentExam?.welcomeConfig as WelcomeConfig | undefined) || {};
+      updateFields.welcomeConfig = { ...existingConfig, ...body.welcomeConfig };
+    }
 
     if (Object.keys(updateFields).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
+
+    // Always set updatedAt timestamp
+    updateFields.updatedAt = new Date();
 
     const result = await collection.updateOne(
       { examId },

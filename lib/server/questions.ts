@@ -144,6 +144,7 @@ export async function fetchExamDetail(examId: string): Promise<ExamDetail | null
     examId: exam.examId,
     examTitle: exam.examTitle,
     welcomeConfig: exam.welcomeConfig,
+    documentGroups: exam.documentGroups,
     questions: externalQs,
   };
 }

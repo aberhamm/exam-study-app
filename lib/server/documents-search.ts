@@ -92,3 +92,16 @@ export async function searchSimilarDocuments(
     return [];
   }
 }
+
+export async function getAvailableDocumentGroups(): Promise<string[]> {
+  const embCol = await getDocumentEmbeddingsCollection();
+
+  try {
+    const groups = await embCol.distinct('groupId');
+    // Filter out null, undefined, and empty strings
+    return groups.filter((g): g is string => typeof g === 'string' && g.trim().length > 0).sort();
+  } catch (error) {
+    console.error('[getAvailableDocumentGroups] Failed to fetch distinct groupIds', error);
+    return [];
+  }
+}
