@@ -9,6 +9,7 @@ export type NormalizedQuestion = {
   explanationGeneratedByAI?: boolean;
   study?: { chunkId: string; url?: string; anchor?: string; excerpt?: string }[];
   competencyIds?: string[];
+  competencies?: Array<{ id: string; title: string }>;
 };
 
 export type WelcomeConfig = {

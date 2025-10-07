@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StudyPanel } from '@/components/StudyPanel';
@@ -23,7 +22,6 @@ type Props = {
   onSaveExplanation?: () => void;
   isSavingExplanation?: boolean;
   showCompetencies?: boolean;
-  examId?: string;
 };
 
 export function QuestionCard({
@@ -41,35 +39,9 @@ export function QuestionCard({
   onSaveExplanation,
   isSavingExplanation,
   showCompetencies,
-  examId,
 }: Props) {
-  const [competencies, setCompetencies] = useState<Array<{ id: string; title: string }>>([]);
-
-  // Fetch competencies if showCompetencies is enabled
-  useEffect(() => {
-    if (!showCompetencies || !examId || !question.competencyIds || question.competencyIds.length === 0) {
-      setCompetencies([]);
-      return;
-    }
-
-    const fetchCompetencies = async () => {
-      try {
-        const response = await fetch(`/api/exams/${examId}/competencies`);
-        if (response.ok) {
-          const data = await response.json();
-          const allCompetencies = data.competencies || [];
-          const filtered = allCompetencies.filter((c: { id: string }) =>
-            question.competencyIds?.includes(c.id)
-          );
-          setCompetencies(filtered);
-        }
-      } catch (err) {
-        console.error('Failed to fetch competencies:', err);
-      }
-    };
-
-    fetchCompetencies();
-  }, [showCompetencies, examId, question.competencyIds]);
+  // Get competencies directly from the question
+  const competencies = question.competencies || [];
   return (
     <Card className="p-6">
       <div>

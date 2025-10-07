@@ -738,7 +738,6 @@ export function QuizApp({
           onSaveExplanation={saveExplanation}
           isSavingExplanation={isSavingExplanation}
           showCompetencies={testSettings.showCompetencies}
-          examId={examId}
         />
       )}
 

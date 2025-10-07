@@ -44,6 +44,7 @@ export function normalizeQuestions(qs: ExternalQuestion[]): NormalizedQuestion[]
       explanationGeneratedByAI: q.explanationGeneratedByAI,
       study: q.study,
       competencyIds: q.competencyIds,
+      competencies: q.competencies,
     } as NormalizedQuestion;
   });
 }
@@ -74,5 +75,6 @@ export function denormalizeQuestion(question: NormalizedQuestion): ExternalQuest
     explanationGeneratedByAI: question.explanationGeneratedByAI,
     study: question.study,
     competencyIds: question.competencyIds,
+    competencies: question.competencies,
   };
 }

@@ -4,6 +4,7 @@ import { getDb, getQuestionsCollectionName } from '@/lib/server/mongodb';
 import type { QuestionDocument } from '@/types/question';
 import { normalizeQuestions } from '@/lib/normalize';
 import type { ExternalQuestion } from '@/types/external-question';
+import { envConfig } from '@/lib/env-config';
 
 const StartRequestZ = z.object({
   questionType: z.enum(['all', 'single', 'multiple']).default('all'),
@@ -60,6 +61,32 @@ export async function POST(request: Request, context: RouteParams) {
 
     // Random sample to avoid shipping all questions to the client
     pipeline.push({ $sample: { size: input.questionCount } });
+
+    // Lookup competencies to embed minimal data in questions
+    pipeline.push({
+      $lookup: {
+        from: envConfig.mongo.examCompetenciesCollection,
+        let: { questionCompetencyIds: '$competencyIds' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $in: ['$id', { $ifNull: ['$$questionCompetencyIds', []] }],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              id: 1,
+              title: 1,
+            },
+          },
+        ],
+        as: 'competencies',
+      },
+    });
+
     pipeline.push({
       $project: {
         _id: 1,
@@ -72,6 +99,7 @@ export async function POST(request: Request, context: RouteParams) {
         explanationGeneratedByAI: 1,
         study: 1,
         competencyIds: 1,
+        competencies: 1,
       },
     });
 
@@ -86,6 +114,7 @@ export async function POST(request: Request, context: RouteParams) {
       explanationGeneratedByAI: d.explanationGeneratedByAI,
       study: d.study,
       competencyIds: d.competencyIds,
+      competencies: d.competencies,
     }));
     const normalized = normalizeQuestions(external);
 

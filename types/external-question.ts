@@ -18,6 +18,7 @@ export type ExternalQuestion = {
   explanationGeneratedByAI?: boolean;
   study?: StudyLink[];
   competencyIds?: string[];
+  competencies?: Array<{ id: string; title: string }>;
 };
 
 /**
