@@ -4,6 +4,9 @@ import ExamSkeleton from "@/components/ExamSkeleton";
 import { fetchExamById } from "@/lib/server/exams";
 import type { Metadata } from 'next';
 
+// Force dynamic rendering to avoid build-time database access
+export const dynamic = 'force-dynamic';
+
 type PageProps = {
   // Next.js 15: params is async for dynamic routes
   params: Promise<{ examId: string }>;

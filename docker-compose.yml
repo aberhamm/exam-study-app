@@ -1,0 +1,42 @@
+services:
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_ENABLE_DEV_FEATURES: ${NEXT_PUBLIC_ENABLE_DEV_FEATURES:-}
+    container_name: scxmcl-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Node environment
+      NODE_ENV: production
+
+      # MongoDB connection (external)
+      MONGODB_URI: ${MONGODB_URI}
+      MONGODB_DB: ${MONGODB_DB:-study-util}
+      MONGODB_EXAMS_COLLECTION: ${MONGODB_EXAMS_COLLECTION:-exams}
+      MONGODB_QUESTIONS_COLLECTION: ${MONGODB_QUESTIONS_COLLECTION:-questions}
+      MONGODB_QUESTION_EMBEDDINGS_COLLECTION: ${MONGODB_QUESTION_EMBEDDINGS_COLLECTION:-question_embeddings}
+      MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX: ${MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX:-vector_index}
+
+      # OpenAI API (for embeddings)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      QUESTIONS_EMBEDDING_MODEL: ${QUESTIONS_EMBEDDING_MODEL:-text-embedding-3-small}
+      QUESTIONS_EMBEDDING_DIMENSIONS: ${QUESTIONS_EMBEDDING_DIMENSIONS:-}
+
+      # OpenRouter API (for AI features)
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
+
+      # Feature flags
+      ENABLE_DEV_FEATURES: ${ENABLE_DEV_FEATURES:-}
+      NEXT_PUBLIC_ENABLE_DEV_FEATURES: ${NEXT_PUBLIC_ENABLE_DEV_FEATURES:-}
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

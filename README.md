@@ -43,12 +43,24 @@ An interactive quiz application built with Next.js for studying Sitecore XM Clou
 
 ## Getting Started
 
-### Prerequisites
+### Docker Deployment (Recommended for Production)
+
+For production environments, Docker deployment is recommended. See the complete [Docker Deployment Guide](./DOCKER.md) for instructions on:
+- Quick setup with docker-compose
+- Environment configuration
+- Database seeding
+- Monitoring and maintenance
+- Production best practices
+
+### Local Development
+
+#### Prerequisites
 
 - Node.js 18+
 - npm, yarn, pnpm, or bun
+- MongoDB (or use Docker)
 
-### Installation
+#### Installation
 
 ```bash
 # Clone the repository

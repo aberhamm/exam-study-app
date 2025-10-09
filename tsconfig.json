@@ -23,5 +23,14 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "types/**/*.d.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "data-pipelines/node_modules",
+    "data-pipelines/scripts",
+    "data-pipelines/src/pipelines",
+    "data-pipelines/src/shared/clients",
+    "data-pipelines/src/shared/services",
+    "data-pipelines/src/shared/utils"
+  ]
 }

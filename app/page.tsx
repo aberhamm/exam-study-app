@@ -2,6 +2,9 @@ import HomeClient from "./HomeClient";
 import { fetchExamById } from "@/lib/server/exams";
 import { computeExamStats } from "@/lib/server/questions";
 
+// Force dynamic rendering to avoid build-time database access
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const examId = 'sitecore-xmc';
   const [exam, stats] = await Promise.all([
