@@ -253,7 +253,7 @@ async function populateClustersWithQuestions(
   }
 
   // Fetch questions by BOTH _id (ObjectId) and id (string)
-  const query: any = { examId };
+  const query: Document = { examId };
   if (objectIds.length > 0 && stringIds.length > 0) {
     query.$or = [
       { _id: { $in: objectIds } },
@@ -272,9 +272,10 @@ async function populateClustersWithQuestions(
   for (const q of questions) {
     const idStr = q._id.toString();
     questionMap.set(idStr, { ...q, id: idStr });
-    // Also map by old string ID if it exists
-    if (q.id && typeof q.id === 'string') {
-      questionMap.set(q.id, { ...q, id: idStr });
+    // Also map by old string ID if it exists (legacy data may have string id field)
+    const qWithId = q as QuestionDocument & { id?: string };
+    if (qWithId.id && typeof qWithId.id === 'string') {
+      questionMap.set(qWithId.id, { ...q, id: idStr });
     }
   }
 

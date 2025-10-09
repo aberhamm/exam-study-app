@@ -145,7 +145,6 @@ export type CompetencyStats = {
 
 export async function getCompetencyAssignmentStats(examId: string): Promise<CompetencyStats[]> {
   const db = await getDb();
-  const competenciesCol = await getCompetenciesCollection();
   const questionsCol = db.collection(envConfig.mongo.questionsCollection);
 
   // Get all competencies for this exam

@@ -47,7 +47,6 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [missedQuestionIds, setMissedQuestionIds] = useState<string[]>([]);
   const [starting, setStarting] = useState(false);
   const [competencies, setCompetencies] = useState<Array<{ id: string; title: string; questionCount?: number }>>([]);
-  const [competenciesLoading, setCompetenciesLoading] = useState(false);
 
   // Configure header on mount and when exam title loads
   useEffect(() => {
@@ -131,7 +130,6 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     if (!examMetadata?.examId) return;
 
     const fetchCompetencies = async () => {
-      setCompetenciesLoading(true);
       try {
         const response = await fetch(`/api/exams/${examMetadata.examId}/competencies?includeStats=true`);
         if (response.ok) {
@@ -140,8 +138,6 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
         }
       } catch (err) {
         console.error('Failed to fetch competencies:', err);
-      } finally {
-        setCompetenciesLoading(false);
       }
     };
 

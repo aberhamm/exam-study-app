@@ -23,7 +23,7 @@ interface ImportantSection {
   title: string;
   context: string;
   content: string;
-  type: 'warning-alert' | 'important-marker' | 'note';
+  type: 'warning-alert' | 'important-marker' | 'note' | 'important-mention';
 }
 
 /**
@@ -95,7 +95,7 @@ function extractImportantMarkers(markdown: string, sourceFile: string, title: st
   const sections: ImportantSection[] = [];
 
   // Look for IMPORTANT: pattern followed by content
-  const importantRegex = /IMPORTANT:\s*(.+?)(?=\n\n|\n#|$)/gis;
+  const importantRegex = /IMPORTANT:\s*([\s\S]+?)(?=\n\n|\n#|$)/gi;
 
   let match;
   while ((match = importantRegex.exec(markdown)) !== null) {
@@ -131,7 +131,7 @@ function extractImportantMentions(markdown: string, sourceFile: string, title: s
 
   // Find paragraphs or sentences containing "important"
   // Match paragraph: text with "important" followed by period/newline/end
-  const paragraphRegex = /([^.\n]{20,}?important[^.\n]{20,}[.!?])/gis;
+  const paragraphRegex = /([^.\n]{20,}?important[^.\n]{20,}[.!?])/gi;
 
   let match;
   while ((match = paragraphRegex.exec(withoutAlerts)) !== null) {

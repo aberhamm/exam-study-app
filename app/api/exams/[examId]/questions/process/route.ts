@@ -27,8 +27,6 @@ const ProcessRequestSchema = z.object({
     .optional(),
 });
 
-type ProcessRequest = z.infer<typeof ProcessRequestSchema>;
-
 export async function POST(request: Request, context: RouteContext) {
   if (!isDevFeaturesEnabled()) {
     return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
