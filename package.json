@@ -23,7 +23,8 @@
     "assign:competencies": "tsx scripts/assign-competencies-to-questions.ts",
     "sync:competencies": "tsx scripts/sync-competency-references.ts",
     "extract:important": "tsx scripts/extract-important-sections.ts",
-    "generate:important-questions": "tsx scripts/generate-questions-from-important.ts"
+    "generate:important-questions": "tsx scripts/generate-questions-from-important.ts",
+    "check:mongodb": "tsx scripts/check-mongodb-connection.ts"
   },
   "dependencies": {
     "@next/env": "15.5.2",

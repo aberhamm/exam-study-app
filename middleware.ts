@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { isDevFeaturesEnabled } from '@/lib/feature-flags';
+import { envConfig } from '@/lib/env-config';
 
 export function middleware() {
-  if (!isDevFeaturesEnabled()) {
+  if (!envConfig.features.devFeaturesEnabled) {
     return new NextResponse('Not Found', { status: 404 });
   }
   return NextResponse.next();
@@ -10,15 +10,20 @@ export function middleware() {
 
 export const config = {
   matcher: [
+    // UI routes for dev tools
     '/import',
     '/dev/:path*',
+
+    // Write/admin operations only
     '/api/exams/:examId/questions/import',
-    '/api/exams/:examId/questions/:questionId',
     '/api/exams/:examId/questions/embed',
+    '/api/exams/:examId/questions/process',
+    '/api/exams/:examId/questions/:questionId/explain',
+    '/api/exams/:examId/questions/:questionId/competencies',
     '/api/exams/:examId/dedupe',
-    '/api/exams/:examId/dedupe/flags',
-    '/api/exams/:examId/dedupe/review',
-    '/api/exams/:examId/stats',
-    '/api/exams/:examId/search',
+    '/api/exams/:examId/dedupe/:path*',
+    '/api/exams/:examId/competencies/:path*',
+
+    // Note: Read-only routes like /stats, /search, /questions/prepare, /questions (GET) are NOT protected
   ],
 };
