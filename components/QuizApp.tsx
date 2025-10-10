@@ -1,23 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { StudyPanel } from '@/components/StudyPanel';
 import { useHeader } from '@/contexts/HeaderContext';
-import { Timer } from '@/components/Timer';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { MarkdownContent } from '@/components/ui/markdown';
+import { QuestionEditorDialog } from '@/components/QuestionEditorDialog';
+import { QuizHeader } from '@/components/quiz/QuizHeader';
+import { QuizProgress } from '@/components/quiz/QuizProgress';
+import { QuestionCard } from '@/components/quiz/QuestionCard';
+import { QuizResults } from '@/components/quiz/QuizResults';
+import { QuizControls } from '@/components/quiz/QuizControls';
+import { QuitDialog } from '@/components/quiz/QuitDialog';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { TestSettings } from '@/lib/test-settings';
 import { shuffleArray } from '@/lib/question-utils';
+import { denormalizeQuestion, normalizeQuestions } from '@/lib/normalize';
 import {
   saveExamState,
   clearExamState,
@@ -25,6 +22,10 @@ import {
   updateExamState,
   type ExamState,
 } from '@/lib/exam-state';
+import {
+  recordQuestionSeen,
+  recordQuestionResult,
+} from '@/lib/question-metrics';
 
 type QuizState = {
   currentQuestionIndex: number;
@@ -46,6 +47,8 @@ type Props = {
   testSettings: TestSettings;
   onBackToSettings: () => void;
   initialExamState?: ExamState | null;
+  examId: string;
+  examTitle?: string;
 };
 
 export function QuizApp({
@@ -53,12 +56,25 @@ export function QuizApp({
   testSettings,
   onBackToSettings,
   initialExamState,
+  examId,
+  examTitle,
 }: Props) {
   const [questions, setQuestions] = useState<NormalizedQuestion[]>(
     initialExamState?.questions || preparedQuestions
   );
   const { setConfig } = useHeader();
-  const [showRestartDialog, setShowRestartDialog] = useState(false);
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<NormalizedQuestion | null>(null);
+  const [isSavingQuestion, setIsSavingQuestion] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const successTimeoutRef = useRef<number | null>(null);
+
+  // AI Explanation state
+  const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [isSavingExplanation, setIsSavingExplanation] = useState(false);
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: initialExamState?.currentQuestionIndex || 0,
     selectedAnswers: initialExamState?.selectedAnswers || [],
@@ -69,6 +85,44 @@ export function QuizApp({
     timerRunning: initialExamState?.timerRunning ?? true,
     timeElapsed: initialExamState?.timeElapsed || 0,
   });
+  const seenQuestionsRef = useRef<Set<string>>(new Set());
+  const scoredQuestionsRef = useRef<Set<string>>(new Set());
+  const persistEnabledRef = useRef<boolean>(true);
+
+  const evaluateAnswer = useCallback(
+    (question: NormalizedQuestion, selected: number | number[] | null): 'correct' | 'incorrect' | 'unanswered' => {
+      if (selected === null || (Array.isArray(selected) && selected.length === 0)) {
+        return 'unanswered';
+      }
+
+      const correctIndex = question.answerIndex;
+
+      if (Array.isArray(correctIndex)) {
+        if (!Array.isArray(selected)) {
+          return 'incorrect';
+        }
+        if (correctIndex.length !== selected.length) {
+          return 'incorrect';
+        }
+
+        const sortedCorrect = [...correctIndex].sort();
+        const sortedSelected = [...selected].sort();
+        for (let i = 0; i < sortedCorrect.length; i++) {
+          if (sortedCorrect[i] !== sortedSelected[i]) {
+            return 'incorrect';
+          }
+        }
+        return 'correct';
+      }
+
+      if (Array.isArray(selected)) {
+        return 'incorrect';
+      }
+
+      return selected === correctIndex ? 'correct' : 'incorrect';
+    },
+    []
+  );
 
   // Ensure questions are set when component mounts or props change
   useEffect(() => {
@@ -79,8 +133,9 @@ export function QuizApp({
 
   // Save exam state to localStorage whenever quiz state changes
   useEffect(() => {
+    if (!persistEnabledRef.current) return;
     if (!quizState.showResult && questions.length > 0) {
-      const examState = createExamState(questions, testSettings);
+      const examState = createExamState(questions, testSettings, examId, examTitle);
       const updatedState = updateExamState(examState, {
         currentQuestionIndex: quizState.currentQuestionIndex,
         selectedAnswers: quizState.selectedAnswers,
@@ -93,7 +148,7 @@ export function QuizApp({
       });
       saveExamState(updatedState);
     }
-  }, [quizState, questions, testSettings]);
+  }, [quizState, questions, testSettings, examId, examTitle]);
 
   // Configure header based on quiz state
   useEffect(() => {
@@ -101,6 +156,7 @@ export function QuizApp({
       // Results page - simple header
       setConfig({
         variant: 'short',
+        title: examTitle,
         leftContent: null,
         rightContent: null,
         visible: true,
@@ -109,14 +165,16 @@ export function QuizApp({
       // No questions - simple header
       setConfig({
         variant: 'short',
+        title: examTitle,
         leftContent: null,
         rightContent: null,
         visible: true,
       });
     } else {
-      // Main quiz - complex header with settings and back button
+      // Main quiz - compact header with a single quit button
       setConfig({
         variant: 'short',
+        title: examTitle,
         leftContent: (
           <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
             <span className="bg-muted px-2 py-1 rounded">
@@ -135,32 +193,31 @@ export function QuizApp({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowRestartDialog(true)}
-              className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-              title="Restart exam"
+              onClick={() => setShowQuitDialog(true)}
             >
-              🔄 Restart
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                clearExamState();
-                onBackToSettings();
-              }}
-            >
-              ← Settings
+              Quit and go Home
             </Button>
           </div>
         ),
         visible: true,
       });
     }
-  }, [quizState.showResult, questions, testSettings, onBackToSettings, setConfig]);
+  }, [quizState.showResult, questions, testSettings, onBackToSettings, setConfig, examTitle]);
 
   const currentQuestion = questions?.[quizState.currentQuestionIndex];
   const totalQuestions = questions?.length || 0;
   const isLastQuestion = quizState.currentQuestionIndex === totalQuestions - 1;
+
+  useEffect(() => {
+    if (!currentQuestion) return;
+    if (!seenQuestionsRef.current.has(currentQuestion.id)) {
+      recordQuestionSeen(currentQuestion.id);
+      seenQuestionsRef.current.add(currentQuestion.id);
+    }
+  }, [currentQuestion]);
+
+  // Note: Question results are now tracked immediately in selectAnswer() and submitMultipleAnswer()
+  // This ensures the metrics are recorded as soon as the user answers, not in a delayed effect
 
   // Note: Disabled localStorage persistence since questions are randomized
   // Loading a saved state wouldn't match the current question order
@@ -172,21 +229,23 @@ export function QuizApp({
     const incorrectAnswers: QuizState['incorrectAnswers'] = [];
 
     questions.forEach((question, index) => {
-      const selectedIndex = quizState.selectedAnswers[index];
+      const selected = quizState.selectedAnswers[index] ?? null;
       const correctIndex = question.answerIndex;
+      const outcome = evaluateAnswer(question, selected);
 
-      let isCorrect = false;
-
-      isCorrect = selectedIndex === correctIndex;
-
-      if (isCorrect) {
+      if (outcome === 'correct') {
         score++;
-      } else if (selectedIndex !== null) {
+      } else if (outcome === 'incorrect' && selected !== null) {
         incorrectAnswers.push({
           question,
-          selectedIndex,
+          selectedIndex: selected,
           correctIndex,
         });
+      }
+
+      if ((outcome === 'correct' || outcome === 'incorrect') && !scoredQuestionsRef.current.has(question.id)) {
+        recordQuestionResult(question.id, outcome);
+        scoredQuestionsRef.current.add(question.id);
       }
     });
 
@@ -198,7 +257,7 @@ export function QuizApp({
     };
 
     setQuizState(finalState);
-  }, [questions, quizState]);
+  }, [questions, quizState, evaluateAnswer]);
 
   const selectAnswer = useCallback(
     (answerIndex: number) => {
@@ -232,6 +291,15 @@ export function QuizApp({
         // For single choice, show feedback immediately
         newSelectedAnswers[quizState.currentQuestionIndex] = answerIndex;
 
+        // Record the result immediately
+        if (!scoredQuestionsRef.current.has(currentQuestion.id)) {
+          const outcome = evaluateAnswer(currentQuestion, answerIndex);
+          if (outcome === 'correct' || outcome === 'incorrect') {
+            recordQuestionResult(currentQuestion.id, outcome);
+            scoredQuestionsRef.current.add(currentQuestion.id);
+          }
+        }
+
         const newState = {
           ...quizState,
           selectedAnswers: newSelectedAnswers,
@@ -240,18 +308,30 @@ export function QuizApp({
         setQuizState(newState);
       }
     },
-    [questions, quizState]
+    [questions, quizState, evaluateAnswer]
   );
 
   const submitMultipleAnswer = useCallback(() => {
     if (!questions || quizState.showFeedback) return;
+
+    const currentQuestion = questions[quizState.currentQuestionIndex];
+    const selected = quizState.selectedAnswers[quizState.currentQuestionIndex] ?? null;
+
+    // Record the result immediately
+    if (!scoredQuestionsRef.current.has(currentQuestion.id)) {
+      const outcome = evaluateAnswer(currentQuestion, selected);
+      if (outcome === 'correct' || outcome === 'incorrect') {
+        recordQuestionResult(currentQuestion.id, outcome);
+        scoredQuestionsRef.current.add(currentQuestion.id);
+      }
+    }
 
     const newState = {
       ...quizState,
       showFeedback: true,
     };
     setQuizState(newState);
-  }, [questions, quizState]);
+  }, [questions, quizState, evaluateAnswer]);
 
   const nextQuestion = useCallback(() => {
     if (isLastQuestion) {
@@ -263,6 +343,8 @@ export function QuizApp({
         showFeedback: false,
       };
       setQuizState(newState);
+      // Clear AI explanation when moving to next question
+      setAiExplanation(null);
     }
   }, [isLastQuestion, quizState, finishQuiz]);
 
@@ -272,6 +354,8 @@ export function QuizApp({
 
     // Randomize questions again on reset
     setQuestions(shuffleArray(preparedQuestions));
+    seenQuestionsRef.current = new Set();
+    scoredQuestionsRef.current = new Set();
 
     const resetState = {
       currentQuestionIndex: 0,
@@ -285,17 +369,118 @@ export function QuizApp({
     };
 
     setQuizState(resetState);
+
+    // Clear AI explanation state
+    setAiExplanation(null);
   };
 
-  const handleRestartConfirm = () => {
-    setShowRestartDialog(false);
-    resetQuiz();
-  };
+  const generateExplanation = useCallback(async () => {
+    if (!currentQuestion || !examId) return;
 
-  const handleRestartCancel = () => {
-    setShowRestartDialog(false);
-  };
+    setIsGeneratingExplanation(true);
+    setEditError(null);
 
+    try {
+      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}/explain`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to generate explanation`);
+      }
+
+      const data = await response.json();
+
+      // If auto-saved (no existing explanation), update questions state
+      if (data.savedAsDefault) {
+        const updatedQuestions = questions.map(q =>
+          q.id === currentQuestion.id
+            ? { ...q, explanation: data.explanation, explanationGeneratedByAI: true }
+            : q
+        );
+        setQuestions(updatedQuestions);
+        setAiExplanation(null); // Clear AI explanation since it's now the default
+        setEditSuccess('Explanation generated and saved as default!');
+      } else {
+        // Has existing explanation, show in AI section for user to decide
+        setAiExplanation(data.explanation);
+        setEditSuccess('Explanation generated! Click "Replace Default" to save.');
+      }
+
+      if (successTimeoutRef.current) {
+        window.clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = window.setTimeout(() => {
+        setEditSuccess(null);
+        successTimeoutRef.current = null;
+      }, 3000);
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate explanation';
+      setEditError(message);
+      console.error('Failed to generate explanation:', error);
+    } finally {
+      setIsGeneratingExplanation(false);
+    }
+  }, [currentQuestion, examId, questions]);
+
+  const saveExplanation = useCallback(async () => {
+    if (!currentQuestion || !examId || !aiExplanation) return;
+
+    setIsSavingExplanation(true);
+    setEditError(null);
+
+    try {
+      // Build updated question with new explanation and AI flag
+      const updatedQuestion: NormalizedQuestion = {
+        ...currentQuestion,
+        explanation: aiExplanation,
+        explanationGeneratedByAI: true,
+      };
+
+      // Use PATCH endpoint to update the question
+      const payload = denormalizeQuestion(updatedQuestion);
+      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to save explanation`);
+      }
+
+      // Update the current question with the explanation and AI flag
+      const updatedQuestions = questions.map(q =>
+        q.id === currentQuestion.id
+          ? { ...q, explanation: aiExplanation, explanationGeneratedByAI: true }
+          : q
+      );
+      setQuestions(updatedQuestions);
+
+      // Clear AI explanation state since it's now the default
+      setAiExplanation(null);
+
+      setEditSuccess('Explanation saved as default!');
+      if (successTimeoutRef.current) {
+        window.clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = window.setTimeout(() => {
+        setEditSuccess(null);
+        successTimeoutRef.current = null;
+      }, 3000);
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save explanation';
+      setEditError(message);
+      console.error('Failed to save explanation:', error);
+    } finally {
+      setIsSavingExplanation(false);
+    }
+  }, [currentQuestion, examId, aiExplanation, questions]);
   const handleTimeUp = useCallback(() => {
     finishQuiz();
   }, [finishQuiz]);
@@ -309,9 +494,81 @@ export function QuizApp({
     [testSettings.timerDuration]
   );
 
+  const openQuestionEditor = () => {
+    if (!currentQuestion) return;
+    setEditingQuestion(currentQuestion);
+    setEditError(null);
+    setEditDialogOpen(true);
+  };
+
+  const handleQuestionSave = async (updatedQuestion: NormalizedQuestion) => {
+    if (!examId) {
+      const message = 'Exam ID is required to save edits.';
+      setEditError(message);
+      throw new Error(message);
+    }
+
+    setIsSavingQuestion(true);
+    setEditError(null);
+    if (successTimeoutRef.current) {
+      window.clearTimeout(successTimeoutRef.current);
+      successTimeoutRef.current = null;
+    }
+
+    try {
+      const payload = denormalizeQuestion(updatedQuestion);
+      const response = await fetch(`/api/exams/${examId}/questions/${payload.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const details = await response.json().catch(() => ({}));
+        const message = typeof details?.error === 'string'
+          ? details.error
+          : `Failed to save question (HTTP ${response.status})`;
+        throw new Error(message);
+      }
+
+      const json = await response.json();
+      const [normalized] = normalizeQuestions([json]);
+
+      setQuestions((prev) =>
+        prev.map((question) => (question.id === normalized.id ? normalized : question))
+      );
+
+      setQuizState((prev) => ({
+        ...prev,
+        incorrectAnswers: prev.incorrectAnswers.map((entry) =>
+          entry.question.id === normalized.id
+            ? { ...entry, question: normalized }
+            : entry
+        ),
+      }));
+
+      setEditingQuestion(normalized);
+      setEditDialogOpen(false);
+      setEditSuccess('Question updated successfully.');
+      successTimeoutRef.current = window.setTimeout(() => {
+        setEditSuccess(null);
+        successTimeoutRef.current = null;
+      }, 4000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save question.';
+      setEditError(message);
+      throw new Error(message);
+    } finally {
+      setIsSavingQuestion(false);
+    }
+  };
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!currentQuestion || quizState.showResult) return;
+      // Disable global shortcuts while any dialog is open
+      if (editDialogOpen || showQuitDialog) return;
 
       if (e.key >= '1' && e.key <= '5') {
         const answerIndex = parseInt(e.key) - 1;
@@ -333,6 +590,8 @@ export function QuizApp({
       currentQuestion,
       quizState.showFeedback,
       quizState.showResult,
+      editDialogOpen,
+      showQuitDialog,
       selectAnswer,
       nextQuestion,
       submitMultipleAnswer,
@@ -359,6 +618,14 @@ export function QuizApp({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [quizState.showResult]);
 
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        window.clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Early return if no questions available (should not happen with proper setup)
   if (!questions || questions.length === 0) {
     return (
@@ -369,12 +636,13 @@ export function QuizApp({
             <p>No questions found to display.</p>
             <Button
               onClick={() => {
+                persistEnabledRef.current = false;
                 clearExamState();
                 onBackToSettings();
               }}
               className="mt-4"
             >
-              Back to Settings
+              Home
             </Button>
           </div>
         </Card>
@@ -383,104 +651,19 @@ export function QuizApp({
   }
 
   if (quizState.showResult) {
-    const percentage = Math.round((quizState.score / totalQuestions) * 100);
-    const timeElapsedMinutes = Math.floor(quizState.timeElapsed / 60);
-    const timeElapsedSeconds = quizState.timeElapsed % 60;
-    const formattedElapsedTime = `${timeElapsedMinutes}:${timeElapsedSeconds
-      .toString()
-      .padStart(2, '0')}`;
-
     return (
-      <div className="space-y-6">
-        <Card className="p-6">
-          <div className="text-center space-y-4">
-            <h2 className="text-2xl font-bold">Quiz Complete!</h2>
-            <div className="text-4xl font-bold text-primary">
-              {quizState.score}/{totalQuestions} ({percentage}%)
-            </div>
-            <div className="text-lg text-muted-foreground">Time taken: {formattedElapsedTime}</div>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={resetQuiz} size="lg">
-                Start New Quiz
-              </Button>
-              <Button
-                onClick={() => {
-                  clearExamState();
-                  onBackToSettings();
-                }}
-                variant="outline"
-                size="lg"
-              >
-                Change Settings
-              </Button>
-            </div>
-          </div>
-        </Card>
-
-        {quizState.incorrectAnswers.length > 0 && (
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Review Incorrect Answers</h2>
-            <div className="space-y-6">
-              {quizState.incorrectAnswers.map(({ question, selectedIndex, correctIndex }) => (
-                <div key={question.id} className="border-b pb-4 last:border-b-0">
-                  <div className="font-medium mb-3">{question.prompt}</div>
-
-                  <div className="space-y-2 mb-4">
-                    {question.choices.map((choice, choiceIndex) => {
-                      let isCorrect = false;
-                      let isSelected = false;
-
-                      isCorrect = choiceIndex === correctIndex;
-                      isSelected = choiceIndex === selectedIndex;
-
-                      return (
-                        <div
-                          key={choiceIndex}
-                          className={`p-3 rounded-lg border-2 ${
-                            isCorrect
-                              ? 'border-green-500 bg-green-50 dark:bg-green-950 text-green-800 dark:text-green-200'
-                              : isSelected && !isCorrect
-                              ? 'border-red-500 bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200'
-                              : 'border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          <span className="font-medium">
-                            {String.fromCharCode(65 + choiceIndex)}.
-                          </span>{' '}
-                          {choice}
-                          {isCorrect && (
-                            <span className="ml-2 text-green-600 dark:text-green-400 font-semibold">
-                              ✓ Correct
-                            </span>
-                          )}
-                          {isSelected && !isCorrect && (
-                            <span className="ml-2 text-red-600 dark:text-red-400 font-semibold">
-                              ✗ Your answer
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {question.explanation && (
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <div className="font-medium text-blue-800 dark:text-blue-200 mb-1">
-                        Explanation:
-                      </div>
-                      <MarkdownContent variant="explanation">
-                        {question.explanation}
-                      </MarkdownContent>
-                    </div>
-                  )}
-
-                  {question.study && <StudyPanel study={question.study} />}
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-      </div>
+      <QuizResults
+        score={quizState.score}
+        totalQuestions={totalQuestions}
+        timeElapsed={quizState.timeElapsed}
+        incorrectAnswers={quizState.incorrectAnswers}
+        onResetQuiz={resetQuiz}
+        onGoHome={() => {
+          persistEnabledRef.current = false;
+          clearExamState();
+          onBackToSettings();
+        }}
+      />
     );
   }
 
@@ -510,278 +693,86 @@ export function QuizApp({
 
   return (
     <div className="space-y-6">
-      {/* Mobile Settings Display */}
-      <div className="md:hidden flex justify-between items-center text-sm">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <span className="bg-muted px-2 py-1 rounded">
-            {testSettings.questionType === 'all'
-              ? 'All Types'
-              : testSettings.questionType === 'single'
-              ? 'Single Select'
-              : 'Multiple Select'}
-          </span>
-          <span>•</span>
-          <span>{testSettings.questionCount} questions</span>
+      <QuizHeader
+        examTitle={examTitle}
+        testSettings={testSettings}
+        onQuit={() => setShowQuitDialog(true)}
+      />
+
+      <QuizProgress
+        testSettings={testSettings}
+        currentQuestionIndex={quizState.currentQuestionIndex}
+        totalQuestions={totalQuestions}
+        timerRunning={quizState.timerRunning && !quizState.showResult}
+        timeElapsed={quizState.timeElapsed}
+        onTimeUp={handleTimeUp}
+        onTimeUpdate={handleTimeUpdate}
+      />
+
+      {/* Error and Success Messages */}
+      {editError && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {editError}
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowRestartDialog(true)}
-            className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 text-xs px-2"
-            title="Restart exam"
-          >
-            🔄
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              clearExamState();
-              onBackToSettings();
-            }}
-          >
-            Settings
-          </Button>
+      )}
+
+      {editSuccess && (
+        <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-900/40 dark:text-green-200">
+          {editSuccess}
         </div>
-      </div>
+      )}
 
-      {/* Timer and Progress Indicator */}
-      <div className="flex items-center justify-between gap-6">
-        {/* Timer (1/4 width) */}
-        <div className="flex-shrink-0 w-1/4">
-          <Timer
-            initialMinutes={testSettings.timerDuration}
-            isRunning={quizState.timerRunning && !quizState.showResult}
-            onTimeUp={handleTimeUp}
-            onTimeUpdate={handleTimeUpdate}
-            timeElapsed={quizState.timeElapsed}
-          />
-        </div>
+      {currentQuestion && (
+        <QuestionCard
+          question={currentQuestion}
+          selectedAnswers={selectedAnswerIndex}
+          showFeedback={quizState.showFeedback}
+          isCurrentAnswerCorrect={isCurrentAnswerCorrect}
+          isSavingQuestion={isSavingQuestion}
+          onSelectAnswer={selectAnswer}
+          onSubmitMultipleAnswer={submitMultipleAnswer}
+          onOpenQuestionEditor={openQuestionEditor}
+          onGenerateExplanation={generateExplanation}
+          isGeneratingExplanation={isGeneratingExplanation}
+          aiExplanation={aiExplanation || undefined}
+          onSaveExplanation={saveExplanation}
+          isSavingExplanation={isSavingExplanation}
+          showCompetencies={testSettings.showCompetencies}
+        />
+      )}
 
-        {/* Progress Indicator (3/4 width) */}
-        <div className="flex-grow text-center">
-          <div className="text-lg font-medium">
-            Question {quizState.currentQuestionIndex + 1} of {totalQuestions}
-          </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{
-                width: `${((quizState.currentQuestionIndex + 1) / totalQuestions) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
-      </div>
+      {currentQuestion && (
+        <QuizControls
+          question={currentQuestion}
+          showFeedback={quizState.showFeedback}
+          isLastQuestion={isLastQuestion}
+          onNextQuestion={nextQuestion}
+        />
+      )}
 
-      {/* Question */}
-      <Card className="p-6">
-        <div>
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <h2 className="text-xl font-semibold flex-1" role="heading" aria-level={2}>
-              {currentQuestion?.prompt}
-            </h2>
-            {quizState.showFeedback && (
-              <div className="flex-shrink-0 mt-1">
-                {isCurrentAnswerCorrect ? (
-                  <div className="flex items-center text-green-600 dark:text-green-400">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="sr-only">Correct answer</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center text-red-600 dark:text-red-400">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="sr-only">Incorrect answer</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="text-base font-medium text-foreground">
-            {currentQuestion?.questionType === 'multiple'
-              ? 'Select all that apply.'
-              : 'Select one answer.'}
-          </div>
-        </div>
+      <QuitDialog
+        open={showQuitDialog}
+        onOpenChange={setShowQuitDialog}
+        onConfirmQuit={() => {
+          persistEnabledRef.current = false;
+          clearExamState();
+          onBackToSettings();
+        }}
+      />
 
-        <div
-          className="space-y-3"
-          role={currentQuestion?.questionType === 'multiple' ? 'group' : 'radiogroup'}
-          aria-label="Answer choices"
-          aria-required="true"
-        >
-          {currentQuestion?.choices.map((choice, index) => {
-            let isSelected = false;
-            if (currentQuestion.questionType === 'single') {
-              isSelected = selectedAnswerIndex === index;
-            } else {
-              const selectedArray = Array.isArray(selectedAnswerIndex) ? selectedAnswerIndex : [];
-              isSelected = selectedArray.includes(index);
-            }
-
-            let showCorrect = false;
-            if (quizState.showFeedback) {
-              if (currentQuestion.questionType === 'single') {
-                showCorrect = index === currentQuestion.answerIndex;
-              } else {
-                // For multiple choice, only show green if the answer is both correct AND selected
-                const correctArray = Array.isArray(currentQuestion.answerIndex)
-                  ? currentQuestion.answerIndex
-                  : [];
-                const isCorrectAnswer = correctArray.includes(index as 0 | 1 | 2 | 3 | 4);
-                showCorrect = isCorrectAnswer && isSelected;
-              }
-            }
-
-            const showIncorrect = quizState.showFeedback && isSelected && !showCorrect;
-
-            // For multiple choice, show missed correct answers in a subtle way
-            let showMissedCorrect = false;
-            if (quizState.showFeedback && currentQuestion.questionType === 'multiple') {
-              const correctArray = Array.isArray(currentQuestion.answerIndex)
-                ? currentQuestion.answerIndex
-                : [];
-              const isCorrectAnswer = correctArray.includes(index as 0 | 1 | 2 | 3);
-              showMissedCorrect = isCorrectAnswer && !isSelected;
-            }
-
-            return (
-              <button
-                key={index}
-                onClick={() => selectAnswer(index)}
-                disabled={quizState.showFeedback}
-                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                  showCorrect
-                    ? 'border-green-600 bg-green-50 dark:bg-green-950 text-green-900 dark:text-green-100'
-                    : showIncorrect
-                    ? 'border-red-600 bg-red-50 dark:bg-red-950 text-red-900 dark:text-red-100'
-                    : showMissedCorrect
-                    ? 'border-green-300 bg-green-25 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-dashed'
-                    : quizState.showFeedback
-                    ? 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                    : isSelected
-                    ? 'border-primary bg-primary/5 dark:bg-primary/10'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
-                } ${quizState.showFeedback ? 'cursor-default' : 'cursor-pointer'}`}
-                role={currentQuestion.questionType === 'multiple' ? 'checkbox' : 'radio'}
-                aria-checked={isSelected}
-                aria-readonly={quizState.showFeedback}
-                aria-describedby={quizState.showFeedback ? `answer-${index}-feedback` : undefined}
-                tabIndex={0}
-              >
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{String.fromCharCode(65 + index)}.</span>
-                    <span>{choice}</span>
-                  </div>
-                  {currentQuestion.questionType === 'multiple' && (
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        isSelected
-                          ? 'bg-primary border-primary'
-                          : 'border-gray-300 dark:border-gray-600'
-                      }`}
-                    >
-                      {isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-primary-foreground"></div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                {/* Screen reader only feedback */}
-                {showCorrect && <span className="sr-only">Correct answer, selected</span>}
-                {showIncorrect && <span className="sr-only">Incorrect answer, selected</span>}
-                {showMissedCorrect && <span className="sr-only">Correct answer, not selected</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Submit button for multiple select questions */}
-        {currentQuestion?.questionType === 'multiple' && !quizState.showFeedback && (
-          <div className="mt-6">
-            <Button
-              onClick={submitMultipleAnswer}
-              size="lg"
-              className="w-full"
-              disabled={
-                !selectedAnswerIndex ||
-                (Array.isArray(selectedAnswerIndex) && selectedAnswerIndex.length === 0)
-              }
-            >
-              Submit Answer
-            </Button>
-          </div>
-        )}
-
-        {quizState.showFeedback && (
-          <div className="mt-6 space-y-4">
-            {currentQuestion?.explanation && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <div className="font-medium text-blue-800 dark:text-blue-200 mb-2">
-                  Explanation:
-                </div>
-                <MarkdownContent variant="explanation">
-                  {currentQuestion.explanation}
-                </MarkdownContent>
-              </div>
-            )}
-
-            {currentQuestion?.study && <StudyPanel study={currentQuestion.study} />}
-
-            <Button onClick={nextQuestion} size="lg" className="w-full">
-              {isLastQuestion ? 'Finish Quiz' : 'Next Question'}
-            </Button>
-          </div>
-        )}
-      </Card>
-
-      {/* Keyboard Instructions */}
-      <div className="text-center text-sm text-muted-foreground">
-        {currentQuestion?.questionType === 'multiple'
-          ? quizState.showFeedback
-            ? 'Use Enter/Space to continue to next question'
-            : 'Use keys 1-5 to toggle selections, Enter/Space to submit'
-          : 'Use keys 1-5 to select answers, Enter/Space to continue'}
-      </div>
-
-      {/* Restart Confirmation Dialog */}
-      <Dialog open={showRestartDialog} onOpenChange={setShowRestartDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Restart Exam</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to restart the exam? This will lose all your current progress
-              and cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleRestartCancel}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRestartConfirm}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Restart Exam
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <QuestionEditorDialog
+        open={editDialogOpen}
+        question={editingQuestion}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            setEditingQuestion(null);
+            setEditError(null);
+          }
+        }}
+        onSave={handleQuestionSave}
+        saving={isSavingQuestion}
+      />
     </div>
   );
 }

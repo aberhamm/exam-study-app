@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import Script from 'next/script';
 import { HeaderProvider } from '@/contexts/HeaderContext';
 import { Header } from '@/components/Header';
 import { APP_CONFIG } from '@/lib/app-config';
@@ -27,12 +28,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    // suppressHydrationWarning is needed because theme script modifies className before React hydrates
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <head>
+        {/* No-flash theme script: runs before hydration to set html.dark */}
+        <Script id="theme-mode" strategy="beforeInteractive">
+          {`(function(){try{var s=localStorage.getItem('theme');var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var c=document.documentElement.classList;c.toggle('dark', d);}catch(e){}})();`}
+        </Script>
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}>
         <ThemeProvider>
           <HeaderProvider>
             <div className="min-h-screen bg-background">
-              <div className="max-w-4xl mx-auto px-6">
+              <div className="mx-auto w-full max-w-6xl px-6 md:px-10 lg:px-14">
                 <div className="py-8">
                   <Header />
                 </div>

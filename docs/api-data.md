@@ -5,7 +5,7 @@
 The application follows an enhanced data flow pattern for loading, configuring, and processing quiz questions:
 
 ```
-JSON File → Fetch → Validation → Normalization → Test Configuration → Question Preparation → Component State
+MongoDB (exams + questions) → Fetch → Validation → Normalization → Test Configuration → Question Preparation → Component State
 ```
 
 ### Test Configuration Layer
@@ -20,7 +20,7 @@ User Settings → Question Filtering → Question Limiting → Shuffling → Qui
 
 ### Question JSON Structure
 
-Questions are stored in JSON files that follow a specific schema. The main file is located at `/public/questions.json`.
+Questions are persisted in MongoDB. The API composes responses from an `exams` metadata document and a separate `questions` collection keyed by `{ examId, id }`. The external wire format remains the same for backward compatibility.
 
 ```json
 {
@@ -52,7 +52,7 @@ Questions are stored in JSON files that follow a specific schema. The main file 
 
 ### External Question Types (`types/external-question.ts`)
 
-These types represent the raw data format from JSON files:
+These types represent the payload shape exchanged by the API (in-memory, not a disk file):
 
 ```typescript
 export type StudyLink = {
@@ -69,13 +69,23 @@ export type ExternalQuestion = {
     B: string;
     C: string;
     D: string;
+    E?: string;           // Optional fifth choice
   };
-  answer: 'A' | 'B' | 'C' | 'D';  // Correct answer letter
+  answer: 'A' | 'B' | 'C' | 'D' | 'E' | ('A' | 'B' | 'C' | 'D' | 'E')[]; // Single or multiple letters
+  question_type?: 'single' | 'multiple';
   explanation?: string;   // Optional explanation of the answer
   study?: StudyLink[];    // Optional study materials
 };
 
-export type ExternalQuestionsFile = {
+export type ExamDetail = {
+  examId?: string;
+  examTitle?: string;
+  welcomeConfig?: {
+    title?: string;
+    description?: string;
+    ctaText?: string;
+    showDefaultSubtitle?: boolean;
+  };
   questions: ExternalQuestion[];
 };
 ```
@@ -139,19 +149,33 @@ export const StudyLinkZ = z.object({
 });
 
 export const ExternalQuestionZ = z.object({
+  id: z.string().min(1).optional(),
   question: z.string().min(1),
   options: z.object({
     A: z.string().min(1),
     B: z.string().min(1),
     C: z.string().min(1),
     D: z.string().min(1),
+    E: z.string().min(1).optional(),
   }),
-  answer: z.enum(['A', 'B', 'C', 'D']),
+  answer: z.union([
+    z.enum(['A', 'B', 'C', 'D', 'E']),
+    z.array(z.enum(['A', 'B', 'C', 'D', 'E'])).min(1),
+  ]),
+  question_type: z.enum(['single', 'multiple']).optional().default('single'),
   explanation: z.string().optional(),
   study: z.array(StudyLinkZ).optional(),
 });
 
-export const ExternalQuestionsFileZ = z.object({
+export const ExamDetailZ = z.object({
+  examId: z.string().optional().default('sitecore-xmc'),
+  examTitle: z.string().optional().default('Sitecore XM Cloud'),
+  welcomeConfig: z.object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    ctaText: z.string().optional(),
+    showDefaultSubtitle: z.boolean().optional().default(true),
+  }).optional(),
   questions: z.array(ExternalQuestionZ),
 });
 ```
@@ -212,23 +236,23 @@ export function normalizeQuestions(qs: ExternalQuestion[]): NormalizedQuestion[]
 Custom hook that handles the entire data loading pipeline:
 
 ```typescript
-export function useQuestions() {
+export function useQuestions(examId: string = 'sitecore-xmc') {
   const [data, setData] = useState<NormalizedQuestion[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/questions.json", { cache: "no-store" });
+        const res = await fetch(`/api/exams/${examId}`, { cache: "no-store" });
         const json = await res.json();
-        const parsed = ExternalQuestionsFileZ.parse(json);
+        const parsed = ExamDetailZ.parse(json);
         setData(normalizeQuestions(parsed.questions));
       } catch (e) {
         setError("Failed to load questions.");
         console.error(e);
       }
     })();
-  }, []);
+  }, [examId]);
 
   return { data, error, loading: !data && !error };
 }
@@ -334,7 +358,7 @@ When Zod validation fails, the error is caught and displayed to the user:
 
 ```typescript
 try {
-  const parsed = ExternalQuestionsFileZ.parse(json);
+  const parsed = ExamDetailZ.parse(json);
   setData(normalizeQuestions(parsed.questions));
 } catch (e) {
   setError("Failed to load questions.");

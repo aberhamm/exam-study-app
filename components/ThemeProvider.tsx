@@ -17,7 +17,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
 
   useEffect(() => {
-    // Load theme from localStorage
+    // Load theme from localStorage on the client.
+    // Note: initial html.dark is set by a pre-hydration script in layout
+    // to avoid flashes and hydration mismatches; this effect keeps
+    // React state in sync after mount.
     const stored = localStorage.getItem("theme") as Theme;
     if (stored && ["dark", "light", "system"].includes(stored)) {
       setTheme(stored);

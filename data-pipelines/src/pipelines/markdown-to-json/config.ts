@@ -5,10 +5,8 @@ import { config as loadDotenv } from 'dotenv';
 loadDotenv();
 
 export const config = {
-  // Default paths (can be overridden via CLI args)
-  defaultInputDir: join(process.cwd(), 'data', 'input'),
-  defaultOutputDir: join(process.cwd(), 'data', 'output'),
-  defaultLogsDir: join(process.cwd(), 'data', 'logs'),
+  // Pipeline name
+  pipelineName: 'markdown-to-json',
 
   // API configuration
   defaultModel: 'anthropic/claude-3.5-sonnet',
@@ -20,14 +18,23 @@ export const config = {
   supportedInputExtensions: ['.md', '.markdown'],
 };
 
-export function getEnvConfig() {
-  const apiKey = process.env[config.apiKeyEnvVar];
-  if (!apiKey) {
-    throw new Error(`${config.apiKeyEnvVar} environment variable is required`);
-  }
+export function getPipelinePaths(pipelineName: string = config.pipelineName) {
+  const pipelineDataDir = join(process.cwd(), 'data', pipelineName);
 
   return {
-    apiKey,
-    model: process.env.OPENROUTER_MODEL || config.defaultModel,
+    defaultInputDir: join(pipelineDataDir, 'input'),
+    defaultOutputDir: join(pipelineDataDir, 'output'),
+    defaultLogsDir: join(pipelineDataDir, 'logs'),
+    defaultTempDir: join(pipelineDataDir, 'temp'),
+  };
+}
+
+export async function getEnvConfig() {
+  // Dynamic import to avoid import issues in this ESM module
+  const { envConfig } = await import('../../../../lib/env-config.js');
+
+  return {
+    apiKey: envConfig.pipeline.openrouterApiKey,
+    model: envConfig.pipeline.openrouterModel,
   };
 }

@@ -3,6 +3,8 @@ import type { TestSettings } from '@/lib/test-settings';
 
 export type ExamState = {
   id: string;
+  examId?: string;
+  examTitle?: string;
   startTime: number;
   currentQuestionIndex: number;
   selectedAnswers: (number | number[] | null)[];
@@ -81,11 +83,15 @@ export function hasActiveExam(): boolean {
 
 export function createExamState(
   questions: NormalizedQuestion[],
-  testSettings: TestSettings
+  testSettings: TestSettings,
+  examId?: string,
+  examTitle?: string
 ): ExamState {
   const now = Date.now();
   return {
     id: `exam-${now}`,
+    examId,
+    examTitle,
     startTime: now,
     currentQuestionIndex: 0,
     selectedAnswers: [],

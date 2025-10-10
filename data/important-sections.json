@@ -1,0 +1,219 @@
+[
+  {
+    "sourceFile": "branching-strategy.md",
+    "title": "Branching Strategy",
+    "context": "Commit Messages",
+    "content": "how\n\nRead the original post on why these rules are important and for more in depth detail on each rule: [The Seven Rules of a Great Commit Message](https://cbea.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "component-design-best-practices.md",
+    "title": "Component Design Best Practices",
+    "context": "Wrap JSS Dependencies to Avoid Direct Usage in Custom Components",
+    "content": "- Ensures proper application of styles in both normal and empty-field editing states, especially important with CSS frameworks like Tailwind.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "component-design-best-practices.md",
+    "title": "Component Design Best Practices",
+    "context": "Example 2: CSS Styling Considerations with Tailwind ",
+    "content": "props} />;\n};\n```\n### Example 2: CSS Styling Considerations with Tailwind \nThis approach is particularly important when using CSS frameworks such as Tailwind.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "creating-new-components.md",
+    "title": "Creating New Components",
+    "context": "Component Structure",
+    "content": "- It's important to note that we are not using the JavaScript `default export` statement here, we are just exporting a function called `Default`, this is important to be able to support Headless Variants, discussed below.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "dev-workflow-codespaces.md",
+    "title": "Development Workflow: Github Codespaces",
+    "context": "Running your website",
+    "content": "There is currently a bug in JSS that means the `.env.local` file does not get picked up. As a work around, update the `.env` file directly, but remember not to commit the changes. Once the bug is fixed, `.env.local` should be used.\n  [JSS Changelog](https://github.com/Sitecore/jss/blob/dev/CHANGELOG.md) - [Add .env.* support #1741](https://github.com/Sitecore/jss/pull/1741)",
+    "type": "warning-alert"
+  },
+  {
+    "sourceFile": "dev-workflow-codespaces.md",
+    "title": "Development Workflow: Github Codespaces",
+    "context": "Running your website",
+    "content": "The following configuration is for JSS 21.6 or greater:",
+    "type": "note"
+  },
+  {
+    "sourceFile": "dev-workflow-codespaces.md",
+    "title": "Development Workflow: Github Codespaces",
+    "context": "Running your website",
+    "content": "The following configuration is for JSS 21.5.x or earlier:",
+    "type": "note"
+  },
+  {
+    "sourceFile": "document-search.md",
+    "title": "Enhancing search with documents",
+    "context": "Execution",
+    "content": "Documents, on the other hand, often contain important information that users need to find, so they must be made discoverable.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "getting-component-specific-data.md",
+    "title": "Getting Component Specific Data",
+    "context": "Component Level Data Fetching",
+    "content": "Because the `getStaticProps` and `getServerSideProps` are functions provided by JSS, these functions will be included in the client bundle. Do not include any secrets or sensitive information in any of these component-level functions.\nAlso included in the client bundle are any imports that the function depends on, even if the client-side code does not use the imports.\nThis does not affect page-level `getStaticProps` and `getServerSideProps` functions.",
+    "type": "warning-alert"
+  },
+  {
+    "sourceFile": "getting-component-specific-data.md",
+    "title": "Getting Component Specific Data",
+    "context": "Execution",
+    "content": "Integrated GraphQL can be utilized based on the use cases that you have but there are limitations in the extensibility and publishing performance.",
+    "type": "note"
+  },
+  {
+    "sourceFile": "getting-component-specific-data.md",
+    "title": "Getting Component Specific Data",
+    "context": "Integrated GraphQL",
+    "content": "Integrated GraphQL is executed when the content is published to Experience Edge. On building the layout data, if a component contains IGQL, a REST API call is made to the Edge preview end point on the CM. These API calls are not asynchronous.\nIf you make a complex query for your component that requires multiple REST API calls, this will impact the publishing performance.",
+    "type": "note"
+  },
+  {
+    "sourceFile": "go-live-checklist.md",
+    "title": "Go-Live Checklist",
+    "context": "Head Application",
+    "content": "- If your hosting platform supports notifications or alerts, consider setting those up for important limits like bandwidth, function invocations, and image optimization.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "head-application-security.md",
+    "title": "Head Application Security",
+    "context": "Experience Edge Token",
+    "content": "JSS Exposes the API Token by default. Follow the steps below to address that:_",
+    "type": "important-marker"
+  },
+  {
+    "sourceFile": "moving-to-saas.md",
+    "title": "Moving to SaaS - Concepts You Need to Know",
+    "context": "Data Driven Implementation",
+    "content": "To consider the long term effect of this project it is important to plan and document the return on investment it is generating, any significant investment must have some strategy for showing it's value return to the business.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "multisite.md",
+    "title": "Multisite Architecture",
+    "context": "Context",
+    "content": "To achieve this, it’s important to design a well-structured content tree that ensures scalability and usability.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "multisite.md",
+    "title": "Multisite Architecture",
+    "context": "Multisite Content Tree",
+    "content": "> When creating Site Collections, it is important to note that data templates, rendering items and content can only be shared by sites within the _same_ Site Collection.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "page-personalization.md",
+    "title": "Page personalization ",
+    "context": "Strategy Planning",
+    "content": "While brainstorming these audiences it’s important to remember how these audiences can be identified using personalize in XM Cloud.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "performance-optimization.md",
+    "title": "Performance optimization for Web applications",
+    "context": "Code Splitting with next/dynamic",
+    "content": "This is especially important for large applications where users might only interact with a small portion of the total functionality.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "scheduled-publishing.md",
+    "title": "Scheduled Publishing",
+    "context": "Multi-app, time sensative content",
+    "content": "As there is no actual deployment of code required, it’s important set the pipeline trigger to be the Cron expression (as opposed to an event that is triggered via the repository, such as a git Push).",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "scope-governance-framework.md",
+    "title": "Scope and Governance Framework",
+    "context": "Gather Practical Requirements",
+    "content": "State Needs|Redirects, sunsetting legacy URLs, archiving rules, temporary environments|\n|Accessibility & Privacy|Compliance with WCAG, GDPR, cookie consent, opt-out functionality, data audit trails|\n\nRequirements gathering can quickly gets out of hand - get what truly is important now so you don't build too much for down the road or end up forgetting something that's a must for launch.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "seo-web-optimization.md",
+    "title": "On-page SEO Optimization",
+    "context": "SEO recommendation in website",
+    "content": "</li></ul>|\n|Meta tags missing or empty|Meta tags are an important source in what is displayed in search results and other places used by search engines.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "seo-web-optimization.md",
+    "title": "On-page SEO Optimization",
+    "context": "SEO recommendation in website",
+    "content": "While most render hosts will be on HTTPS, it is important to review external resources.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "seo-web-optimization.md",
+    "title": "On-page SEO Optimization",
+    "context": "Rich Text Component SEO Issues",
+    "content": "|\n|<strong>Missing Image Attribute</strong>|When embedding images, rich text editors may omit important attributes like alt text, which is crucial for accessibility and SEO.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "testing-experiences.md",
+    "title": "Testing experiences",
+    "context": "Strategy Planning",
+    "content": "When planning A/B/n testing there are important stages to consider when building your testing strategy.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "testing-experiences.md",
+    "title": "Testing experiences",
+    "context": "2. Test-and-learn cycle",
+    "content": "Test-and-learn cycle\nUsing a test-and-learn cycle for A/B/n testing in XM Cloud is an important stage for continuously improving user experiences and optimizing site performance.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "testing-experiences.md",
+    "title": "Testing experiences",
+    "context": "Steps to XM Cloud A/B/n Testing",
+    "content": "When brainstorming A/B/n tests for your XM Cloud site, considering a few specific points are important to ensure your tests are effective and meaningful.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "testing-foundations.md",
+    "title": "Developer testing foundations",
+    "context": "Context",
+    "content": "While this recipe focuses on developer-led testing, it's important to align with QA and business stakeholders for performance, security, system, and UAT testing during later stages including while [planning your testing strategy](/learn/accelerate/xm-cloud/pre-development/project-planning/test-strategy-planning) and [go-live testing](/learn/accelerate/xm-cloud/final-steps/testing-framework).",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "testing-framework.md",
+    "title": "Testing Framework",
+    "context": "4. Regression Testing",
+    "content": "It is particularly important in agile development environments where frequent changes are made to the codebase.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "testing-framework.md",
+    "title": "Testing Framework",
+    "context": "7. Accessibility Testing",
+    "content": "Include instructions or suggestions to help users correct issues, especially important for users with cognitive impairments.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "wildcard-pages.md",
+    "title": "Wildcard Pages",
+    "context": "Multisite Middleware",
+    "content": "// This is an important performance consideration since Next.",
+    "type": "important-mention"
+  },
+  {
+    "sourceFile": "xmc-quick-reference.md",
+    "title": "XM Cloud Quick Reference",
+    "context": "Extensions",
+    "content": "Before starting development, it's important that you clearly identify the organization's needs and challenges your app will address.",
+    "type": "important-mention"
+  }
+]

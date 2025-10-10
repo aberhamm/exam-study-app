@@ -1,5 +1,5 @@
-import { writeFileSync, appendFileSync, existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { appendFileSync, existsSync, mkdirSync } from 'fs';
+import { dirname } from 'path';
 import type { LogEntry } from '../types/pipeline.js';
 
 export class Logger {
@@ -15,7 +15,7 @@ export class Logger {
     }
   }
 
-  private createLogEntry(level: LogEntry['level'], message: string, data?: any): LogEntry {
+  private createLogEntry(level: LogEntry['level'], message: string, data?: Record<string, unknown>): LogEntry {
     return {
       timestamp: new Date().toISOString(),
       level,
@@ -41,15 +41,15 @@ export class Logger {
     appendFileSync(this.logPath, logLine);
   }
 
-  info(message: string, data?: any) {
+  info(message: string, data?: Record<string, unknown>) {
     this.writeLog(this.createLogEntry('info', message, data));
   }
 
-  warn(message: string, data?: any) {
+  warn(message: string, data?: Record<string, unknown>) {
     this.writeLog(this.createLogEntry('warn', message, data));
   }
 
-  error(message: string, data?: any) {
+  error(message: string, data?: Record<string, unknown>) {
     this.writeLog(this.createLogEntry('error', message, data));
   }
 }

@@ -24,8 +24,8 @@ function preprocessMarkdown(text: string): string {
   );
 }
 
-// Shared markdown component configurations
-const markdownComponents: Components = {
+// Create variant-specific components
+const createMarkdownComponents = (variant: 'default' | 'explanation' | 'welcome'): Components => ({
   // Headings
   h1: ({ children, ...props }) => (
     <h1 className="text-3xl font-bold mt-8 mb-4 first:mt-0" {...props}>
@@ -84,17 +84,25 @@ const markdownComponents: Components = {
     </em>
   ),
 
-  // Links
-  a: ({ children, ...props }) => (
-    <a
-      className="text-primary hover:underline font-medium"
-      target="_blank"
-      rel="noopener noreferrer"
-      {...props}
-    >
-      {children}
-    </a>
-  ),
+  // Links - variant-specific colors
+  a: ({ children, ...props }) => {
+    const linkClasses = {
+      default: "text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300",
+      explanation: "text-blue-800 dark:text-blue-200 hover:text-blue-900 dark:hover:text-blue-100 underline decoration-blue-600 dark:decoration-blue-400",
+      welcome: "text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+    };
+
+    return (
+      <a
+        className={`${linkClasses[variant]} hover:underline font-medium transition-colors`}
+        target="_blank"
+        rel="noopener noreferrer"
+        {...props}
+      >
+        {children}
+      </a>
+    );
+  },
 
   // Code
   code: ({ children, ...props }) => {
@@ -157,7 +165,7 @@ const markdownComponents: Components = {
       {children}
     </td>
   ),
-};
+});
 
 export function MarkdownContent({
   children,
@@ -175,7 +183,7 @@ export function MarkdownContent({
 
   return (
     <div className={cn(variantClasses[variant], className)}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={createMarkdownComponents(variant)}>
         {processedContent}
       </ReactMarkdown>
     </div>

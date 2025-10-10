@@ -3,6 +3,7 @@ export interface PipelineConfig {
   outputPath: string;
   model?: string;
   apiKey?: string;
+  pipelineName?: string;
 }
 
 export interface PipelineResult<T> {
@@ -16,5 +17,5 @@ export interface LogEntry {
   timestamp: string;
   level: 'info' | 'warn' | 'error';
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }

@@ -31,15 +31,18 @@ export const ExternalQuestionsFileSchema = z.object({
   questions: z.array(ExternalQuestionSchema).min(1, 'At least one question is required'),
 });
 
-export function validateExternalQuestion(data: unknown) {
+export type ExternalQuestion = z.infer<typeof ExternalQuestionSchema>;
+export type ExternalQuestionsFile = z.infer<typeof ExternalQuestionsFileSchema>;
+
+type ExternalQuestionValidationResult =
+  | { isValid: true; data: ExternalQuestion }
+  | { isValid: false; data: unknown; error?: string };
+
+export function validateExternalQuestion(data: unknown): ExternalQuestion {
   return ExternalQuestionSchema.parse(data);
 }
 
-export function validateExternalQuestionSafe(data: unknown): {
-  isValid: boolean;
-  data: any;
-  error?: string
-} {
+export function validateExternalQuestionSafe(data: unknown): ExternalQuestionValidationResult {
   try {
     const validated = ExternalQuestionSchema.parse(data);
     return { isValid: true, data: validated };
@@ -52,16 +55,16 @@ export function validateExternalQuestionSafe(data: unknown): {
   }
 }
 
-export function validateExternalQuestionsFile(data: unknown) {
+export function validateExternalQuestionsFile(data: unknown): ExternalQuestionsFile {
   return ExternalQuestionsFileSchema.parse(data);
 }
 
-export function validateExternalQuestions(data: unknown) {
+export function validateExternalQuestions(data: unknown): ExternalQuestion[] {
   if (!Array.isArray(data)) {
     throw new Error('Data must be an array of questions');
   }
 
-  const results: any[] = [];
+  const results: ExternalQuestion[] = [];
   const validationErrors: string[] = [];
   let validatedCount = 0;
   let failedCount = 0;
@@ -78,7 +81,7 @@ export function validateExternalQuestions(data: unknown) {
       console.warn(`⚠️  ${errorMessage}`);
 
       // Include the raw item even if validation fails
-      results.push(item);
+      results.push(item as ExternalQuestion);
       failedCount++;
     }
   });

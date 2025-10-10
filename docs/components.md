@@ -40,7 +40,7 @@ App Layout (layout.tsx)
 ```typescript
 type Props = {
   questions: NormalizedQuestion[] | null;
-  onStartTest: (settings: TestSettings) => void;
+  onStartTest: (settings: TestSettings, options?: { overrideQuestions?: NormalizedQuestion[] }) => void;
   loading: boolean;
   error: string | null;
 };
@@ -59,6 +59,7 @@ type Props = {
 - Smart validation preventing invalid configurations
 - Responsive design with mobile-specific layouts
 - Session persistence for user preferences
+- Missed-question shortcut to launch a quiz composed only of previously incorrect items
 
 **Test Configuration Flow**:
 1. Load saved settings from session storage
@@ -254,6 +255,31 @@ type ThemeProviderContextType = {
 - Automatic data validation
 - Error handling with user-friendly messages
 - Loading state management
+
+---
+
+### usePreparedQuestions (`app/usePreparedQuestions.ts`)
+
+**Purpose**: Fetch only the number of questions needed to start an exam. The server filters and randomly samples matching questions, returning a normalized subset.
+
+**Return Type**:
+```typescript
+{
+  data: NormalizedQuestion[] | null;
+  error: string | null;
+  loading: boolean;
+}
+```
+
+**Responsibilities**:
+- POST to `/api/exams/:examId/questions/prepare` with `{ questionType, explanationFilter, questionCount }`
+- Receive and expose server-normalized `questions`
+- Handle loading and error states
+
+**Features**:
+- Avoids downloading full datasets on exam start
+- Aligns server/client selection logic for consistency
+- Plays well with resume flows (client bypasses when a saved state exists)
 
 ---
 

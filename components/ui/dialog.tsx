@@ -1,56 +1,56 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import * as React from 'react';
+import { Card } from '@/components/ui/card';
 
 interface DialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  children: React.ReactNode
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
 }
 
 interface DialogContentProps {
-  children: React.ReactNode
-  className?: string
+  children: React.ReactNode;
+  className?: string;
 }
 
 interface DialogHeaderProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 interface DialogTitleProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 interface DialogDescriptionProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 interface DialogFooterProps {
-  children: React.ReactNode
+  children: React.ReactNode;
+  className?: string;
 }
 
 export function Dialog({ open, onOpenChange, children }: DialogProps) {
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onOpenChange(false)
+        onOpenChange(false);
       }
-    }
+    };
 
     if (open) {
-      document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'unset'
-    }
-  }, [open, onOpenChange])
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [open, onOpenChange]);
 
-  if (!open) return null
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -58,49 +58,27 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
-      <div className="relative z-10 w-full max-w-lg mx-4">
-        {children}
-      </div>
+      <div className="relative z-10 w-full max-w-4xl md:max-h-[85vh] mx-4">{children}</div>
     </div>
-  )
+  );
 }
 
-export function DialogContent({ children, className = "" }: DialogContentProps) {
-  return (
-    <Card className={`p-6 ${className}`}>
-      {children}
-    </Card>
-  )
+export function DialogContent({ children, className = '' }: DialogContentProps) {
+  return <Card className={`p-6 ${className}`}>{children}</Card>;
 }
 
 export function DialogHeader({ children }: DialogHeaderProps) {
-  return (
-    <div className="space-y-2 mb-4">
-      {children}
-    </div>
-  )
+  return <div className="space-y-2 mb-4">{children}</div>;
 }
 
 export function DialogTitle({ children }: DialogTitleProps) {
-  return (
-    <h2 className="text-lg font-semibold">
-      {children}
-    </h2>
-  )
+  return <h2 className="text-lg font-semibold">{children}</h2>;
 }
 
 export function DialogDescription({ children }: DialogDescriptionProps) {
-  return (
-    <p className="text-sm text-muted-foreground">
-      {children}
-    </p>
-  )
+  return <p className="text-sm text-muted-foreground">{children}</p>;
 }
 
-export function DialogFooter({ children }: DialogFooterProps) {
-  return (
-    <div className="flex justify-end gap-2 mt-6">
-      {children}
-    </div>
-  )
+export function DialogFooter({ children, className = '' }: DialogFooterProps) {
+  return <div className={`flex justify-end gap-2 mt-6 ${className}`}>{children}</div>;
 }

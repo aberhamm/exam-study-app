@@ -6,6 +6,7 @@ export type HeaderVariant = 'full' | 'short';
 
 export interface HeaderConfig {
   variant: HeaderVariant;
+  title?: string;
   leftContent?: ReactNode;
   rightContent?: ReactNode;
   visible: boolean;
@@ -19,6 +20,7 @@ interface HeaderContextType {
 
 const defaultConfig: HeaderConfig = {
   variant: 'full',
+  title: undefined,
   leftContent: null,
   rightContent: null,
   visible: true,
