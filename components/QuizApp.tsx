@@ -26,6 +26,7 @@ import {
   recordQuestionSeen,
   recordQuestionResult,
 } from '@/lib/question-metrics';
+import { toast } from 'sonner';
 
 type QuizState = {
   currentQuestionIndex: number;
@@ -66,9 +67,6 @@ export function QuizApp({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<NormalizedQuestion | null>(null);
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
-  const [editSuccess, setEditSuccess] = useState<string | null>(null);
-  const successTimeoutRef = useRef<number | null>(null);
 
   // AI Explanation state
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
@@ -388,7 +386,6 @@ export function QuizApp({
     if (!currentQuestion || !examId) return;
 
     setIsGeneratingExplanation(true);
-    setEditError(null);
 
     try {
       const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}/explain`, {
@@ -411,24 +408,16 @@ export function QuizApp({
         );
         setQuestions(updatedQuestions);
         setAiExplanation(null); // Clear AI explanation since it's now the default
-        setEditSuccess('Explanation generated and saved as default!');
+        toast.success('Explanation generated and saved!');
       } else {
         // Has existing explanation, show in AI section for user to decide
         setAiExplanation(data.explanation);
-        setEditSuccess('Explanation generated! Click "Replace Default" to save.');
+        toast.success('Explanation generated! Click "Replace Default" to save.');
       }
-
-      if (successTimeoutRef.current) {
-        window.clearTimeout(successTimeoutRef.current);
-      }
-      successTimeoutRef.current = window.setTimeout(() => {
-        setEditSuccess(null);
-        successTimeoutRef.current = null;
-      }, 3000);
 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to generate explanation';
-      setEditError(message);
+      toast.error(message);
       console.error('Failed to generate explanation:', error);
     } finally {
       setIsGeneratingExplanation(false);
@@ -439,7 +428,6 @@ export function QuizApp({
     if (!currentQuestion || !examId || !aiExplanation) return;
 
     setIsSavingExplanation(true);
-    setEditError(null);
 
     try {
       // Build updated question with new explanation and AI flag
@@ -474,18 +462,11 @@ export function QuizApp({
       // Clear AI explanation state since it's now the default
       setAiExplanation(null);
 
-      setEditSuccess('Explanation saved as default!');
-      if (successTimeoutRef.current) {
-        window.clearTimeout(successTimeoutRef.current);
-      }
-      successTimeoutRef.current = window.setTimeout(() => {
-        setEditSuccess(null);
-        successTimeoutRef.current = null;
-      }, 3000);
+      toast.success('Explanation saved as default!');
 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save explanation';
-      setEditError(message);
+      toast.error(message);
       console.error('Failed to save explanation:', error);
     } finally {
       setIsSavingExplanation(false);
@@ -527,23 +508,17 @@ export function QuizApp({
   const openQuestionEditor = () => {
     if (!currentQuestion) return;
     setEditingQuestion(currentQuestion);
-    setEditError(null);
     setEditDialogOpen(true);
   };
 
   const handleQuestionSave = async (updatedQuestion: NormalizedQuestion) => {
     if (!examId) {
       const message = 'Exam ID is required to save edits.';
-      setEditError(message);
+      toast.error(message);
       throw new Error(message);
     }
 
     setIsSavingQuestion(true);
-    setEditError(null);
-    if (successTimeoutRef.current) {
-      window.clearTimeout(successTimeoutRef.current);
-      successTimeoutRef.current = null;
-    }
 
     try {
       const payload = denormalizeQuestion(updatedQuestion);
@@ -580,14 +555,10 @@ export function QuizApp({
 
       setEditingQuestion(normalized);
       setEditDialogOpen(false);
-      setEditSuccess('Question updated successfully.');
-      successTimeoutRef.current = window.setTimeout(() => {
-        setEditSuccess(null);
-        successTimeoutRef.current = null;
-      }, 4000);
+      toast.success('Question updated successfully!');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save question.';
-      setEditError(message);
+      toast.error(message);
       throw new Error(message);
     } finally {
       setIsSavingQuestion(false);
@@ -647,14 +618,6 @@ export function QuizApp({
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [quizState.showResult]);
-
-  useEffect(() => {
-    return () => {
-      if (successTimeoutRef.current) {
-        window.clearTimeout(successTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Early return if no questions available (should not happen with proper setup)
   if (!questions || questions.length === 0) {
@@ -739,19 +702,6 @@ export function QuizApp({
         onTimeUpdate={handleTimeUpdate}
       />
 
-      {/* Error and Success Messages */}
-      {editError && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {editError}
-        </div>
-      )}
-
-      {editSuccess && (
-        <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-900/40 dark:text-green-200">
-          {editSuccess}
-        </div>
-      )}
-
       {currentQuestion && (
         <QuestionCard
           question={currentQuestion}
@@ -797,7 +747,6 @@ export function QuizApp({
           setEditDialogOpen(open);
           if (!open) {
             setEditingQuestion(null);
-            setEditError(null);
           }
         }}
         onSave={handleQuestionSave}

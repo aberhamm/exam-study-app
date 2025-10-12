@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { SessionProvider } from '@/components/SessionProvider';
+import { Toaster } from '@/components/ui/toaster';
 import Script from 'next/script';
 import { HeaderProvider } from '@/contexts/HeaderContext';
 import { Header } from '@/components/Header';
@@ -53,6 +54,7 @@ export default function RootLayout({
               </div>
             </HeaderProvider>
           </ThemeProvider>
+          <Toaster />
         </SessionProvider>
       </body>
     </html>
