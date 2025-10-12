@@ -22,22 +22,7 @@ export async function POST(request: Request, context: RouteParams) {
     examId = params.examId;
     questionId = params.questionId;
 
-    // Require admin authentication
-    try {
-      await requireAdmin();
-    } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Forbidden' },
-        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
-      );
-    }
-
-    // Get the exam to access documentGroups
-    const { fetchExamById } = await import('@/lib/server/exams');
-    const exam = await fetchExamById(examId);
-    const documentGroups = exam?.documentGroups;
-
-    // Get the question from database
+    // Get the question first to check if it has an explanation
     const questionDoc = await getQuestionById(examId, questionId);
     if (!questionDoc) {
       return NextResponse.json(
@@ -45,6 +30,25 @@ export async function POST(request: Request, context: RouteParams) {
         { status: 404 }
       );
     }
+
+    // Only require admin auth if the question already has an explanation
+    // (for regenerating/replacing existing explanations)
+    const hasExistingExplanation = questionDoc.explanation && questionDoc.explanation.trim().length > 0;
+    if (hasExistingExplanation) {
+      try {
+        await requireAdmin();
+      } catch (error) {
+        return NextResponse.json(
+          { error: error instanceof Error ? error.message : 'Forbidden' },
+          { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+        );
+      }
+    }
+
+    // Get the exam to access documentGroups
+    const { fetchExamById } = await import('@/lib/server/exams');
+    const exam = await fetchExamById(examId);
+    const documentGroups = exam?.documentGroups;
 
     // Normalize the question to the format expected by the explanation generator
     const [normalizedQuestion] = normalizeQuestions([questionDoc]);
@@ -69,7 +73,6 @@ export async function POST(request: Request, context: RouteParams) {
 
     // Auto-save if no existing explanation
     let savedAsDefault = false;
-    const hasExistingExplanation = questionDoc.explanation && questionDoc.explanation.trim().length > 0;
 
     if (!hasExistingExplanation) {
       try {

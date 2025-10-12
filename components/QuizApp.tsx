@@ -491,6 +491,23 @@ export function QuizApp({
       setIsSavingExplanation(false);
     }
   }, [currentQuestion, examId, aiExplanation, questions]);
+
+  // Auto-generate explanation when user selects an answer and question doesn't have one
+  useEffect(() => {
+    if (!currentQuestion || !quizState.showFeedback) return;
+
+    // Check if question has no explanation
+    const hasExplanation = currentQuestion.explanation && currentQuestion.explanation.trim().length > 0;
+    if (hasExplanation) return;
+
+    // Check if already generating or already have AI explanation
+    if (isGeneratingExplanation || aiExplanation) return;
+
+    // Auto-generate explanation
+    console.log('[QuizApp] Auto-generating explanation for question without one:', currentQuestion.id);
+    generateExplanation();
+  }, [quizState.showFeedback, currentQuestion, isGeneratingExplanation, aiExplanation, generateExplanation]);
+
   const handleTimeUp = useCallback(() => {
     finishQuiz();
   }, [finishQuiz]);
