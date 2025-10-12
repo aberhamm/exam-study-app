@@ -30,10 +30,6 @@ RUN pnpm install --frozen-lockfile
 # Copy source files
 COPY . .
 
-# Set build-time environment variables
-ARG NEXT_PUBLIC_ENABLE_DEV_FEATURES
-ENV NEXT_PUBLIC_ENABLE_DEV_FEATURES=${NEXT_PUBLIC_ENABLE_DEV_FEATURES}
-
 # Build the Next.js application
 # Note: Turbopack is currently development-only, so we build without it for production
 RUN pnpm exec next build

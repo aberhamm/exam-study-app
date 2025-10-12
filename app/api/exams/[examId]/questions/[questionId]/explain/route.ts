@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { envConfig } from '@/lib/env-config';
 import { generateQuestionExplanation } from '@/lib/server/explanation-generator';
 import { getQuestionById } from '@/lib/server/questions';
 import { normalizeQuestions } from '@/lib/normalize';
+import { requireAdmin } from '@/lib/auth';
 
 type RouteParams = {
   params: Promise<{
@@ -22,11 +22,13 @@ export async function POST(request: Request, context: RouteParams) {
     examId = params.examId;
     questionId = params.questionId;
 
-    // Check if dev features are enabled
-    if (!envConfig.features.devFeaturesEnabled) {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
       return NextResponse.json(
-        { error: 'Explanation generation is not available' },
-        { status: 403 }
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
       );
     }
 

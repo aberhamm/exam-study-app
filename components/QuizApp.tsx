@@ -728,16 +728,16 @@ export function QuizApp({
           selectedAnswers={selectedAnswerIndex}
           showFeedback={quizState.showFeedback}
           isCurrentAnswerCorrect={isCurrentAnswerCorrect}
-          isSavingQuestion={isSavingQuestion}
           onSelectAnswer={selectAnswer}
           onSubmitMultipleAnswer={submitMultipleAnswer}
+          showCompetencies={testSettings.showCompetencies}
+          isSavingQuestion={isSavingQuestion}
           onOpenQuestionEditor={openQuestionEditor}
           onGenerateExplanation={generateExplanation}
-          isGeneratingExplanation={isGeneratingExplanation}
-          aiExplanation={aiExplanation || undefined}
           onSaveExplanation={saveExplanation}
+          isGeneratingExplanation={isGeneratingExplanation}
           isSavingExplanation={isSavingExplanation}
-          showCompetencies={testSettings.showCompetencies}
+          aiExplanation={aiExplanation}
         />
       )}
 

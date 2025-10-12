@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { ExternalQuestionsImportZ } from '@/lib/validation';
-import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 import { addExamQuestions } from '@/lib/server/questions';
 import { DuplicateQuestionIdsError, ExamNotFoundError } from '@/lib/server/exams';
+import { requireAdmin } from '@/lib/auth';
 
 interface RouteContext {
   params: Promise<{
@@ -12,12 +12,19 @@ interface RouteContext {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  if (!isDevFeaturesEnabled()) {
-    return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
-  }
   let examId = 'unknown';
 
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     examId = params.examId;
 

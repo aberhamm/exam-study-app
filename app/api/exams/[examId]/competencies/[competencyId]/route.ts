@@ -6,6 +6,7 @@ import {
   CompetencyNotFoundError,
 } from '@/lib/server/competencies';
 import { CompetencyUpdateZ } from '@/lib/validation';
+import { requireAdmin } from '@/lib/auth';
 
 type RouteParams = { params: Promise<{ examId: string; competencyId: string }> };
 
@@ -29,6 +30,16 @@ export async function GET(request: Request, context: RouteParams) {
 
 export async function PUT(request: Request, context: RouteParams) {
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     const { examId, competencyId } = params;
 
@@ -53,6 +64,16 @@ export async function PUT(request: Request, context: RouteParams) {
 
 export async function DELETE(request: Request, context: RouteParams) {
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     const { examId, competencyId } = params;
 

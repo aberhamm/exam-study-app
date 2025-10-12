@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 import { getDb, getDedupePairsCollectionName } from '@/lib/server/mongodb';
+import { requireAdmin } from '@/lib/auth';
 
 type RouteParams = {
   params: Promise<{ examId: string }>;
@@ -17,11 +17,18 @@ type UpsertBody = {
 export async function GET(_request: Request, context: RouteParams) {
   let examId = 'unknown';
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     examId = params.examId;
-    if (!isDevFeaturesEnabled()) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
-    }
     const db = await getDb();
     const col = db.collection(getDedupePairsCollectionName());
     const flags = await col
@@ -37,11 +44,18 @@ export async function GET(_request: Request, context: RouteParams) {
 export async function POST(request: Request, context: RouteParams) {
   let examId = 'unknown';
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     examId = params.examId;
-    if (!isDevFeaturesEnabled()) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
-    }
 
     let body: UpsertBody | null = null;
     try {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { envConfig } from '@/lib/env-config';
 import { searchSimilarQuestions } from '@/lib/server/questions-search';
+import { requireAdmin } from '@/lib/auth';
 
 type RouteParams = {
   params: Promise<{
@@ -43,9 +44,14 @@ export async function POST(request: Request, context: RouteParams) {
     const params = await context.params;
     examId = params.examId;
 
-    // Controlled via dev feature flag
-    if (!envConfig.features.devFeaturesEnabled) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
     }
 
     let body: SearchBody | null = null;

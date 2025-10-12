@@ -3,7 +3,7 @@ import { fetchExamDetail, getExamCacheTag } from '@/lib/server/questions';
 import { ExamDetailZ, coerceExamDetail } from '@/lib/validation';
 import type { ExamDetailResponse } from '@/types/api';
 import type { WelcomeConfig } from '@/types/normalized';
-import { envConfig } from '@/lib/env-config';
+import { requireAdmin } from '@/lib/auth';
 
 type RouteParams = {
   params: Promise<{
@@ -61,9 +61,14 @@ export async function PATCH(request: Request, context: RouteParams) {
     const params = await context.params;
     examId = params.examId;
 
-    // Check if dev features are enabled
-    if (!envConfig.features.devFeaturesEnabled) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
     }
 
     let body: ExamPatchBody | null = null;

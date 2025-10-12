@@ -5,6 +5,7 @@ import {
   getCompetencyAssignmentStats,
 } from '@/lib/server/competencies';
 import { CompetencyCreateZ } from '@/lib/validation';
+import { requireAdmin } from '@/lib/auth';
 
 type RouteParams = { params: Promise<{ examId: string }> };
 
@@ -39,6 +40,16 @@ export async function GET(request: Request, context: RouteParams) {
 
 export async function POST(request: Request, context: RouteParams) {
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     const examId = params.examId;
 

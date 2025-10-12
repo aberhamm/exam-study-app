@@ -5,13 +5,11 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
-import { APP_CONFIG } from '@/lib/app-config';
 import type { ExamSummary } from '@/types/api';
 import type { ExamDetail } from '@/types/external-question';
 import { DevNavigation } from '@/components/DevNavigation';
 
 export default function ExamsDevPage() {
-  const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
   const { setConfig, resetConfig } = useHeader();
 
   const [exams, setExams] = useState<ExamSummary[]>([]);
@@ -47,7 +45,6 @@ export default function ExamsDevPage() {
   }, [resetConfig, setConfig]);
 
   useEffect(() => {
-    if (!DEV) return;
     const loadExams = async () => {
       setLoading(true);
       setError(null);
@@ -66,10 +63,9 @@ export default function ExamsDevPage() {
     };
 
     loadExams();
-  }, [DEV]);
+  }, []);
 
   useEffect(() => {
-    if (!DEV) return;
     const loadDocumentGroups = async () => {
       setLoadingGroups(true);
       try {
@@ -88,7 +84,7 @@ export default function ExamsDevPage() {
     };
 
     loadDocumentGroups();
-  }, [DEV]);
+  }, []);
 
   useEffect(() => {
     if (!selectedExam) {
@@ -181,19 +177,6 @@ export default function ExamsDevPage() {
       return next;
     });
   };
-
-  if (!DEV) {
-    return (
-      <div className="space-y-6">
-        <Card className="p-6">
-          <h2 className="text-2xl font-semibold mb-2">Exam Settings Disabled</h2>
-          <p className="text-sm text-muted-foreground">
-            This tool is available only in development.
-          </p>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { SessionProvider } from '@/components/SessionProvider';
 import Script from 'next/script';
 import { HeaderProvider } from '@/contexts/HeaderContext';
 import { Header } from '@/components/Header';
@@ -37,20 +38,22 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}>
-        <ThemeProvider>
-          <HeaderProvider>
-            <div className="min-h-screen bg-background">
-              <div className="mx-auto w-full max-w-6xl px-6 md:px-10 lg:px-14">
-                <div className="py-8">
-                  <Header />
-                </div>
-                <div className="pb-8">
-                  {children}
+        <SessionProvider>
+          <ThemeProvider>
+            <HeaderProvider>
+              <div className="min-h-screen bg-background">
+                <div className="mx-auto w-full max-w-6xl px-6 md:px-10 lg:px-14">
+                  <div className="py-8">
+                    <Header />
+                  </div>
+                  <div className="pb-8">
+                    {children}
+                  </div>
                 </div>
               </div>
-            </div>
-          </HeaderProvider>
-        </ThemeProvider>
+            </HeaderProvider>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

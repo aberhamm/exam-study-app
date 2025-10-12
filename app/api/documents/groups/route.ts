@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
-import { envConfig } from '@/lib/env-config';
 import { getAvailableDocumentGroups } from '@/lib/server/documents-search';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET() {
   try {
-    // Protected by dev features flag
-    if (!envConfig.features.devFeaturesEnabled) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
     }
 
     const groups = await getAvailableDocumentGroups();

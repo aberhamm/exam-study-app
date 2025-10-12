@@ -5,11 +5,9 @@ import { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
-import { APP_CONFIG } from '@/lib/app-config';
 import { DevNavigation } from '@/components/DevNavigation';
 
 export default function DocumentEmbeddingsDevPage() {
-  const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
   const { setConfig, resetConfig } = useHeader();
 
   useEffect(() => {
@@ -25,17 +23,6 @@ export default function DocumentEmbeddingsDevPage() {
     });
     return () => resetConfig();
   }, [resetConfig, setConfig]);
-
-  if (!DEV) {
-    return (
-      <div className="space-y-6">
-        <Card className="p-6">
-          <h2 className="text-2xl font-semibold mb-2">Document Embeddings Disabled</h2>
-          <p className="text-sm text-muted-foreground">This tool is available only in development.</p>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

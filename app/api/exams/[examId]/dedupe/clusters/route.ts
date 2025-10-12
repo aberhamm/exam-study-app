@@ -6,6 +6,7 @@ import type { Document } from 'mongodb';
 import type { QuestionDocument } from '@/types/question';
 import type { ClusterDocument, QuestionCluster } from '@/types/clusters';
 import type { OptionalId } from 'mongodb';
+import { requireAdmin } from '@/lib/auth';
 
 type RouteParams = {
   params: Promise<{ examId: string }>;
@@ -23,8 +24,14 @@ export async function GET(request: Request, context: RouteParams) {
     const params = await context.params;
     examId = params.examId;
 
-    if (!envConfig.features.devFeaturesEnabled) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
     }
 
     const url = new URL(request.url);
@@ -112,8 +119,14 @@ export async function POST(request: Request, context: RouteParams) {
     const params = await context.params;
     examId = params.examId;
 
-    if (!envConfig.features.devFeaturesEnabled) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
     }
 
     const body = (await request.json().catch(() => ({}))) as ClusterBody;

@@ -5,10 +5,8 @@ import { useMemo, useState, useEffect } from 'react';
 import { Card, CardHeader, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
-import { APP_CONFIG } from '@/lib/app-config';
 import { MarkdownContent } from '@/components/ui/markdown';
 import { History, BookOpen } from 'lucide-react';
-import { DevNavigation } from '@/components/DevNavigation';
 import {
   TEST_SETTINGS,
   TestSettings,
@@ -52,16 +50,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   useEffect(() => {
     setConfig({
       variant: 'full',
-      title: examMetadata?.examTitle || APP_CONFIG.APP_NAME,
+      title: examMetadata?.examTitle || 'Study Utility',
       leftContent: null,
-      rightContent: APP_CONFIG.DEV_FEATURES_ENABLED ? (
-        <div className="hidden md:flex items-center gap-3">
-          <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border border-amber-300/50">
-            Dev
-          </span>
-          <DevNavigation />
-        </div>
-      ) : null,
+      rightContent: null,
       visible: true,
     });
   }, [setConfig, examMetadata]);
@@ -565,7 +556,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
             </CardHeader>
             <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
               <Link
-                href={`/dev/questions/${examMetadata?.examId || 'sitecore-xmc'}`}
+                href={`/admin/questions/${examMetadata?.examId || 'sitecore-xmc'}`}
                 className="w-full inline-flex items-center justify-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >
                 View all questions

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 import { getDb, getQuestionClustersCollectionName, getQuestionsCollectionName } from '@/lib/server/mongodb';
 // import { splitCluster } from '@/lib/server/clustering';
 import type { ClusterDocument, ClusterAction } from '@/types/clusters';
 import type { QuestionDocument } from '@/types/question';
+import { requireAdmin } from '@/lib/auth';
 
 type RouteParams = {
   params: Promise<{ examId: string; clusterId: string }>;
@@ -13,13 +13,19 @@ export async function GET(_request: Request, context: RouteParams) {
   let examId = 'unknown';
   let clusterId = 'unknown';
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     examId = params.examId;
     clusterId = params.clusterId;
-
-    if (!isDevFeaturesEnabled()) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
-    }
 
     const db = await getDb();
     const clustersCol = db.collection<ClusterDocument>(getQuestionClustersCollectionName());
@@ -52,13 +58,19 @@ export async function POST(request: Request, context: RouteParams) {
   let examId = 'unknown';
   let clusterId = 'unknown';
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     examId = params.examId;
     clusterId = params.clusterId;
-
-    if (!isDevFeaturesEnabled()) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
-    }
 
     const action = (await request.json()) as ClusterAction;
 
@@ -182,13 +194,19 @@ export async function DELETE(_request: Request, context: RouteParams) {
   let examId = 'unknown';
   let clusterId = 'unknown';
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     examId = params.examId;
     clusterId = params.clusterId;
-
-    if (!isDevFeaturesEnabled()) {
-      return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
-    }
 
     const db = await getDb();
     const clustersCol = db.collection<ClusterDocument>(getQuestionClustersCollectionName());

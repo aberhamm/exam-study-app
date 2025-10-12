@@ -46,3 +46,16 @@ export function getQuestionClustersCollectionName(): string {
 export function getDocumentEmbeddingsCollectionName(): string {
   return 'document_embeddings';
 }
+
+/**
+ * Close the MongoDB connection
+ * Useful for scripts that need to exit cleanly
+ */
+export async function closeConnection(): Promise<void> {
+  if (globalForMongo.__mongoClientPromise) {
+    const client = await globalForMongo.__mongoClientPromise;
+    await client.close();
+    delete globalForMongo.__mongoClientPromise;
+    clientPromise = undefined as any;
+  }
+}

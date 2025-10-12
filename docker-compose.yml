@@ -4,8 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_ENABLE_DEV_FEATURES: ${NEXT_PUBLIC_ENABLE_DEV_FEATURES:-}
     container_name: scxmcl-app
     restart: unless-stopped
     ports:
@@ -31,9 +29,10 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
 
-      # Feature flags
-      ENABLE_DEV_FEATURES: ${ENABLE_DEV_FEATURES:-}
-      NEXT_PUBLIC_ENABLE_DEV_FEATURES: ${NEXT_PUBLIC_ENABLE_DEV_FEATURES:-}
+      # Authentication (required for admin features)
+      AUTH_SECRET: ${AUTH_SECRET}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/db-status', (r) => {let d='';r.on('data',c=>d+=c);r.on('end',()=>{try{const j=JSON.parse(d);process.exit(j.connected?0:1)}catch(e){process.exit(1)}}})"]
       interval: 30s

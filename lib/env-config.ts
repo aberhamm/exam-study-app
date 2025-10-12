@@ -52,6 +52,7 @@ export const mongoConfig = {
   dedupePairsCollection: 'question_duplicates',
   questionClustersCollection: 'question_clusters',
   examCompetenciesCollection: 'exam_competencies',
+  usersCollection: 'users',
 
   // Vector index names (hardcoded)
   questionEmbeddingsVectorIndex: 'question_embeddings_vector_index',
@@ -132,17 +133,39 @@ export const pipelineConfig = {
  * Feature flags configuration
  */
 export const featureFlags = {
-  get devFeaturesEnabled(): boolean {
-    // Primary: explicit server-side flag
-    if (isTruthyEnv(process.env.ENABLE_DEV_FEATURES)) return true;
-    // Secondary: public/client build-time flag
-    if (isTruthyEnv(process.env.NEXT_PUBLIC_ENABLE_DEV_FEATURES)) return true;
-    // Fallback: development environment
-    return process.env.NODE_ENV === 'development';
-  },
-
   get debugRetrieval(): boolean {
     return isTruthyEnv(process.env.DEBUG_RETRIEVAL);
+  },
+} as const;
+
+/**
+ * Authentication and session configuration
+ */
+export const authConfig = {
+  /**
+   * Session max age in seconds
+   * Default: 28800 (8 hours)
+   * Special values:
+   *   - "never" or "0": Sets to 30 years (effectively never expires)
+   */
+  get sessionMaxAge(): number {
+    const value = process.env.SESSION_MAX_AGE;
+
+    // Handle "never" or "0" as never expiring (30 years)
+    if (value === 'never' || value === '0') {
+      return 30 * 365 * 24 * 60 * 60; // 30 years in seconds (946,080,000)
+    }
+
+    // Parse as integer with 8 hour default
+    return parseIntEnv(value, 8 * 60 * 60); // Default: 8 hours
+  },
+
+  /**
+   * Session update age in seconds (how often to update session activity)
+   * Default: 3600 (1 hour)
+   */
+  get sessionUpdateAge(): number {
+    return parseIntEnv(process.env.SESSION_UPDATE_AGE, 60 * 60); // Default: 1 hour
   },
 } as const;
 
@@ -171,6 +194,7 @@ export const envConfig = {
   openai: openaiConfig,
   pipeline: pipelineConfig,
   features: featureFlags,
+  auth: authConfig,
   app: appConfig,
 } as const;
 

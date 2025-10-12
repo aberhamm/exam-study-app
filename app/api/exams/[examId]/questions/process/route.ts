@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { isDevFeaturesEnabled } from '@/lib/feature-flags';
 import {
   generateEmbeddingsForQuestions,
   assignCompetenciesToQuestions,
   type EmbeddingResult,
   type CompetencyAssignmentResult,
 } from '@/lib/server/question-processing';
+import { requireAdmin } from '@/lib/auth';
 
 interface RouteContext {
   params: Promise<{
@@ -28,13 +28,19 @@ const ProcessRequestSchema = z.object({
 });
 
 export async function POST(request: Request, context: RouteContext) {
-  if (!isDevFeaturesEnabled()) {
-    return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
-  }
-
   let examId = 'unknown';
 
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     examId = params.examId;
 

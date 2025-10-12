@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
 import { ExternalQuestionsImportZ } from '@/lib/validation';
-import { APP_CONFIG } from '@/lib/app-config';
 import type { ExamSummary } from '@/types/api';
 import { DevNavigation } from '@/components/DevNavigation';
 
@@ -44,7 +43,6 @@ type ProcessingStatus = {
 };
 
 export default function ImportQuestionsPage() {
-  const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
   const { setConfig, resetConfig } = useHeader();
   const [exams, setExams] = useState<ExamSummary[]>([]);
   const [examsLoading, setExamsLoading] = useState(true);
@@ -78,7 +76,6 @@ export default function ImportQuestionsPage() {
   }, [resetConfig, setConfig]);
 
   useEffect(() => {
-    if (!DEV) return;
     const loadExams = async () => {
       setExamsLoading(true);
       setExamsError(null);
@@ -98,7 +95,7 @@ export default function ImportQuestionsPage() {
     };
 
     loadExams();
-  }, [DEV]);
+  }, []);
 
   useEffect(() => {
     if (!rawInput.trim()) {
@@ -230,17 +227,6 @@ export default function ImportQuestionsPage() {
       setSubmitting(false);
     }
   };
-
-  if (!DEV) {
-    return (
-      <div className="space-y-6">
-        <Card className="p-6">
-          <h2 className="text-2xl font-semibold mb-2">Import Disabled</h2>
-          <p className="text-sm text-muted-foreground">This tool is available only in development.</p>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

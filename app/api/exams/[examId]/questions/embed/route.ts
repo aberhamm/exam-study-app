@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { envConfig } from '@/lib/env-config';
 import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName } from '@/lib/server/mongodb';
+import { requireAdmin } from '@/lib/auth';
 
 type RouteParams = {
   params: Promise<{
@@ -45,12 +46,18 @@ async function createEmbeddings(inputs: string[], model: string, dimensions?: nu
 }
 
 export async function POST(request: Request, context: RouteParams) {
-  if (!envConfig.features.devFeaturesEnabled) {
-    return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
-  }
-
   let examId = 'unknown';
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     const params = await context.params;
     examId = params.examId;
 

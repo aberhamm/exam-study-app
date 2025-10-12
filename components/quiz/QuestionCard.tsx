@@ -5,23 +5,26 @@ import { Button } from '@/components/ui/button';
 import { StudyPanel } from '@/components/StudyPanel';
 import { MarkdownContent } from '@/components/ui/markdown';
 import type { NormalizedQuestion } from '@/types/normalized';
-import { APP_CONFIG } from '@/lib/app-config';
+import { useSession } from 'next-auth/react';
+import { Sparkles, Save, Loader2 } from 'lucide-react';
 
 type Props = {
   question: NormalizedQuestion;
   selectedAnswers: number | number[] | null;
   showFeedback: boolean;
   isCurrentAnswerCorrect: boolean;
-  isSavingQuestion: boolean;
   onSelectAnswer: (answerIndex: number) => void;
   onSubmitMultipleAnswer: () => void;
-  onOpenQuestionEditor: () => void;
-  onGenerateExplanation?: () => void;
-  isGeneratingExplanation?: boolean;
-  aiExplanation?: string;
-  onSaveExplanation?: () => void;
-  isSavingExplanation?: boolean;
   showCompetencies?: boolean;
+  // Admin features for question editing
+  isSavingQuestion?: boolean;
+  onOpenQuestionEditor?: () => void;
+  // Admin features for explanation generation
+  onGenerateExplanation?: () => void;
+  onSaveExplanation?: () => void;
+  isGeneratingExplanation?: boolean;
+  isSavingExplanation?: boolean;
+  aiExplanation?: string | null;
 };
 
 export function QuestionCard({
@@ -29,19 +32,21 @@ export function QuestionCard({
   selectedAnswers,
   showFeedback,
   isCurrentAnswerCorrect,
-  isSavingQuestion,
   onSelectAnswer,
   onSubmitMultipleAnswer,
+  showCompetencies,
+  isSavingQuestion = false,
   onOpenQuestionEditor,
   onGenerateExplanation,
-  isGeneratingExplanation,
-  aiExplanation,
   onSaveExplanation,
-  isSavingExplanation,
-  showCompetencies,
+  isGeneratingExplanation = false,
+  isSavingExplanation = false,
+  aiExplanation,
 }: Props) {
   // Get competencies directly from the question
   const competencies = question.competencies || [];
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
   return (
     <Card className="p-6">
       <div>
@@ -50,7 +55,7 @@ export function QuestionCard({
             {question.prompt}
           </h2>
           <div className="flex flex-col items-end gap-2">
-            {APP_CONFIG.DEV_FEATURES_ENABLED && (
+            {isAdmin && onOpenQuestionEditor && (
               <Button
                 variant="outline"
                 size="sm"
@@ -91,9 +96,7 @@ export function QuestionCard({
         </div>
         <div className="flex items-center justify-between gap-4">
           <div className="text-base font-medium text-foreground">
-            {question.questionType === 'multiple'
-              ? 'Select all that apply.'
-              : 'Select one answer.'}
+            {question.questionType === 'multiple' ? 'Select all that apply.' : 'Select one answer.'}
           </div>
           {showCompetencies && competencies.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -131,9 +134,7 @@ export function QuestionCard({
               showCorrect = index === question.answerIndex;
             } else {
               // For multiple choice, only show green if the answer is both correct AND selected
-              const correctArray = Array.isArray(question.answerIndex)
-                ? question.answerIndex
-                : [];
+              const correctArray = Array.isArray(question.answerIndex) ? question.answerIndex : [];
               const isCorrectAnswer = correctArray.includes(index as 0 | 1 | 2 | 3 | 4);
               showCorrect = isCorrectAnswer && isSelected;
             }
@@ -144,9 +145,7 @@ export function QuestionCard({
           // For multiple choice, show missed correct answers in a subtle way
           let showMissedCorrect = false;
           if (showFeedback && question.questionType === 'multiple') {
-            const correctArray = Array.isArray(question.answerIndex)
-              ? question.answerIndex
-              : [];
+            const correctArray = Array.isArray(question.answerIndex) ? question.answerIndex : [];
             const isCorrectAnswer = correctArray.includes(index as 0 | 1 | 2 | 3);
             showMissedCorrect = isCorrectAnswer && !isSelected;
           }
@@ -211,8 +210,7 @@ export function QuestionCard({
             size="lg"
             className="w-full"
             disabled={
-              !selectedAnswers ||
-              (Array.isArray(selectedAnswers) && selectedAnswers.length === 0)
+              !selectedAnswers || (Array.isArray(selectedAnswers) && selectedAnswers.length === 0)
             }
           >
             Submit Answer
@@ -226,65 +224,79 @@ export function QuestionCard({
           {question.explanation && (
             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <div className="font-medium text-blue-800 dark:text-blue-200">
-                  Explanation:
-                </div>
+                <div className="font-medium text-blue-800 dark:text-blue-200">Explanation:</div>
                 {question.explanationGeneratedByAI && (
                   <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd"/>
+                      <path
+                        fillRule="evenodd"
+                        d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     AI Generated
                   </div>
                 )}
               </div>
-              <MarkdownContent variant="explanation">
-                {question.explanation}
-              </MarkdownContent>
+              <MarkdownContent variant="explanation">{question.explanation}</MarkdownContent>
             </div>
           )}
 
-          {/* AI Explanation Generation Section */}
-          {APP_CONFIG.DEV_FEATURES_ENABLED && (
-            <div className="p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <div className="font-medium text-gray-800 dark:text-gray-200">
-                  {question.explanation ? 'Alternative AI Explanation' : 'AI Explanation'}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onGenerateExplanation}
-                  disabled={isGeneratingExplanation || !onGenerateExplanation}
-                >
-                  {isGeneratingExplanation ? 'Generating...' :
-                   question.explanation ? 'Generate Alternative' : 'Generate AI Explanation'}
-                </Button>
-              </div>
+          {/* Admin: AI Explanation Generation */}
+          {isAdmin && onGenerateExplanation && (
+            <div className="space-y-3">
+              {/* Generate button */}
+              <Button
+                onClick={onGenerateExplanation}
+                disabled={isGeneratingExplanation || isSavingExplanation}
+                variant="default"
+                size="sm"
+              >
+                {isGeneratingExplanation ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating explanation...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate {question.explanation ? 'New' : ''} Explanation with AI
+                  </>
+                )}
+              </Button>
 
-              {isGeneratingExplanation && (
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Analyzing question and searching documentation...
-                </div>
-              )}
-
+              {/* AI-generated explanation preview */}
               {aiExplanation && (
-                <div className="space-y-3">
-                  <MarkdownContent variant="explanation">
-                    {aiExplanation}
-                  </MarkdownContent>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onSaveExplanation}
-                      disabled={isSavingExplanation || !onSaveExplanation}
-                    >
-                      {isSavingExplanation ? 'Saving...' :
-                       question.explanation ? 'Replace Default' : 'Save as Default'}
-                    </Button>
+                <div className="p-4 bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      <span className="font-medium text-purple-800 dark:text-purple-200">
+                        AI-Generated Explanation:
+                      </span>
+                    </div>
+                    {onSaveExplanation && (
+                      <Button
+                        onClick={onSaveExplanation}
+                        disabled={isSavingExplanation}
+                        size="sm"
+                        variant="default"
+                      >
+                        {isSavingExplanation ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-3 w-3 mr-1" />
+                            Replace Default
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
+                  <MarkdownContent variant="explanation">{aiExplanation}</MarkdownContent>
                 </div>
               )}
             </div>

@@ -1,20 +1,60 @@
+import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-import { envConfig } from '@/lib/env-config';
 
-export function middleware() {
-  if (!envConfig.features.devFeaturesEnabled) {
-    return new NextResponse('Not Found', { status: 404 });
+// Use Node.js runtime for middleware (required for bcrypt, mongodb, crypto)
+export const runtime = 'nodejs';
+
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
+  const session = req.auth;
+
+  // Check if route requires admin access
+  const isAdminRoute =
+    pathname.startsWith('/admin') ||
+    pathname === '/import' ||
+    pathname.startsWith('/api/exams/') && (
+      pathname.includes('/questions/import') ||
+      pathname.includes('/questions/embed') ||
+      pathname.includes('/questions/process') ||
+      pathname.includes('/explain') ||
+      pathname.includes('/competencies') ||
+      pathname.includes('/dedupe')
+    );
+
+  if (isAdminRoute) {
+    // Require authentication
+    if (!session?.user) {
+      // Redirect to login for UI routes
+      if (!pathname.startsWith('/api/')) {
+        // Preserve the original URL as callbackUrl for post-login redirect
+        const loginUrl = new URL('/login', req.url);
+        loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname + req.nextUrl.search);
+        return NextResponse.redirect(loginUrl);
+      }
+      // Return 401 for API routes
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Require admin role
+    if (session.user.role !== 'admin') {
+      // Return 403 for both UI and API routes
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      }
+      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    }
   }
+
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
-    // UI routes for dev tools
+    // Admin UI routes
     '/import',
-    '/dev/:path*',
+    '/admin/:path*',
 
-    // Write/admin operations only
+    // Admin API operations
     '/api/exams/:examId/questions/import',
     '/api/exams/:examId/questions/embed',
     '/api/exams/:examId/questions/process',

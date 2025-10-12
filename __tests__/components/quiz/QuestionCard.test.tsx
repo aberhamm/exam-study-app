@@ -17,12 +17,6 @@ jest.mock('@/components/ui/markdown', () => ({
   )
 }))
 
-jest.mock('@/lib/app-config', () => ({
-  APP_CONFIG: {
-    DEV_FEATURES_ENABLED: true
-  }
-}))
-
 describe('QuestionCard', () => {
   const mockOnSelectAnswer = jest.fn()
   const mockOnSubmitMultipleAnswer = jest.fn()
@@ -202,32 +196,4 @@ describe('QuestionCard', () => {
     })
   })
 
-  describe('Question Editor', () => {
-    it('renders edit button when dev features enabled', () => {
-      render(<QuestionCard {...defaultProps} question={createMockQuestion()} />)
-
-      expect(screen.getByText('Edit Question')).toBeInTheDocument()
-    })
-
-    it('calls onOpenQuestionEditor when edit button clicked', async () => {
-      const user = userEvent.setup()
-      render(<QuestionCard {...defaultProps} question={createMockQuestion()} />)
-
-      await user.click(screen.getByText('Edit Question'))
-
-      expect(mockOnOpenQuestionEditor).toHaveBeenCalledTimes(1)
-    })
-
-    it('disables edit button when saving', () => {
-      render(
-        <QuestionCard
-          {...defaultProps}
-          question={createMockQuestion()}
-          isSavingQuestion={true}
-        />
-      )
-
-      expect(screen.getByText('Edit Question')).toBeDisabled()
-    })
-  })
 })

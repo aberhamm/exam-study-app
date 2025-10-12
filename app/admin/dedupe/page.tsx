@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
-import { APP_CONFIG } from '@/lib/app-config';
 import type { ExamSummary } from '@/types/api';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { ExternalQuestion } from '@/types/external-question';
@@ -23,7 +22,6 @@ type PairItem = {
 type FlagStatus = 'ignore' | 'review';
 
 export default function DedupeDevPage() {
-  const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
   const { setConfig, resetConfig } = useHeader();
 
   const [exams, setExams] = useState<ExamSummary[]>([]);
@@ -64,7 +62,6 @@ export default function DedupeDevPage() {
   }, [resetConfig, setConfig]);
 
   useEffect(() => {
-    if (!DEV) return;
     const loadExams = async () => {
       setExamsLoading(true);
       setExamsError(null);
@@ -81,11 +78,11 @@ export default function DedupeDevPage() {
       }
     };
     loadExams();
-  }, [DEV]);
+  }, []);
 
   // Load existing flags for current exam
   useEffect(() => {
-    if (!DEV || !examId) return;
+    if (!examId) return;
     const loadFlags = async () => {
       try {
         const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/dedupe/flags`, { cache: 'no-store' });
@@ -101,7 +98,7 @@ export default function DedupeDevPage() {
       } catch {}
     };
     loadFlags();
-  }, [DEV, examId]);
+  }, [examId]);
 
   const canSubmit = useMemo(() => !!examId && !submitting, [examId, submitting]);
 
@@ -294,17 +291,6 @@ export default function DedupeDevPage() {
       setSaving(false);
     }
   };
-
-  if (!DEV) {
-    return (
-      <div className="space-y-6">
-        <Card className="p-6">
-          <h2 className="text-2xl font-semibold mb-2">Dedupe Disabled</h2>
-          <p className="text-sm text-muted-foreground">This tool is available only in development.</p>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

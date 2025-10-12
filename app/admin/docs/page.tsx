@@ -4,11 +4,9 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useHeader } from '@/contexts/HeaderContext';
-import { APP_CONFIG } from '@/lib/app-config';
 import { DevNavigation } from '@/components/DevNavigation';
 
 export default function DocsPage() {
-  const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
   const { setConfig, resetConfig } = useHeader();
 
   useEffect(() => {
@@ -24,19 +22,6 @@ export default function DocsPage() {
     });
     return () => resetConfig();
   }, [resetConfig, setConfig]);
-
-  if (!DEV) {
-    return (
-      <div className="space-y-6">
-        <Card className="p-6">
-          <h2 className="text-2xl font-semibold mb-2">Documentation Unavailable</h2>
-          <p className="text-sm text-muted-foreground">
-            This page is available only in development.
-          </p>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

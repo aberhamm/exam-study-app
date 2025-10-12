@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
-import { APP_CONFIG } from '@/lib/app-config';
 import type { ExamSummary } from '@/types/api';
 import { QuestionEditorDialog } from '@/components/QuestionEditorDialog';
 import type { NormalizedQuestion } from '@/types/normalized';
@@ -45,7 +44,6 @@ type ApiDocumentResult = {
 };
 
 export default function SearchDevPage() {
-  const DEV = APP_CONFIG.DEV_FEATURES_ENABLED;
   const { setConfig, resetConfig } = useHeader();
 
   const [exams, setExams] = useState<ExamSummary[]>([]);
@@ -83,7 +81,6 @@ export default function SearchDevPage() {
   }, [resetConfig, setConfig]);
 
   useEffect(() => {
-    if (!DEV) return;
     const loadExams = async () => {
       setExamsLoading(true);
       setExamsError(null);
@@ -103,7 +100,7 @@ export default function SearchDevPage() {
     };
 
     loadExams();
-  }, [DEV]);
+  }, []);
 
   const canSubmit = useMemo(() => {
     if (searchType === 'questions') {
@@ -232,19 +229,6 @@ export default function SearchDevPage() {
       setSaving(false);
     }
   };
-
-  if (!DEV) {
-    return (
-      <div className="space-y-6">
-        <Card className="p-6">
-          <h2 className="text-2xl font-semibold mb-2">Search Disabled</h2>
-          <p className="text-sm text-muted-foreground">
-            This tool is available only in development.
-          </p>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
