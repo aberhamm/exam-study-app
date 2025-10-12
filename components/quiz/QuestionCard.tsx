@@ -6,7 +6,7 @@ import { StudyPanel } from '@/components/StudyPanel';
 import { MarkdownContent } from '@/components/ui/markdown';
 import type { NormalizedQuestion } from '@/types/normalized';
 import { useSession } from 'next-auth/react';
-import { Sparkles, Save, Loader2 } from 'lucide-react';
+import { Sparkles, Save, Loader2, Trash2 } from 'lucide-react';
 
 type Props = {
   question: NormalizedQuestion;
@@ -22,8 +22,10 @@ type Props = {
   // Admin features for explanation generation
   onGenerateExplanation?: () => void;
   onSaveExplanation?: () => void;
+  onDeleteExplanation?: () => void;
   isGeneratingExplanation?: boolean;
   isSavingExplanation?: boolean;
+  isDeletingExplanation?: boolean;
   aiExplanation?: string | null;
 };
 
@@ -39,8 +41,10 @@ export function QuestionCard({
   onOpenQuestionEditor,
   onGenerateExplanation,
   onSaveExplanation,
+  onDeleteExplanation,
   isGeneratingExplanation = false,
   isSavingExplanation = false,
+  isDeletingExplanation = false,
   aiExplanation,
 }: Props) {
   // Get competencies directly from the question
@@ -237,18 +241,41 @@ export function QuestionCard({
           {question.explanation && (
             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <div className="font-medium text-blue-800 dark:text-blue-200">Explanation:</div>
-                {question.explanationGeneratedByAI && (
-                  <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    AI Generated
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="font-medium text-blue-800 dark:text-blue-200">Explanation:</div>
+                  {question.explanationGeneratedByAI && (
+                    <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      AI Generated
+                    </div>
+                  )}
+                </div>
+                {isAdmin && onDeleteExplanation && (
+                  <Button
+                    onClick={onDeleteExplanation}
+                    disabled={isDeletingExplanation}
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/50"
+                  >
+                    {isDeletingExplanation ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Delete
+                      </>
+                    )}
+                  </Button>
                 )}
               </div>
               <MarkdownContent variant="explanation">{question.explanation}</MarkdownContent>

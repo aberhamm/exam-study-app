@@ -56,6 +56,6 @@ export async function closeConnection(): Promise<void> {
     const client = await globalForMongo.__mongoClientPromise;
     await client.close();
     delete globalForMongo.__mongoClientPromise;
-    clientPromise = undefined as any;
+    clientPromise = undefined as unknown as Promise<MongoClient>;
   }
 }

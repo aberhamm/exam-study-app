@@ -72,6 +72,7 @@ export function QuizApp({
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
   const [isSavingExplanation, setIsSavingExplanation] = useState(false);
+  const [isDeletingExplanation, setIsDeletingExplanation] = useState(false);
 
   // Separate timeElapsed state to prevent re-renders every second
   const [timeElapsed, setTimeElapsed] = useState(initialExamState?.timeElapsed || 0);
@@ -473,6 +474,46 @@ export function QuizApp({
     }
   }, [currentQuestion, examId, aiExplanation, questions]);
 
+  const deleteExplanation = useCallback(async () => {
+    if (!currentQuestion || !examId) return;
+
+    // Confirm before deleting
+    if (!confirm('Are you sure you want to delete this explanation? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsDeletingExplanation(true);
+
+    try {
+      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}/explanation`, {
+        method: 'DELETE',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to delete explanation`);
+      }
+
+      // Update the questions state to remove the explanation
+      const updatedQuestions = questions.map(q =>
+        q.id === currentQuestion.id
+          ? { ...q, explanation: undefined, explanationGeneratedByAI: undefined }
+          : q
+      );
+      setQuestions(updatedQuestions);
+
+      toast.success('Explanation deleted successfully!');
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete explanation';
+      toast.error(message);
+      console.error('Failed to delete explanation:', error);
+    } finally {
+      setIsDeletingExplanation(false);
+    }
+  }, [currentQuestion, examId, questions]);
+
   // Auto-generate explanation when user selects an answer and question doesn't have one
   useEffect(() => {
     if (!currentQuestion || !quizState.showFeedback) return;
@@ -715,8 +756,10 @@ export function QuizApp({
           onOpenQuestionEditor={openQuestionEditor}
           onGenerateExplanation={generateExplanation}
           onSaveExplanation={saveExplanation}
+          onDeleteExplanation={deleteExplanation}
           isGeneratingExplanation={isGeneratingExplanation}
           isSavingExplanation={isSavingExplanation}
+          isDeletingExplanation={isDeletingExplanation}
           aiExplanation={aiExplanation}
         />
       )}
