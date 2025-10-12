@@ -25,6 +25,7 @@
     "seed:admin": "tsx scripts/seed-admin-user.ts",
     "extract:important": "tsx scripts/extract-important-sections.ts",
     "generate:important-questions": "tsx scripts/generate-questions-from-important.ts",
+    "generate:explanations": "tsx scripts/generate-explanations.ts",
     "check:mongodb": "tsx scripts/check-mongodb-connection.ts"
   },
   "dependencies": {

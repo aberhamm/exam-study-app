@@ -90,6 +90,7 @@ export function QuizApp({
   const seenQuestionsRef = useRef<Set<string>>(new Set());
   const scoredQuestionsRef = useRef<Set<string>>(new Set());
   const persistEnabledRef = useRef<boolean>(true);
+  const deletedExplanationsRef = useRef<Set<string>>(new Set());
 
   const evaluateAnswer = useCallback(
     (question: NormalizedQuestion, selected: number | number[] | null): 'correct' | 'incorrect' | 'unanswered' => {
@@ -210,6 +211,7 @@ export function QuizApp({
   const currentQuestion = questions?.[quizState.currentQuestionIndex];
   const totalQuestions = questions?.length || 0;
   const isLastQuestion = quizState.currentQuestionIndex === totalQuestions - 1;
+  const isFirstQuestion = quizState.currentQuestionIndex === 0;
 
   useEffect(() => {
     if (!currentQuestion) return;
@@ -354,6 +356,28 @@ export function QuizApp({
     }
   }, [isLastQuestion, quizState, finishQuiz]);
 
+  const previousQuestion = useCallback(() => {
+    if (quizState.currentQuestionIndex > 0) {
+      const previousIndex = quizState.currentQuestionIndex - 1;
+      const previousAnswer = quizState.selectedAnswers[previousIndex];
+
+      // Determine if the previous question has an answer selected
+      const hasPreviousAnswer = previousAnswer !== null &&
+        previousAnswer !== undefined &&
+        (!Array.isArray(previousAnswer) || previousAnswer.length > 0);
+
+      const newState = {
+        ...quizState,
+        currentQuestionIndex: previousIndex,
+        // Show feedback if the previous question was answered
+        showFeedback: hasPreviousAnswer,
+      };
+      setQuizState(newState);
+      // Clear AI explanation when moving to previous question
+      setAiExplanation(null);
+    }
+  }, [quizState]);
+
   const resetQuiz = () => {
     // Clear exam state from localStorage
     clearExamState();
@@ -362,6 +386,7 @@ export function QuizApp({
     setQuestions(shuffleArray(preparedQuestions));
     seenQuestionsRef.current = new Set();
     scoredQuestionsRef.current = new Set();
+    deletedExplanationsRef.current = new Set();
 
     // Reset timer state
     setTimeElapsed(0);
@@ -402,6 +427,9 @@ export function QuizApp({
 
       // If auto-saved (no existing explanation), update questions state
       if (data.savedAsDefault) {
+        // Remove from deleted list since explanation was auto-generated and saved
+        deletedExplanationsRef.current.delete(currentQuestion.id);
+
         const updatedQuestions = questions.map(q =>
           q.id === currentQuestion.id
             ? { ...q, explanation: data.explanation, explanationGeneratedByAI: true }
@@ -452,6 +480,9 @@ export function QuizApp({
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to save explanation`);
       }
 
+      // Remove from deleted list since user manually saved a new explanation
+      deletedExplanationsRef.current.delete(currentQuestion.id);
+
       // Update the current question with the explanation and AI flag
       const updatedQuestions = questions.map(q =>
         q.id === currentQuestion.id
@@ -495,6 +526,9 @@ export function QuizApp({
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to delete explanation`);
       }
 
+      // Mark this question as intentionally deleted to prevent auto-regeneration
+      deletedExplanationsRef.current.add(currentQuestion.id);
+
       // Update the questions state to remove the explanation
       const updatedQuestions = questions.map(q =>
         q.id === currentQuestion.id
@@ -521,6 +555,12 @@ export function QuizApp({
     // Check if question has no explanation
     const hasExplanation = currentQuestion.explanation && currentQuestion.explanation.trim().length > 0;
     if (hasExplanation) return;
+
+    // Check if explanation was intentionally deleted for this question
+    if (deletedExplanationsRef.current.has(currentQuestion.id)) {
+      console.log('[QuizApp] Skipping auto-generation for intentionally deleted explanation:', currentQuestion.id);
+      return;
+    }
 
     // Check if already generating or already have AI explanation
     if (isGeneratingExplanation || aiExplanation) return;
@@ -626,6 +666,14 @@ export function QuizApp({
           e.preventDefault();
           submitMultipleAnswer();
         }
+      } else if (e.key === 'ArrowLeft' && quizState.showFeedback && !isFirstQuestion) {
+        // Navigate to previous question when feedback is shown
+        e.preventDefault();
+        previousQuestion();
+      } else if (e.key === 'ArrowRight' && quizState.showFeedback) {
+        // Navigate to next question when feedback is shown
+        e.preventDefault();
+        nextQuestion();
       }
     },
     [
@@ -634,8 +682,10 @@ export function QuizApp({
       quizState.showResult,
       editDialogOpen,
       showQuitDialog,
+      isFirstQuestion,
       selectAnswer,
       nextQuestion,
+      previousQuestion,
       submitMultipleAnswer,
     ]
   );
@@ -658,6 +708,13 @@ export function QuizApp({
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [quizState.showResult]);
+
+  // Scroll to top when quiz finishes
+  useEffect(() => {
+    if (quizState.showResult) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [quizState.showResult]);
 
   // Early return if no questions available (should not happen with proper setup)
@@ -769,7 +826,9 @@ export function QuizApp({
           question={currentQuestion}
           showFeedback={quizState.showFeedback}
           isLastQuestion={isLastQuestion}
+          isFirstQuestion={isFirstQuestion}
           onNextQuestion={nextQuestion}
+          onPreviousQuestion={previousQuestion}
         />
       )}
 

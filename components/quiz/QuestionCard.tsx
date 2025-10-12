@@ -342,7 +342,7 @@ export function QuestionCard({
                           ) : (
                             <>
                               <Save className="h-4 w-4 mr-2" />
-                              Replace {question.explanation ? 'Current' : 'and Save'}
+                              {question.explanation ? 'Replace Current' : 'Save Explanation'}
                             </>
                           )}
                         </Button>

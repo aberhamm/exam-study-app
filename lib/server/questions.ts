@@ -18,7 +18,7 @@ function sanitizeStudy(value: unknown): ExternalQuestion['study'] | undefined {
 }
 
 function mapQuestionDocToExternal(q: QuestionDocument & { _id: ObjectId }): ExternalQuestion & { id: string } {
-  const { _id, question, options, answer, question_type, explanation, study } = q;
+  const { _id, question, options, answer, question_type, explanation, explanationGeneratedByAI, study } = q;
   return {
     id: _id.toString(),
     question,
@@ -26,6 +26,7 @@ function mapQuestionDocToExternal(q: QuestionDocument & { _id: ObjectId }): Exte
     answer,
     question_type,
     explanation,
+    explanationGeneratedByAI,
     study: sanitizeStudy(study as unknown),
   };
 }
@@ -115,9 +116,13 @@ export async function updateQuestion(
     return null;
   }
 
+  // Exclude _id and createdAt from the update to avoid MongoDB errors
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { _id, createdAt, ...updateFields } = question as QuestionWithId & { _id?: unknown; createdAt?: Date };
+
   const result = await collection.updateOne(
     { _id: new MongoObjectId(questionId), examId },
-    { $set: { ...question, updatedAt: new Date() } }
+    { $set: { ...updateFields, updatedAt: new Date() } }
   );
 
   if (result.matchedCount === 0) {

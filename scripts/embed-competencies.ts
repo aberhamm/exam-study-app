@@ -101,7 +101,7 @@ async function main() {
 
   try {
     const batchSize = batch && batch > 0 ? batch : 16;
-    let toProcess: CompetencyDoc[] = [];
+    const toProcess: CompetencyDoc[] = [];
 
     if (recompute) {
       // Simple path: all competencies (optionally filtered by exam)

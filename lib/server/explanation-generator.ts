@@ -62,9 +62,11 @@ async function retryWithBackoff<T>(
       if (attempt < maxRetries - 1) {
         const backoffMs = Math.min(1000 * Math.pow(2, attempt), 10000);
         if (featureFlags.debugRetrieval) {
-          console.warn(`[retryWithBackoff] Attempt ${attempt + 1} failed, retrying in ${backoffMs}ms`);
+          console.warn(
+            `[retryWithBackoff] Attempt ${attempt + 1} failed, retrying in ${backoffMs}ms`
+          );
         }
-        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
       }
     }
   }
@@ -128,7 +130,11 @@ async function searchDocumentChunks(
   const numCandidates = Math.min(topK * candidateMultiplier, maxCandidates);
 
   if (featureFlags.debugRetrieval) {
-    console.info(`[searchDocumentChunks] topK=${topK}, candidates=${numCandidates}, dimensions=${queryEmbedding.length}, groupIds=${groupIds?.join(',') || 'all'}`);
+    console.info(
+      `[searchDocumentChunks] topK=${topK}, candidates=${numCandidates}, dimensions=${
+        queryEmbedding.length
+      }, groupIds=${groupIds?.join(',') || 'all'}`
+    );
   }
 
   try {
@@ -173,8 +179,8 @@ async function searchDocumentChunks(
     }
 
     // Step 2: Targeted find for full documents
-    const ids = vectorResults.map(r => r._id);
-    const scoreMap = new Map(vectorResults.map(r => [String(r._id), r.score]));
+    const ids = vectorResults.map((r) => r._id);
+    const scoreMap = new Map(vectorResults.map((r) => [String(r._id), r.score]));
 
     const documents = await embeddingsCol
       .find({ _id: { $in: ids } } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -192,7 +198,7 @@ async function searchDocumentChunks(
       .toArray();
 
     // Map results with scores
-    const results = documents.map(doc => ({
+    const results = documents.map((doc) => ({
       text: doc.text || '',
       url: doc.url,
       title: doc.title || doc.description,
@@ -206,18 +212,27 @@ async function searchDocumentChunks(
     vectorSearchFailures = 0;
 
     if (featureFlags.debugRetrieval) {
-      console.info(`[searchDocumentChunks] Retrieved ${results.length} chunks, best score: ${results[0]?.score.toFixed(4)}`);
+      console.info(
+        `[searchDocumentChunks] Retrieved ${
+          results.length
+        } chunks, best score: ${results[0]?.score.toFixed(4)}`
+      );
     }
 
     return results;
   } catch (error) {
-    console.error('[searchDocumentChunks] Vector search failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      '[searchDocumentChunks] Vector search failed:',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
 
     // Increment circuit breaker
     vectorSearchFailures++;
     if (vectorSearchFailures >= CIRCUIT_BREAKER_THRESHOLD) {
       circuitBreakerUntil = Date.now() + CIRCUIT_BREAKER_DURATION_MS;
-      console.warn(`[searchDocumentChunks] Circuit breaker activated for ${CIRCUIT_BREAKER_DURATION_MS}ms`);
+      console.warn(
+        `[searchDocumentChunks] Circuit breaker activated for ${CIRCUIT_BREAKER_DURATION_MS}ms`
+      );
     }
 
     return [];
@@ -240,9 +255,7 @@ function deduplicateAndClampChunks(chunks: DocumentChunk[]): DocumentChunk[] {
       // Clamp text length
       const clampedChunk = {
         ...chunk,
-        text: chunk.text.length > maxChars
-          ? chunk.text.substring(0, maxChars) + '...'
-          : chunk.text
+        text: chunk.text.length > maxChars ? chunk.text.substring(0, maxChars) + '...' : chunk.text,
       };
 
       unique.push(clampedChunk);
@@ -265,7 +278,11 @@ async function generateExplanationWithLLM(
     const model = envConfig.pipeline.openrouterModel;
 
     if (featureFlags.debugRetrieval) {
-      console.info(`[generateExplanationWithLLM] question=${hashText(question.prompt)}, chunks=${documentChunks.length}, model=${model}`);
+      console.info(
+        `[generateExplanationWithLLM] question=${hashText(question.prompt)}, chunks=${
+          documentChunks.length
+        }, model=${model}`
+      );
     }
 
     // Create the correct answer text
@@ -304,16 +321,17 @@ Given: (a) one multiple-choice or true/false question, (b) the correct answer, a
 Output a concise, instructional explanation in Markdown that:
 1) teaches why the provided answer is correct,
 2) uses ONLY the provided documentation as evidence,
-3) includes at most TWO inline citations (links) to the most relevant excerpts,
+3) includes at most TWO inline citations (links) to the most relevant excerpts, you may include more in the Sources section,
 4) stays within 120-200 words,
 5) contains no chit-chat, no follow-ups, no greetings, no meta-commentary.
 
 HARD RULES
 - If the excerpts are insufficient to justify the answer, output exactly:
-  The provided documentation does not contain enough information to explain the answer.
+  The available documentation does not contain enough information to explain the answer.
 - Do NOT invent facts or rely on outside knowledge.
 - Do NOT reveal or restate the answer choices or the letter keys.
 - Do NOT mention "snippets," "context," or "I".
+- Do NOT refer to the reference chunks by number or say "the excerpt says."
 - Use clear headings only if helpful (e.g., **Why this is correct**).
 - Prefer quotes or paraphrases anchored to the excerpts.
 - Phrases like "according to the documentation," "the docs state," "as per …," "the excerpt shows," etc. You present **direct explanations** supported implicitly by the facts, not by referencing *where* they came from.
@@ -333,12 +351,16 @@ FORMAT
 
 
 SOURCES SECTION FORMAT:
-End your explanation with:
+- Use at least one source if you cited any excerpts.
+- Multiple sources are OK if they add value.
+- List each source only once, even if cited multiple times.
+- End your explanation with:
 
 _Sources:_
-- [Source Title 1 | Website Name](URL1) (if you used citation [1])
-- [Source Title 2 | Website Docs](URL2) (if you used citation [2])
-- etc.`;
+- [Source Title | Website Name](URL)
+- [Another Source Title | Website Name](URL)
+- (etc)
+`;
 
     const userPrompt = `Question:
 ${question.prompt}
@@ -351,13 +373,6 @@ ${contextSections}
 
 Available citations (include as markdown links when relevant):
 ${availableCitations}
-
-Instructions:
-Explain why the correct answer is correct using ONLY the excerpts above.
-- Keep to 80-160 words.
-- Include one to two inline citations by linking directly to the most relevant excerpt URLs.
-- Do not mention option letters, option text, "excerpts," or "context."
-- Do not engage in conversation or add greetings.
 `;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -402,7 +417,11 @@ export async function generateQuestionExplanation(
   const questionHash = hashText(question.id);
 
   if (featureFlags.debugRetrieval) {
-    console.info(`[generateQuestionExplanation] Starting for question ${questionHash}, documentGroups=${documentGroups?.join(',') || 'all'}, hasEmbedding=${!!questionEmbedding}`);
+    console.info(
+      `[generateQuestionExplanation] Starting for question ${questionHash}, documentGroups=${
+        documentGroups?.join(',') || 'all'
+      }, hasEmbedding=${!!questionEmbedding}`
+    );
   }
 
   try {
@@ -411,13 +430,17 @@ export async function generateQuestionExplanation(
     if (questionEmbedding && questionEmbedding.length > 0) {
       queryEmbedding = questionEmbedding;
       if (featureFlags.debugRetrieval) {
-        console.info(`[generateQuestionExplanation] Using provided embedding (${queryEmbedding.length}d) for question ${questionHash}`);
+        console.info(
+          `[generateQuestionExplanation] Using provided embedding (${queryEmbedding.length}d) for question ${questionHash}`
+        );
       }
     } else {
       const questionText = `${question.prompt} ${question.choices.join(' ')}`;
       queryEmbedding = await createEmbedding(questionText);
       if (featureFlags.debugRetrieval) {
-        console.info(`[generateQuestionExplanation] Created embedding (${queryEmbedding.length}d) for question ${questionHash}`);
+        console.info(
+          `[generateQuestionExplanation] Created embedding (${queryEmbedding.length}d) for question ${questionHash}`
+        );
       }
     }
 
@@ -425,11 +448,18 @@ export async function generateQuestionExplanation(
     const chunksPerSearch = Math.ceil(envConfig.pipeline.maxContextChunks * 1.5);
 
     // Search for relevant document chunks using question embedding
-    const questionChunks = await searchDocumentChunks(queryEmbedding, chunksPerSearch, documentGroups);
+    const questionChunks = await searchDocumentChunks(
+      queryEmbedding,
+      chunksPerSearch,
+      documentGroups
+    );
 
     // Extract correct answer text and create embedding for it
     const correctAnswerText = Array.isArray(question.answerIndex)
-      ? question.answerIndex.map((idx) => question.choices[idx]).filter(Boolean).join(' ')
+      ? question.answerIndex
+          .map((idx) => question.choices[idx])
+          .filter(Boolean)
+          .join(' ')
       : question.choices[question.answerIndex];
 
     if (!correctAnswerText) {
@@ -437,25 +467,39 @@ export async function generateQuestionExplanation(
     }
 
     if (featureFlags.debugRetrieval) {
-      console.info(`[generateQuestionExplanation] Correct answer text: ${correctAnswerText.substring(0, 100)}`);
+      console.info(
+        `[generateQuestionExplanation] Correct answer text: ${correctAnswerText.substring(0, 100)}`
+      );
     }
 
     const answerEmbedding = await createEmbedding(correctAnswerText);
 
     if (featureFlags.debugRetrieval) {
-      console.info(`[generateQuestionExplanation] Created answer embedding (${answerEmbedding.length}d) for question ${questionHash}`);
+      console.info(
+        `[generateQuestionExplanation] Created answer embedding (${answerEmbedding.length}d) for question ${questionHash}`
+      );
     }
 
     // Search for relevant document chunks using answer embedding
-    const answerChunks = await searchDocumentChunks(answerEmbedding, chunksPerSearch, documentGroups);
+    const answerChunks = await searchDocumentChunks(
+      answerEmbedding,
+      chunksPerSearch,
+      documentGroups
+    );
 
     // Merge chunks from both searches and sort by score (highest first)
     const allChunks = [...questionChunks, ...answerChunks].sort((a, b) => b.score - a.score);
 
     if (featureFlags.debugRetrieval) {
-      console.info(`[generateQuestionExplanation] Combined ${questionChunks.length} question chunks + ${answerChunks.length} answer chunks = ${allChunks.length} total`);
+      console.info(
+        `[generateQuestionExplanation] Combined ${questionChunks.length} question chunks + ${answerChunks.length} answer chunks = ${allChunks.length} total`
+      );
       if (allChunks.length > 0) {
-        console.info(`[generateQuestionExplanation] Score range: ${allChunks[0].score.toFixed(4)} to ${allChunks[allChunks.length - 1].score.toFixed(4)}`);
+        console.info(
+          `[generateQuestionExplanation] Score range: ${allChunks[0].score.toFixed(
+            4
+          )} to ${allChunks[allChunks.length - 1].score.toFixed(4)}`
+        );
       }
     }
 
@@ -463,7 +507,9 @@ export async function generateQuestionExplanation(
     const processedChunks = deduplicateAndClampChunks(allChunks);
 
     if (featureFlags.debugRetrieval) {
-      console.info(`[generateQuestionExplanation] Processed ${processedChunks.length} chunks (from ${allChunks.length})`);
+      console.info(
+        `[generateQuestionExplanation] Processed ${processedChunks.length} chunks (from ${allChunks.length})`
+      );
     }
 
     // Generate explanation using LLM
@@ -478,7 +524,9 @@ export async function generateQuestionExplanation(
     }));
 
     if (featureFlags.debugRetrieval) {
-      console.info(`[generateQuestionExplanation] Generated explanation (${explanation.length} chars) with ${sources.length} sources`);
+      console.info(
+        `[generateQuestionExplanation] Generated explanation (${explanation.length} chars) with ${sources.length} sources`
+      );
     }
 
     return {
@@ -486,7 +534,10 @@ export async function generateQuestionExplanation(
       sources,
     };
   } catch (error) {
-    console.error(`[generateQuestionExplanation] Failed for question ${questionHash}:`, error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      `[generateQuestionExplanation] Failed for question ${questionHash}:`,
+      error instanceof Error ? error.message : 'Unknown error'
+    );
     throw new Error(
       `Failed to generate explanation: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
