@@ -220,11 +220,11 @@ export function QuestionCard({
 
       {showFeedback && (
         <div className="mt-6 space-y-4">
-          {/* Default explanation */}
+          {/* Current/Default Explanation */}
           {question.explanation && (
             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <div className="font-medium text-blue-800 dark:text-blue-200">Explanation:</div>
+                <div className="font-medium text-blue-800 dark:text-blue-200">Current Explanation:</div>
                 {question.explanationGeneratedByAI && (
                   <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -242,63 +242,95 @@ export function QuestionCard({
             </div>
           )}
 
-          {/* Admin: AI Explanation Generation */}
+          {/* Admin: AI Explanation Management */}
           {isAdmin && onGenerateExplanation && (
-            <div className="space-y-3">
-              {/* Generate button */}
-              <Button
-                onClick={onGenerateExplanation}
-                disabled={isGeneratingExplanation || isSavingExplanation}
-                variant="default"
-                size="sm"
-              >
-                {isGeneratingExplanation ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating explanation...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate {question.explanation ? 'New' : ''} Explanation with AI
-                  </>
-                )}
-              </Button>
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
+              {/* Admin section header */}
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Sparkles className="h-4 w-4" />
+                <span>AI Explanation Generator</span>
+              </div>
 
-              {/* AI-generated explanation preview */}
-              {aiExplanation && (
-                <div className="p-4 bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                      <span className="font-medium text-purple-800 dark:text-purple-200">
-                        AI-Generated Explanation:
-                      </span>
+              {/* Generate button and AI preview */}
+              <div className="space-y-3">
+                {/* AI-generated explanation preview */}
+                {aiExplanation ? (
+                  <>
+                    <div className="p-4 bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        <span className="font-medium text-purple-800 dark:text-purple-200">
+                          AI-Generated Preview:
+                        </span>
+                      </div>
+                      <MarkdownContent variant="explanation">{aiExplanation}</MarkdownContent>
                     </div>
-                    {onSaveExplanation && (
+
+                    {/* Action buttons when AI explanation exists */}
+                    <div className="flex gap-2 flex-wrap">
                       <Button
-                        onClick={onSaveExplanation}
-                        disabled={isSavingExplanation}
+                        onClick={onGenerateExplanation}
+                        disabled={isGeneratingExplanation || isSavingExplanation}
+                        variant="outline"
                         size="sm"
-                        variant="default"
                       >
-                        {isSavingExplanation ? (
+                        {isGeneratingExplanation ? (
                           <>
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            Saving...
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generating...
                           </>
                         ) : (
                           <>
-                            <Save className="h-3 w-3 mr-1" />
-                            Replace Default
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Generate New
                           </>
                         )}
                       </Button>
+
+                      {onSaveExplanation && (
+                        <Button
+                          onClick={onSaveExplanation}
+                          disabled={isSavingExplanation}
+                          size="sm"
+                          variant="default"
+                        >
+                          {isSavingExplanation ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Replace {question.explanation ? 'Current' : 'and Save'}
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  /* Generate button when no AI explanation exists */
+                  <Button
+                    onClick={onGenerateExplanation}
+                    disabled={isGeneratingExplanation || isSavingExplanation}
+                    variant="default"
+                    size="sm"
+                  >
+                    {isGeneratingExplanation ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating explanation...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate {question.explanation ? 'New' : ''} Explanation with AI
+                      </>
                     )}
-                  </div>
-                  <MarkdownContent variant="explanation">{aiExplanation}</MarkdownContent>
-                </div>
-              )}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
