@@ -39,7 +39,6 @@ type QuizState = {
     correctIndex: number | number[];
   }>;
   timerRunning: boolean;
-  timeElapsed: number; // in seconds
 };
 
 type Props = {
@@ -75,6 +74,11 @@ export function QuizApp({
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
   const [isSavingExplanation, setIsSavingExplanation] = useState(false);
+
+  // Separate timeElapsed state to prevent re-renders every second
+  const [timeElapsed, setTimeElapsed] = useState(initialExamState?.timeElapsed || 0);
+  const timeElapsedRef = useRef(initialExamState?.timeElapsed || 0);
+
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: initialExamState?.currentQuestionIndex || 0,
     selectedAnswers: initialExamState?.selectedAnswers || [],
@@ -83,7 +87,6 @@ export function QuizApp({
     score: initialExamState?.score || 0,
     incorrectAnswers: initialExamState?.incorrectAnswers || [],
     timerRunning: initialExamState?.timerRunning ?? true,
-    timeElapsed: initialExamState?.timeElapsed || 0,
   });
   const seenQuestionsRef = useRef<Set<string>>(new Set());
   const scoredQuestionsRef = useRef<Set<string>>(new Set());
@@ -132,6 +135,7 @@ export function QuizApp({
   }, [preparedQuestions, initialExamState]);
 
   // Save exam state to localStorage whenever quiz state changes
+  // Note: timeElapsed is tracked separately and read from ref to avoid re-renders
   useEffect(() => {
     if (!persistEnabledRef.current) return;
     if (!quizState.showResult && questions.length > 0) {
@@ -144,7 +148,7 @@ export function QuizApp({
         score: quizState.score,
         incorrectAnswers: quizState.incorrectAnswers,
         timerRunning: quizState.timerRunning,
-        timeElapsed: quizState.timeElapsed,
+        timeElapsed: timeElapsedRef.current, // Read from ref instead of state
       });
       saveExamState(updatedState);
     }
@@ -248,6 +252,9 @@ export function QuizApp({
         scoredQuestionsRef.current.add(question.id);
       }
     });
+
+    // Update timeElapsed state from ref before finishing
+    setTimeElapsed(timeElapsedRef.current);
 
     const finalState = {
       ...quizState,
@@ -357,6 +364,10 @@ export function QuizApp({
     seenQuestionsRef.current = new Set();
     scoredQuestionsRef.current = new Set();
 
+    // Reset timer state
+    setTimeElapsed(0);
+    timeElapsedRef.current = 0;
+
     const resetState = {
       currentQuestionIndex: 0,
       selectedAnswers: [],
@@ -365,7 +376,6 @@ export function QuizApp({
       score: 0,
       incorrectAnswers: [],
       timerRunning: true,
-      timeElapsed: 0,
     };
 
     setQuizState(resetState);
@@ -489,7 +499,10 @@ export function QuizApp({
     (remainingSeconds: number) => {
       const totalTime = testSettings.timerDuration * 60;
       const elapsed = totalTime - remainingSeconds;
-      setQuizState((prev) => ({ ...prev, timeElapsed: elapsed }));
+      // Update ref only - this prevents re-renders every second
+      timeElapsedRef.current = elapsed;
+      // Only update state occasionally (this state is only used for display in results)
+      // We'll update it when the quiz finishes
     },
     [testSettings.timerDuration]
   );
@@ -655,7 +668,7 @@ export function QuizApp({
       <QuizResults
         score={quizState.score}
         totalQuestions={totalQuestions}
-        timeElapsed={quizState.timeElapsed}
+        timeElapsed={timeElapsed}
         incorrectAnswers={quizState.incorrectAnswers}
         onResetQuiz={resetQuiz}
         onGoHome={() => {
@@ -704,7 +717,7 @@ export function QuizApp({
         currentQuestionIndex={quizState.currentQuestionIndex}
         totalQuestions={totalQuestions}
         timerRunning={quizState.timerRunning && !quizState.showResult}
-        timeElapsed={quizState.timeElapsed}
+        timeElapsed={timeElapsed}
         onTimeUp={handleTimeUp}
         onTimeUpdate={handleTimeUpdate}
       />
