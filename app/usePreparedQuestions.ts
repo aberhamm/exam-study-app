@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { NormalizedQuestion } from "@/types/normalized";
 import type { TestSettings } from "@/lib/test-settings";
 import type { PrepareQuestionsRequest, PrepareQuestionsResponse } from "@/types/api";
+import { getAllQuestionMetrics } from "@/lib/question-metrics";
 
 type UsePreparedQuestionsOptions = {
   enabled?: boolean;
@@ -31,11 +32,19 @@ export function usePreparedQuestions(
       setLoading(true);
       setError(null);
       try {
+        // If newQuestionsOnly is enabled, get all seen question IDs to exclude
+        const excludeQuestionIds = settings.newQuestionsOnly
+          ? Object.entries(getAllQuestionMetrics())
+              .filter(([, metrics]) => metrics.seen > 0)
+              .map(([questionId]) => questionId)
+          : undefined;
+
         const payload: PrepareQuestionsRequest = {
           questionType: settings.questionType,
           explanationFilter: settings.explanationFilter,
           questionCount: settings.questionCount,
           competencyFilter: settings.competencyFilter,
+          excludeQuestionIds,
         };
         const res = await fetch(`/api/exams/${encodeURIComponent(examId)}/questions/prepare`, {
           method: 'POST',
@@ -71,7 +80,7 @@ export function usePreparedQuestions(
     return () => {
       cancelled = true;
     };
-  }, [examId, settings.questionType, settings.explanationFilter, settings.questionCount, settings.competencyFilter, enabled]);
+  }, [examId, settings.questionType, settings.explanationFilter, settings.questionCount, settings.competencyFilter, settings.newQuestionsOnly, enabled]);
 
   return { data, error, loading } as const;
 }

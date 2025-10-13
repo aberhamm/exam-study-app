@@ -32,6 +32,7 @@ export type TestSettings = {
   explanationFilter: ExplanationFilter;
   showCompetencies?: boolean;
   competencyFilter?: CompetencyFilter;
+  newQuestionsOnly?: boolean; // Filter to show only unseen questions
 };
 
 export const DEFAULT_TEST_SETTINGS: TestSettings = {
@@ -40,7 +41,8 @@ export const DEFAULT_TEST_SETTINGS: TestSettings = {
   timerDuration: TEST_SETTINGS.DEFAULT_TIMER_DURATION,
   explanationFilter: 'all',
   showCompetencies: false,
-  competencyFilter: 'all'
+  competencyFilter: 'all',
+  newQuestionsOnly: false
 };
 
 // Utility functions for test settings
@@ -63,7 +65,8 @@ export function validateTestSettings(settings: Partial<TestSettings>): TestSetti
     ),
     explanationFilter: settings.explanationFilter || 'all',
     showCompetencies: settings.showCompetencies ?? false,
-    competencyFilter: settings.competencyFilter || 'all'
+    competencyFilter: settings.competencyFilter || 'all',
+    newQuestionsOnly: settings.newQuestionsOnly ?? false
   };
 }
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { ObjectId } from 'mongodb';
 import { getDb, getQuestionsCollectionName } from '@/lib/server/mongodb';
 import type { QuestionDocument } from '@/types/question';
 import { normalizeQuestions } from '@/lib/normalize';
@@ -11,6 +12,7 @@ const StartRequestZ = z.object({
   explanationFilter: z.enum(['all', 'with-explanations', 'without-explanations']).default('all'),
   questionCount: z.number().int().min(1).max(1000).default(50),
   competencyFilter: z.string().optional(),
+  excludeQuestionIds: z.array(z.string()).optional(),
 });
 
 type RouteParams = { params: Promise<{ examId: string }> };
@@ -47,6 +49,17 @@ export async function POST(request: Request, context: RouteParams) {
     const pipeline: object[] = [
       { $match: match },
     ];
+
+    // Exclude specified question IDs (e.g., already seen questions)
+    if (input.excludeQuestionIds && input.excludeQuestionIds.length > 0) {
+      const excludeObjectIds = input.excludeQuestionIds
+        .filter(id => ObjectId.isValid(id))
+        .map(id => new ObjectId(id));
+
+      if (excludeObjectIds.length > 0) {
+        pipeline.push({ $match: { _id: { $nin: excludeObjectIds } } });
+      }
+    }
 
     if (input.explanationFilter === 'with-explanations') {
       pipeline.push({ $match: { $expr: explanationExpr } });

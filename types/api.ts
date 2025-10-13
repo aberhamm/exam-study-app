@@ -33,6 +33,7 @@ export type PrepareQuestionsRequest = {
   explanationFilter: 'all' | 'with-explanations' | 'without-explanations';
   questionCount: number;
   competencyFilter?: 'all' | string; // 'all' or competency ID
+  excludeQuestionIds?: string[]; // Question IDs to exclude (e.g., already seen questions)
 };
 
 export type PrepareQuestionsResponse = {

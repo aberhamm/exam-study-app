@@ -18,7 +18,7 @@ import {
   saveTestSettings,
 } from '@/lib/test-settings';
 import type { NormalizedQuestion, ExamMetadata } from '@/types/normalized';
-import { getMissedQuestionIds } from '@/lib/question-metrics';
+import { getMissedQuestionIds, getAllQuestionMetrics } from '@/lib/question-metrics';
 import type { ExamStatsResponse } from '@/types/api';
 
 type StartTestOptions = {
@@ -43,6 +43,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [useCustomTimer, setUseCustomTimer] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [missedQuestionIds, setMissedQuestionIds] = useState<string[]>([]);
+  const [seenQuestionIds, setSeenQuestionIds] = useState<string[]>([]);
   const [starting, setStarting] = useState(false);
   const [competencies, setCompetencies] = useState<Array<{ id: string; title: string; questionCount?: number }>>([]);
 
@@ -104,11 +105,24 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     const ids = getMissedQuestionIds();
     setMissedQuestionIds(ids);
 
+    // Load seen question IDs
+    const allMetrics = getAllQuestionMetrics();
+    const seenIds = Object.entries(allMetrics)
+      .filter(([, metrics]) => metrics.seen > 0)
+      .map(([questionId]) => questionId);
+    setSeenQuestionIds(seenIds);
+
     // Also refresh when the page becomes visible (user returns from exam)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         const updatedIds = getMissedQuestionIds();
         setMissedQuestionIds(updatedIds);
+
+        const updatedMetrics = getAllQuestionMetrics();
+        const updatedSeenIds = Object.entries(updatedMetrics)
+          .filter(([, metrics]) => metrics.seen > 0)
+          .map(([questionId]) => questionId);
+        setSeenQuestionIds(updatedSeenIds);
       }
     };
 
@@ -386,6 +400,14 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
         message: `No questions available for ${
           settings.questionType === 'all' ? 'any' : settings.questionType
         } question type`,
+      };
+    }
+
+    // Check if new questions only filter is enabled but all questions have been seen
+    if (settings.newQuestionsOnly && seenQuestionIds.length >= questionCounts.all) {
+      return {
+        valid: false,
+        message: `You've seen all ${questionCounts.all} questions already. Try disabling "Show only new questions" to review questions.`,
       };
     }
 
@@ -722,6 +744,28 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                   <div className="font-medium">Show competencies on questions</div>
                   <p className="text-sm text-muted-foreground">
                     Display competency tags on each question during the exam
+                  </p>
+                </label>
+              </div>
+            </section>
+
+            {/* New Questions Only Filter */}
+            <section className="space-y-4">
+              <div className="flex items-start gap-3">
+                <input
+                  id="new-questions-only"
+                  type="checkbox"
+                  checked={settings.newQuestionsOnly ?? false}
+                  onChange={(e) => setSettings({ ...settings, newQuestionsOnly: e.target.checked })}
+                  className="mt-1 h-4 w-4 rounded border-border focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                />
+                <label htmlFor="new-questions-only" className="flex-1 cursor-pointer">
+                  <div className="font-medium">Show only new questions</div>
+                  <p className="text-sm text-muted-foreground">
+                    Only include questions you haven&apos;t seen before in this exam.
+                    {seenQuestionIds.length > 0 && (
+                      <> You&apos;ve seen {seenQuestionIds.length} question{seenQuestionIds.length === 1 ? '' : 's'} so far.</>
+                    )}
                   </p>
                 </label>
               </div>
