@@ -175,6 +175,28 @@ export default function SearchDevPage() {
     setEditOpen(true);
   };
 
+  const handleDelete = async (id: string) => {
+    if (!examId) return;
+    if (!confirm(`Delete question ${id}? This cannot be undone.`)) return;
+    try {
+      const resp = await fetch(
+        `/api/exams/${encodeURIComponent(examId)}/questions/${encodeURIComponent(id)}`,
+        {
+          method: 'DELETE',
+        }
+      );
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok)
+        throw new Error(
+          typeof json?.error === 'string' ? json.error : `Delete failed (${resp.status})`
+        );
+      // Remove the deleted question from results
+      setQuestionResults((prev) => prev.filter((r) => r.question.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Delete failed');
+    }
+  };
+
   const saveEdited = async (updated: NormalizedQuestion) => {
     if (!examId) throw new Error('Missing examId');
     setSaving(true);
@@ -398,6 +420,9 @@ export default function SearchDevPage() {
                   </p>
                 )}
                 <div className="mt-3 flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleDelete(item.question.id)}>
+                    Delete
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
                     Edit
                   </Button>
