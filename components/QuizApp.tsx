@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
 import { QuestionEditorDialog } from '@/components/QuestionEditorDialog';
+import { FlagQuestionDialog } from '@/components/FlagQuestionDialog';
 import { QuizHeader } from '@/components/quiz/QuizHeader';
 import { QuizProgress } from '@/components/quiz/QuizProgress';
 import { QuestionCard } from '@/components/quiz/QuestionCard';
@@ -73,6 +74,10 @@ export function QuizApp({
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
   const [isSavingExplanation, setIsSavingExplanation] = useState(false);
   const [isDeletingExplanation, setIsDeletingExplanation] = useState(false);
+
+  // Flag question state
+  const [flagDialogOpen, setFlagDialogOpen] = useState(false);
+  const [isFlaggingQuestion, setIsFlaggingQuestion] = useState(false);
 
   // Separate timeElapsed state to prevent re-renders every second
   const [timeElapsed, setTimeElapsed] = useState(initialExamState?.timeElapsed || 0);
@@ -646,6 +651,112 @@ export function QuizApp({
     }
   };
 
+  const handleFlagQuestion = useCallback(async (reason: string) => {
+    if (!currentQuestion || !examId) return;
+
+    setIsFlaggingQuestion(true);
+
+    try {
+      const updatedQuestion: NormalizedQuestion = {
+        ...currentQuestion,
+        flaggedForReview: true,
+        flaggedReason: reason || undefined,
+        flaggedAt: new Date(),
+      };
+
+      const payload = denormalizeQuestion(updatedQuestion);
+      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to flag question`);
+      }
+
+      const json = await response.json();
+      const [normalized] = normalizeQuestions([json]);
+
+      setQuestions((prev) =>
+        prev.map((question) => (question.id === normalized.id ? normalized : question))
+      );
+
+      setQuizState((prev) => ({
+        ...prev,
+        incorrectAnswers: prev.incorrectAnswers.map((entry) =>
+          entry.question.id === normalized.id
+            ? { ...entry, question: normalized }
+            : entry
+        ),
+      }));
+
+      toast.success('Question flagged for review!');
+      setFlagDialogOpen(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to flag question';
+      toast.error(message);
+      console.error('Failed to flag question:', error);
+    } finally {
+      setIsFlaggingQuestion(false);
+    }
+  }, [currentQuestion, examId, questions]);
+
+  const handleUnflagQuestion = useCallback(async () => {
+    if (!currentQuestion || !examId) return;
+
+    setIsFlaggingQuestion(true);
+
+    try {
+      const updatedQuestion: NormalizedQuestion = {
+        ...currentQuestion,
+        flaggedForReview: false,
+        flaggedReason: undefined,
+        flaggedAt: undefined,
+        flaggedBy: undefined,
+      };
+
+      const payload = denormalizeQuestion(updatedQuestion);
+      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to unflag question`);
+      }
+
+      const json = await response.json();
+      const [normalized] = normalizeQuestions([json]);
+
+      setQuestions((prev) =>
+        prev.map((question) => (question.id === normalized.id ? normalized : question))
+      );
+
+      setQuizState((prev) => ({
+        ...prev,
+        incorrectAnswers: prev.incorrectAnswers.map((entry) =>
+          entry.question.id === normalized.id
+            ? { ...entry, question: normalized }
+            : entry
+        ),
+      }));
+
+      toast.success('Question unflagged!');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to unflag question';
+      toast.error(message);
+      console.error('Failed to unflag question:', error);
+    } finally {
+      setIsFlaggingQuestion(false);
+    }
+  }, [currentQuestion, examId, questions]);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!currentQuestion || quizState.showResult) return;
@@ -811,6 +922,9 @@ export function QuizApp({
           showCompetencies={testSettings.showCompetencies}
           isSavingQuestion={isSavingQuestion}
           onOpenQuestionEditor={openQuestionEditor}
+          onFlagQuestion={() => setFlagDialogOpen(true)}
+          onUnflagQuestion={handleUnflagQuestion}
+          isFlaggingQuestion={isFlaggingQuestion}
           onGenerateExplanation={generateExplanation}
           onSaveExplanation={saveExplanation}
           onDeleteExplanation={deleteExplanation}
@@ -853,6 +967,14 @@ export function QuizApp({
         }}
         onSave={handleQuestionSave}
         saving={isSavingQuestion}
+      />
+
+      <FlagQuestionDialog
+        open={flagDialogOpen}
+        onOpenChange={setFlagDialogOpen}
+        onConfirm={handleFlagQuestion}
+        currentReason={currentQuestion?.flaggedReason}
+        isFlagged={currentQuestion?.flaggedForReview || false}
       />
     </div>
   );

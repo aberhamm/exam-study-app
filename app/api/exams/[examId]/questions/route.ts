@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb, getQuestionsCollectionName } from '@/lib/server/mongodb';
 import type { QuestionDocument } from '@/types/question';
+import { fetchCompetenciesByExamId } from '@/lib/server/competencies';
 
 type RouteParams = { params: Promise<{ examId: string }> };
 
@@ -11,6 +12,7 @@ export async function GET(request: Request, context: RouteParams) {
     const { searchParams } = new URL(request.url);
     const competencyId = searchParams.get('competencyId');
     const idsParam = searchParams.get('ids');
+    const flaggedOnly = searchParams.get('flaggedOnly') === 'true';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
@@ -39,6 +41,10 @@ export async function GET(request: Request, context: RouteParams) {
       filter.competencyIds = competencyId;
     }
 
+    if (flaggedOnly) {
+      filter.flaggedForReview = true;
+    }
+
     // Get total count for pagination metadata
     const total = await col.countDocuments(filter);
 
@@ -56,6 +62,10 @@ export async function GET(request: Request, context: RouteParams) {
           competencyIds: 1,
           createdAt: 1,
           updatedAt: 1,
+          flaggedForReview: 1,
+          flaggedReason: 1,
+          flaggedAt: 1,
+          flaggedBy: 1,
         },
       })
       .sort({ createdAt: -1 })
@@ -63,7 +73,11 @@ export async function GET(request: Request, context: RouteParams) {
       .limit(validLimit)
       .toArray();
 
-    // Map _id to id for API response
+    // Fetch competencies for this exam to populate on questions
+    const competencies = await fetchCompetenciesByExamId(examId);
+    const competencyMap = new Map(competencies.map(c => [c.id, { id: c.id, title: c.title }]));
+
+    // Map _id to id for API response and populate competencies
     const questions = docs.map(doc => ({
       id: doc._id.toString(),
       examId: doc.examId,
@@ -74,8 +88,15 @@ export async function GET(request: Request, context: RouteParams) {
       explanation: doc.explanation,
       explanationGeneratedByAI: doc.explanationGeneratedByAI,
       competencyIds: doc.competencyIds,
+      competencies: doc.competencyIds
+        ?.map(cid => competencyMap.get(cid))
+        .filter((c): c is { id: string; title: string } => c !== undefined),
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
+      flaggedForReview: doc.flaggedForReview,
+      flaggedReason: doc.flaggedReason,
+      flaggedAt: doc.flaggedAt,
+      flaggedBy: doc.flaggedBy,
     }));
 
     // When fetching specific IDs, return questions directly without pagination

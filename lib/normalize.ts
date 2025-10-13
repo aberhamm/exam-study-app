@@ -45,6 +45,10 @@ export function normalizeQuestions(qs: ExternalQuestion[]): NormalizedQuestion[]
       study: q.study,
       competencyIds: q.competencyIds,
       competencies: q.competencies,
+      flaggedForReview: q.flaggedForReview,
+      flaggedReason: q.flaggedReason,
+      flaggedAt: q.flaggedAt,
+      flaggedBy: q.flaggedBy,
     } as NormalizedQuestion;
   });
 }
@@ -76,5 +80,9 @@ export function denormalizeQuestion(question: NormalizedQuestion): ExternalQuest
     study: question.study,
     competencyIds: question.competencyIds,
     competencies: question.competencies,
+    flaggedForReview: question.flaggedForReview,
+    flaggedReason: question.flaggedReason,
+    flaggedAt: question.flaggedAt,
+    flaggedBy: question.flaggedBy,
   };
 }

@@ -6,7 +6,7 @@ import { StudyPanel } from '@/components/StudyPanel';
 import { MarkdownContent } from '@/components/ui/markdown';
 import type { NormalizedQuestion } from '@/types/normalized';
 import { useSession } from 'next-auth/react';
-import { Sparkles, Save, Loader2, Trash2 } from 'lucide-react';
+import { Sparkles, Save, Loader2, Trash2, Flag, FlagOff } from 'lucide-react';
 
 type Props = {
   question: NormalizedQuestion;
@@ -19,6 +19,10 @@ type Props = {
   // Admin features for question editing
   isSavingQuestion?: boolean;
   onOpenQuestionEditor?: () => void;
+  // Admin features for flagging
+  onFlagQuestion?: () => void;
+  onUnflagQuestion?: () => void;
+  isFlaggingQuestion?: boolean;
   // Admin features for explanation generation
   onGenerateExplanation?: () => void;
   onSaveExplanation?: () => void;
@@ -39,6 +43,9 @@ export function QuestionCard({
   showCompetencies,
   isSavingQuestion = false,
   onOpenQuestionEditor,
+  onFlagQuestion,
+  onUnflagQuestion,
+  isFlaggingQuestion = false,
   onGenerateExplanation,
   onSaveExplanation,
   onDeleteExplanation,
@@ -59,15 +66,58 @@ export function QuestionCard({
             {question.prompt}
           </h2>
           <div className="flex flex-col items-end gap-2">
-            {isAdmin && onOpenQuestionEditor && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onOpenQuestionEditor}
-                disabled={isSavingQuestion}
-              >
-                Edit Question
-              </Button>
+            {isAdmin && (
+              <div className="flex gap-2">
+                {onOpenQuestionEditor && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onOpenQuestionEditor}
+                    disabled={isSavingQuestion}
+                  >
+                    Edit Question
+                  </Button>
+                )}
+                {question.flaggedForReview ? (
+                  onUnflagQuestion && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onUnflagQuestion}
+                      disabled={isFlaggingQuestion}
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:text-orange-300 dark:hover:bg-orange-950/50"
+                      title={question.flaggedReason || 'Flagged for review'}
+                    >
+                      {isFlaggingQuestion ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <FlagOff className="h-4 w-4 mr-1" />
+                          Unflag
+                        </>
+                      )}
+                    </Button>
+                  )
+                ) : (
+                  onFlagQuestion && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onFlagQuestion}
+                      disabled={isFlaggingQuestion}
+                    >
+                      {isFlaggingQuestion ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Flag className="h-4 w-4 mr-1" />
+                          Flag
+                        </>
+                      )}
+                    </Button>
+                  )
+                )}
+              </div>
             )}
             {showFeedback && (
               <div className="flex-shrink-0 mt-1">

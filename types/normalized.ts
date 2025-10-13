@@ -10,6 +10,10 @@ export type NormalizedQuestion = {
   study?: { chunkId: string; url?: string; anchor?: string; excerpt?: string }[];
   competencyIds?: string[];
   competencies?: Array<{ id: string; title: string }>;
+  flaggedForReview?: boolean;
+  flaggedReason?: string;
+  flaggedAt?: Date;
+  flaggedBy?: string;
 };
 
 export type WelcomeConfig = {

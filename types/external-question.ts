@@ -19,6 +19,10 @@ export type ExternalQuestion = {
   study?: StudyLink[];
   competencyIds?: string[];
   competencies?: Array<{ id: string; title: string }>;
+  flaggedForReview?: boolean;
+  flaggedReason?: string;
+  flaggedAt?: Date;
+  flaggedBy?: string;
 };
 
 /**

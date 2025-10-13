@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
 import type { QuestionDocument } from '@/types/question';
 import { MarkdownContent } from '@/components/ui/markdown';
+import { Flag } from 'lucide-react';
 
 type QuestionListItemProps = {
   question: QuestionDocument;
@@ -15,37 +15,15 @@ export function QuestionListItem({
   index,
   showIndex = true,
   showCompetencies = false,
-  examId
 }: QuestionListItemProps) {
-  const [competencies, setCompetencies] = useState<Array<{ id: string; title: string }>>([]);
-
-  // Fetch competencies if showCompetencies is enabled
-  useEffect(() => {
-    if (!showCompetencies || !examId || !question.competencyIds || question.competencyIds.length === 0) {
-      setCompetencies([]);
-      return;
-    }
-
-    const fetchCompetencies = async () => {
-      try {
-        const response = await fetch(`/api/exams/${examId}/competencies`);
-        if (response.ok) {
-          const data = await response.json();
-          const allCompetencies = data.competencies || [];
-          const filtered = allCompetencies.filter((c: { id: string }) =>
-            question.competencyIds?.includes(c.id)
-          );
-          setCompetencies(filtered);
-        }
-      } catch (err) {
-        console.error('Failed to fetch competencies:', err);
-      }
-    };
-
-    fetchCompetencies();
-  }, [showCompetencies, examId, question.competencyIds]);
+  // Use competencies from question object if available
+  const competencies = showCompetencies && question.competencies ? question.competencies : [];
   return (
-    <div className="bg-card p-6 rounded-lg border border-border hover:border-border/80 transition-colors">
+    <div className={`bg-card p-6 rounded-lg border transition-colors ${
+      question.flaggedForReview
+        ? 'border-orange-300 dark:border-orange-700 hover:border-orange-400 dark:hover:border-orange-600 bg-orange-50/30 dark:bg-orange-950/20'
+        : 'border-border hover:border-border/80'
+    }`}>
       <div className="flex items-start gap-4">
         {showIndex && index !== undefined && (
           <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
@@ -54,9 +32,19 @@ export function QuestionListItem({
         )}
         <div className="flex-1">
           <div className="flex items-start justify-between gap-4 mb-3">
-            <h3 className="text-lg font-medium text-foreground flex-1">
-              {question.question}
-            </h3>
+            <div className="flex items-start gap-2 flex-1">
+              {question.flaggedForReview && (
+                <div
+                  className="flex-shrink-0 mt-1"
+                  title={question.flaggedReason || 'Flagged for review'}
+                >
+                  <Flag className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+              )}
+              <h3 className="text-lg font-medium text-foreground flex-1">
+                {question.question}
+              </h3>
+            </div>
             {showCompetencies && competencies.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {competencies.map((competency) => (
@@ -104,6 +92,25 @@ export function QuestionListItem({
               <div className="text-sm text-blue-800 dark:text-blue-200 prose prose-sm dark:prose-invert max-w-none prose-blue">
                 <MarkdownContent>{question.explanation}</MarkdownContent>
               </div>
+            </div>
+          )}
+          {question.flaggedForReview && question.flaggedReason && (
+            <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-md">
+              <div className="flex items-center gap-2 mb-2">
+                <Flag className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                  Flagged for Review
+                </p>
+              </div>
+              <p className="text-sm text-orange-800 dark:text-orange-200">
+                {question.flaggedReason}
+              </p>
+              {question.flaggedAt && (
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
+                  Flagged on {new Date(question.flaggedAt).toLocaleDateString()}
+                  {question.flaggedBy && ` by ${question.flaggedBy}`}
+                </p>
+              )}
             </div>
           )}
         </div>

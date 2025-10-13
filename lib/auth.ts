@@ -24,6 +24,7 @@ declare module 'next-auth' {
 
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  basePath: '/api/auth',
   providers: [
     Credentials({
       credentials: {
@@ -94,6 +95,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Default: 1 hour
     updateAge: authConfig.sessionUpdateAge,
   },
+  trustHost: true,
 });
 
 /**

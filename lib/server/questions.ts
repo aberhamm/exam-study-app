@@ -42,6 +42,10 @@ async function getQuestionsCollection(): Promise<Collection<QuestionDocument>> {
     collection.createIndex(textIndex, { name: 'question_text' }),
     // Index for filtering questions by competency
     collection.createIndex({ examId: 1, competencyIds: 1 }, { name: 'examId_competencyIds' }),
+    // Index for filtering flagged questions
+    collection.createIndex({ examId: 1, flaggedForReview: 1 }, { name: 'examId_flaggedForReview' }),
+    // Index for admin flagged questions view
+    collection.createIndex({ flaggedForReview: 1, flaggedAt: -1 }, { name: 'flaggedForReview_flaggedAt' }),
   ]);
 
   return collection;

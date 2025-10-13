@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { envConfig } from '@/lib/env-config';
 import { searchSimilarQuestions } from '@/lib/server/questions-search';
 import { requireAdmin } from '@/lib/auth';
+import { fetchCompetenciesByExamId } from '@/lib/server/competencies';
 
 type RouteParams = {
   params: Promise<{
@@ -102,7 +103,22 @@ export async function POST(request: Request, context: RouteParams) {
     } else {
       console.info(`[search] Vector search returned ${results.length} result(s). bestScore=${results[0]?.score?.toFixed?.(4) ?? 'n/a'}`);
     }
-    return NextResponse.json({ examId, topK, count: results.length, results }, { headers: { 'Cache-Control': 'no-store' } });
+
+    // Populate competencies on search results
+    const competencies = await fetchCompetenciesByExamId(examId);
+    const competencyMap = new Map(competencies.map(c => [c.id, { id: c.id, title: c.title }]));
+
+    const resultsWithCompetencies = results.map(result => ({
+      ...result,
+      question: {
+        ...result.question,
+        competencies: result.question.competencyIds
+          ?.map(cid => competencyMap.get(cid))
+          .filter((c): c is { id: string; title: string } => c !== undefined),
+      },
+    }));
+
+    return NextResponse.json({ examId, topK, count: resultsWithCompetencies.length, results: resultsWithCompetencies }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error(`Search failed for exam ${examId}`, error);
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });

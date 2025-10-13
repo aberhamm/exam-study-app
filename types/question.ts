@@ -11,11 +11,16 @@ export type QuestionDocument = {
   explanationGeneratedByAI?: boolean;
   study?: StudyLink[];
   competencyIds?: string[];
+  competencies?: Array<{ id: string; title: string }>; // Populated at runtime in API responses, not stored in DB
   createdAt: Date;
   updatedAt: Date;
   embedding?: number[];
   embeddingModel?: string;
   embeddingUpdatedAt?: Date;
+  flaggedForReview?: boolean;
+  flaggedReason?: string;
+  flaggedAt?: Date;
+  flaggedBy?: string;
 };
 
 export type QuestionWithId = QuestionDocument;

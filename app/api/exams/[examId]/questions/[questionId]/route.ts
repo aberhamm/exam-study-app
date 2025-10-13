@@ -95,6 +95,20 @@ export async function PATCH(request: Request, context: RouteParams) {
       updatedAt: new Date(),
     };
 
+    // Support flagging fields if provided
+    if (payload.flaggedForReview !== undefined) {
+      updateDoc.flaggedForReview = payload.flaggedForReview;
+    }
+    if (payload.flaggedReason !== undefined) {
+      updateDoc.flaggedReason = payload.flaggedReason;
+    }
+    if (payload.flaggedAt !== undefined) {
+      updateDoc.flaggedAt = payload.flaggedAt;
+    }
+    if (payload.flaggedBy !== undefined) {
+      updateDoc.flaggedBy = payload.flaggedBy;
+    }
+
     const doc = await qCol.findOneAndUpdate(
       { _id: new ObjectId(questionId), examId },
       { $set: updateDoc },
@@ -149,6 +163,10 @@ export async function PATCH(request: Request, context: RouteParams) {
       explanation: doc.explanation,
       explanationGeneratedByAI: doc.explanationGeneratedByAI,
       study: doc.study,
+      flaggedForReview: doc.flaggedForReview,
+      flaggedReason: doc.flaggedReason,
+      flaggedAt: doc.flaggedAt,
+      flaggedBy: doc.flaggedBy,
     };
 
     return NextResponse.json(responseBody, { headers: { 'Cache-Control': 'no-store' } });
