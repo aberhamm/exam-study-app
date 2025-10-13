@@ -3,6 +3,7 @@ import type { CompetencyDocument } from '@/types/competency';
 import { getDb } from './mongodb';
 import { envConfig } from '@/lib/env-config';
 import { nanoid } from 'nanoid';
+import { buildCompetencyTextForEmbedding, generateEmbedding } from './embeddings';
 
 async function getCompetenciesCollection(): Promise<Collection<CompetencyDocument>> {
   const db = await getDb();
@@ -83,13 +84,6 @@ export async function updateCompetency(
   if (updates.description !== undefined) updateDoc.description = updates.description;
   if (updates.examPercentage !== undefined) updateDoc.examPercentage = updates.examPercentage;
 
-  // If title or description changed, clear embedding so it can be regenerated
-  if (updates.title !== undefined || updates.description !== undefined) {
-    updateDoc.embedding = undefined;
-    updateDoc.embeddingModel = undefined;
-    updateDoc.embeddingUpdatedAt = undefined;
-  }
-
   const result = await collection.findOneAndUpdate(
     { id: competencyId, examId },
     { $set: updateDoc },
@@ -98,6 +92,37 @@ export async function updateCompetency(
 
   if (!result) {
     return null;
+  }
+
+  // If title or description changed, automatically regenerate the embedding
+  if (updates.title !== undefined || updates.description !== undefined) {
+    try {
+      const embeddingText = buildCompetencyTextForEmbedding({
+        title: result.title,
+        description: result.description,
+      });
+      const embeddingData = await generateEmbedding(embeddingText);
+
+      // Update the competency with the new embedding
+      await collection.updateOne(
+        { id: competencyId, examId },
+        {
+          $set: {
+            embedding: embeddingData.embedding,
+            embeddingModel: embeddingData.embeddingModel,
+            embeddingUpdatedAt: embeddingData.embeddingUpdatedAt,
+          },
+        }
+      );
+
+      // Update the result object with the new embedding data
+      result.embedding = embeddingData.embedding;
+      result.embeddingModel = embeddingData.embeddingModel;
+      result.embeddingUpdatedAt = embeddingData.embeddingUpdatedAt;
+    } catch (embeddingError) {
+      // Log embedding error but don't fail the update
+      console.error(`Failed to regenerate embedding for competency ${competencyId}:`, embeddingError);
+    }
   }
 
   const { _id: _ignored, ...rest } = result as CompetencyDocument & { _id?: unknown };

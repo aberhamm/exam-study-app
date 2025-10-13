@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName } from '@/lib/server/mongodb';
 import type { ExternalQuestion } from '@/types/external-question';
 import { requireAdmin } from '@/lib/auth';
+import { buildQuestionTextForEmbedding, generateEmbedding } from '@/lib/server/embeddings';
 
 type RouteParams = {
   params: Promise<{ examId: string; questionId: string }>;
@@ -102,6 +103,40 @@ export async function PATCH(request: Request, context: RouteParams) {
 
     if (!doc) {
       return NextResponse.json({ error: 'Question not found' }, { status: 404 });
+    }
+
+    // Automatically regenerate embedding when question content changes
+    try {
+      const embeddingText = buildQuestionTextForEmbedding({
+        question: doc.question,
+        options: doc.options,
+        answer: doc.answer,
+        explanation: doc.explanation,
+      });
+      const embeddingData = await generateEmbedding(embeddingText);
+
+      // Update the question embedding in the separate embeddings collection
+      const embCol = db.collection(getQuestionEmbeddingsCollectionName());
+      await embCol.updateOne(
+        { questionId: new ObjectId(questionId) },
+        {
+          $set: {
+            embedding: embeddingData.embedding,
+            embeddingModel: embeddingData.embeddingModel,
+            embeddingUpdatedAt: embeddingData.embeddingUpdatedAt,
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            questionId: new ObjectId(questionId),
+            examId,
+            createdAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+    } catch (embeddingError) {
+      // Log embedding error but don't fail the update
+      console.error(`Failed to regenerate embedding for question ${questionId}:`, embeddingError);
     }
 
     // Return the updated question in external format
