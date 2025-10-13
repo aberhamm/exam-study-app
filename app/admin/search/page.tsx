@@ -380,17 +380,40 @@ export default function SearchDevPage() {
             {saveError}
           </div>
         )}
-        {searchType === 'questions' && questionResults.length === 0 && (
+        {submitting && (
+          <ul className="space-y-4">
+            {Array.from({ length: topK }).map((_, idx) => (
+              <li key={idx} className="rounded-md border border-border p-4 animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-32 bg-muted rounded" />
+                  <div className="h-4 w-24 bg-muted rounded" />
+                </div>
+                <div className="mt-2 h-5 w-3/4 bg-muted rounded" />
+                <div className="mt-2 space-y-2">
+                  <div className="h-4 w-full bg-muted rounded" />
+                  <div className="h-4 w-full bg-muted rounded" />
+                  <div className="h-4 w-full bg-muted rounded" />
+                  <div className="h-4 w-full bg-muted rounded" />
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="h-8 w-16 bg-muted rounded" />
+                  <div className="h-8 w-16 bg-muted rounded" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {!submitting && searchType === 'questions' && questionResults.length === 0 && (
           <p className="text-sm text-muted-foreground">
             No results yet. Submit a query to see matches.
           </p>
         )}
-        {searchType === 'documents' && documentResults.length === 0 && (
+        {!submitting && searchType === 'documents' && documentResults.length === 0 && (
           <p className="text-sm text-muted-foreground">
             No results yet. Submit a query to see matches.
           </p>
         )}
-        {searchType === 'questions' && questionResults.length > 0 && (
+        {!submitting && searchType === 'questions' && questionResults.length > 0 && (
           <ul className="space-y-4">
             {questionResults.map((item) => (
               <li key={item.question.id} className="rounded-md border border-border p-4">
@@ -431,7 +454,7 @@ export default function SearchDevPage() {
             ))}
           </ul>
         )}
-        {searchType === 'documents' && documentResults.length > 0 && (
+        {!submitting && searchType === 'documents' && documentResults.length > 0 && (
           <ul className="space-y-4">
             {documentResults.map((item, idx) => (
               <li key={`${item.document.sourceFile}-${item.document.chunkIndex}-${idx}`} className="rounded-md border border-border p-4">
