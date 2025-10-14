@@ -1,0 +1,1 @@
+- question can have many explanations, the newest is shown. the rest are for history. when a new explanation is added/generated, it gets set as the default explanation
