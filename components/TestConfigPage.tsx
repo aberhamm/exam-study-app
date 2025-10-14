@@ -18,7 +18,7 @@ import {
   saveTestSettings,
 } from '@/lib/test-settings';
 import type { NormalizedQuestion, ExamMetadata } from '@/types/normalized';
-import { getMissedQuestionIds, getAllQuestionMetrics } from '@/lib/question-metrics';
+import { getMissedQuestionIds, getAllQuestionMetrics, clearIncorrect } from '@/lib/question-metrics';
 import type { ExamStatsResponse } from '@/types/api';
 
 type StartTestOptions = {
@@ -43,6 +43,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [useCustomTimer, setUseCustomTimer] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
   const [missedQuestionIds, setMissedQuestionIds] = useState<string[]>([]);
+  const [missedThreshold, setMissedThreshold] = useState<number>(1);
   const [seenQuestionIds, setSeenQuestionIds] = useState<string[]>([]);
   const [starting, setStarting] = useState(false);
   const [competencies, setCompetencies] = useState<Array<{ id: string; title: string; questionCount?: number }>>([]);
@@ -102,7 +103,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
   // Load missed question IDs on mount and when returning to this page
   useEffect(() => {
-    const ids = getMissedQuestionIds();
+    const ids = getMissedQuestionIds(missedThreshold);
     setMissedQuestionIds(ids);
 
     // Load seen question IDs
@@ -115,7 +116,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     // Also refresh when the page becomes visible (user returns from exam)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        const updatedIds = getMissedQuestionIds();
+        const updatedIds = getMissedQuestionIds(missedThreshold);
         setMissedQuestionIds(updatedIds);
 
         const updatedMetrics = getAllQuestionMetrics();
@@ -128,7 +129,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [questions]);
+  }, [questions, missedThreshold]);
 
   // Fetch competencies for this exam
   useEffect(() => {
@@ -555,14 +556,49 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               </CardDescription>
             </CardHeader>
             <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
-              <Button
-                type="button"
-                onClick={handleStartMissedQuestions}
-                disabled={missedQuestionIds.length === 0 || starting}
-                className="w-full"
-              >
-                {starting ? 'Loading questions…' : 'Review missed questions'}
-              </Button>
+              <div className="w-full space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="missed-threshold" className="text-sm text-muted-foreground">
+                    Min incorrect
+                  </label>
+                  <input
+                    id="missed-threshold"
+                    type="number"
+                    min={1}
+                    value={missedThreshold}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value || '1', 10);
+                      setMissedThreshold(Number.isNaN(v) ? 1 : Math.max(1, v));
+                    }}
+                    className="w-24 rounded-lg border bg-background px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    aria-label="Minimum incorrect attempts required to include in review"
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    onClick={handleStartMissedQuestions}
+                    disabled={missedQuestionIds.length === 0 || starting}
+                    className="flex-1"
+                  >
+                    {starting ? 'Loading questions…' : 'Review missed questions'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      if (confirm('Reset missed counters? This will clear incorrect counts but keep seen/correct.')) {
+                        clearIncorrect();
+                        const refreshed = getMissedQuestionIds(missedThreshold);
+                        setMissedQuestionIds(refreshed);
+                      }
+                    }}
+                  >
+                    Reset missed
+                  </Button>
+                </div>
+              </div>
             </CardFooter>
           </Card>
 

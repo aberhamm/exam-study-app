@@ -860,6 +860,39 @@ export function QuizApp({
         timeElapsed={timeElapsed}
         incorrectAnswers={quizState.incorrectAnswers}
         onResetQuiz={resetQuiz}
+        onRetryIncorrect={() => {
+          const incorrectQuestions = quizState.incorrectAnswers.map((x) => x.question);
+          if (!incorrectQuestions || incorrectQuestions.length === 0) {
+            toast.info('No incorrect answers to retry.');
+            return;
+          }
+
+          // Start a fresh session with only the incorrect questions
+          const nextQuestions = shuffleArray(incorrectQuestions);
+
+          // Clear and persist a new exam state immediately
+          clearExamState();
+          const freshState = createExamState(nextQuestions, testSettings, examId, examTitle);
+          saveExamState(freshState);
+
+          // Reset local runtime state
+          setQuestions(nextQuestions);
+          seenQuestionsRef.current = new Set();
+          scoredQuestionsRef.current = new Set();
+          deletedExplanationsRef.current = new Set();
+          setTimeElapsed(0);
+          timeElapsedRef.current = 0;
+
+          setQuizState({
+            currentQuestionIndex: 0,
+            selectedAnswers: [],
+            showResult: false,
+            showFeedback: false,
+            score: 0,
+            incorrectAnswers: [],
+            timerRunning: true,
+          });
+        }}
         onGoHome={() => {
           persistEnabledRef.current = false;
           clearExamState();

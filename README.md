@@ -325,9 +325,10 @@ The endpoint validates each question, generates stable `id` values, and returns 
 
 ### Question Metrics Storage
 
-Every time you run a quiz, the client records per-question metrics (seen, correct, incorrect) in `localStorage` under `scxmcl-question-metrics`. This avoids extra database load and keeps progress tracking lightweight and local. Resetting the browser storage clears these counters.
+Every time you run a quiz, the client records per-question metrics (seen, correct, incorrect) in `localStorage` under `scxmcl-question-metrics`. This avoids extra database load and keeps progress tracking lightweight and local.
 
-On the main configuration page you can use these metrics to spin up a “Review missed questions” session, which builds a quiz from just the questions with one or more incorrect attempts.
+- Review missed: From the home screen, start a session composed of questions with at least N incorrect attempts (configurable threshold). You can also reset just the "missed" counters without wiping seen/correct.
+- Retry incorrect: After finishing a quiz, use the “Retry Incorrect (N)” button on the results screen to immediately drill into the items you got wrong in that session.
 
 ## Project Structure
 

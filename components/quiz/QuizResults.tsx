@@ -19,6 +19,7 @@ type Props = {
   incorrectAnswers: IncorrectAnswer[];
   onResetQuiz: () => void;
   onGoHome: () => void;
+  onRetryIncorrect?: () => void;
 };
 
 export function QuizResults({
@@ -28,6 +29,7 @@ export function QuizResults({
   incorrectAnswers,
   onResetQuiz,
   onGoHome,
+  onRetryIncorrect,
 }: Props) {
   const percentage = Math.round((score / totalQuestions) * 100);
   const timeElapsedMinutes = Math.floor(timeElapsed / 60);
@@ -49,6 +51,15 @@ export function QuizResults({
             <Button onClick={onResetQuiz} size="lg">
               Start New Quiz
             </Button>
+            {incorrectAnswers.length > 0 && (
+              <Button
+                onClick={() => onRetryIncorrect?.()}
+                variant="secondary"
+                size="lg"
+              >
+                Retry Incorrect ({incorrectAnswers.length})
+              </Button>
+            )}
             <Button
               onClick={onGoHome}
               variant="outline"
@@ -70,11 +81,16 @@ export function QuizResults({
 
                 <div className="space-y-2 mb-4">
                   {question.choices.map((choice, choiceIndex) => {
-                    let isCorrect = false;
-                    let isSelected = false;
+                    // Support both single and multiple-select display
+                    const correctSet = new Set(
+                      Array.isArray(correctIndex) ? correctIndex : [correctIndex]
+                    );
+                    const selectedSet = new Set(
+                      Array.isArray(selectedIndex) ? selectedIndex : [selectedIndex]
+                    );
 
-                    isCorrect = choiceIndex === correctIndex;
-                    isSelected = choiceIndex === selectedIndex;
+                    const isCorrect = correctSet.has(choiceIndex);
+                    const isSelected = selectedSet.has(choiceIndex);
 
                     return (
                       <div
@@ -99,6 +115,12 @@ export function QuizResults({
                         {isSelected && !isCorrect && (
                           <span className="ml-2 text-red-600 dark:text-red-400 font-semibold">
                             ✗ Your answer
+                          </span>
+                        )}
+                        {/* Indicate missed-correct for multi-select when not chosen */}
+                        {Array.isArray(correctIndex) && isCorrect && !isSelected && (
+                          <span className="ml-2 text-green-700/70 dark:text-green-300/80">
+                            (not selected)
                           </span>
                         )}
                       </div>

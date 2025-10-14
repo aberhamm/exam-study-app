@@ -5,6 +5,7 @@ import {
   getAllQuestionMetrics,
   resetQuestionMetrics,
   getMissedQuestionIds,
+  clearIncorrect,
 } from '@/lib/question-metrics';
 
 describe('question-metrics', () => {
@@ -302,6 +303,29 @@ describe('question-metrics', () => {
 
       expect(missed.length).toBeGreaterThan(0);
       // Should include all questions with any tracking
+    });
+  });
+
+  describe('clearIncorrect', () => {
+    beforeEach(() => {
+      recordQuestionResult('a', 'incorrect');
+      recordQuestionResult('a', 'incorrect');
+      recordQuestionResult('b', 'correct');
+      recordQuestionResult('b', 'incorrect');
+      recordQuestionSeen('c');
+    });
+
+    it('clears incorrect for a specific question only', () => {
+      clearIncorrect('a');
+      expect(getQuestionMetrics('a')).toEqual({ seen: 0, correct: 0, incorrect: 0 });
+      expect(getQuestionMetrics('b')).toEqual({ seen: 0, correct: 1, incorrect: 1 });
+    });
+
+    it('clears incorrect for all questions and preserves seen/correct', () => {
+      clearIncorrect();
+      expect(getQuestionMetrics('a')).toEqual({ seen: 0, correct: 0, incorrect: 0 });
+      expect(getQuestionMetrics('b')).toEqual({ seen: 0, correct: 1, incorrect: 0 });
+      expect(getQuestionMetrics('c')).toEqual({ seen: 1, correct: 0, incorrect: 0 });
     });
   });
 

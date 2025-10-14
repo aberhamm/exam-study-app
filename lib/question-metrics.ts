@@ -112,3 +112,22 @@ export function getMissedQuestionIds(minIncorrect: number = 1): string[] {
     .filter(([, metrics]) => metrics.incorrect >= minIncorrect)
     .map(([questionId]) => questionId);
 }
+
+// Clear only the 'incorrect' counters while preserving 'seen' and 'correct'
+export function clearIncorrect(questionId?: string): void {
+  if (!isBrowser()) return;
+
+  const state = readState();
+
+  if (questionId) {
+    const metrics = ensureMetrics(state, questionId);
+    metrics.incorrect = 0;
+    writeState(state);
+    return;
+  }
+
+  for (const id of Object.keys(state)) {
+    state[id].incorrect = 0;
+  }
+  writeState(state);
+}

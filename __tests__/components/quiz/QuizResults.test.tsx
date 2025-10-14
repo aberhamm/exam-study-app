@@ -28,6 +28,7 @@ describe('QuizResults', () => {
     incorrectAnswers: [],
     onResetQuiz: mockOnResetQuiz,
     onGoHome: mockOnGoHome,
+    onRetryIncorrect: jest.fn(),
   }
 
   beforeEach(() => {
@@ -96,6 +97,7 @@ describe('QuizResults', () => {
       render(<QuizResults {...defaultProps} incorrectAnswers={incorrectAnswers} />)
 
       expect(screen.getByText('Review Incorrect Answers')).toBeInTheDocument()
+      expect(screen.getByText('Retry Incorrect (1)')).toBeInTheDocument()
     })
 
     it('displays incorrect answer details correctly', () => {
@@ -153,6 +155,27 @@ describe('QuizResults', () => {
       render(<QuizResults {...defaultProps} incorrectAnswers={[incorrectAnswer]} />)
 
       expect(screen.getByTestId('study-panel')).toBeInTheDocument()
+    })
+
+    it('renders multi-select correctness and missed-correct indicators', () => {
+      const incorrectAnswer = createMockIncorrectAnswer({
+        question: {
+          id: 'multi-1',
+          prompt: 'Select all correct options',
+          choices: ['A1', 'B2', 'C3', 'D4'],
+          answerIndex: [1, 3],
+          questionType: 'multiple',
+        },
+        selectedIndex: [1], // Missed index 3
+        correctIndex: [1, 3],
+      })
+
+      render(<QuizResults {...defaultProps} incorrectAnswers={[incorrectAnswer]} />)
+
+      // Correct selected should show ✓ Correct
+      expect(screen.getAllByText('✓ Correct').length).toBeGreaterThan(0)
+      // Missed correct (not selected) should be indicated
+      expect(screen.getAllByText('(not selected)').length).toBeGreaterThan(0)
     })
   })
 })
