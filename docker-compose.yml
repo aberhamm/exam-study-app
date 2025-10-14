@@ -15,10 +15,6 @@ services:
       # MongoDB connection (external)
       MONGODB_URI: ${MONGODB_URI}
       MONGODB_DB: ${MONGODB_DB:-study-util}
-      MONGODB_EXAMS_COLLECTION: ${MONGODB_EXAMS_COLLECTION:-exams}
-      MONGODB_QUESTIONS_COLLECTION: ${MONGODB_QUESTIONS_COLLECTION:-questions}
-      MONGODB_QUESTION_EMBEDDINGS_COLLECTION: ${MONGODB_QUESTION_EMBEDDINGS_COLLECTION:-question_embeddings}
-      MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX: ${MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX:-vector_index}
 
       # OpenAI API (for embeddings)
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -33,6 +29,23 @@ services:
       AUTH_SECRET: ${AUTH_SECRET}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+
+      # Session Configuration
+      SESSION_MAX_AGE: ${SESSION_MAX_AGE:-28800}
+      SESSION_UPDATE_AGE: ${SESSION_UPDATE_AGE:-3600}
+
+      # Feature Flags
+      DEBUG_RETRIEVAL: ${DEBUG_RETRIEVAL:-}
+
+      # Advanced Configuration
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
+      CANDIDATE_MULTIPLIER: ${CANDIDATE_MULTIPLIER:-10}
+      MAX_CANDIDATES: ${MAX_CANDIDATES:-100}
+      MAX_CONTEXT_CHUNKS: ${MAX_CONTEXT_CHUNKS:-4}
+      MAX_CHUNK_CHARS: ${MAX_CHUNK_CHARS:-1500}
+      API_TIMEOUT_MS: ${API_TIMEOUT_MS:-30000}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/db-status', (r) => {let d='';r.on('data',c=>d+=c);r.on('end',()=>{try{const j=JSON.parse(d);process.exit(j.connected?0:1)}catch(e){process.exit(1)}}})"]
       interval: 30s
