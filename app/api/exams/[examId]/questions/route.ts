@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb, getQuestionsCollectionName } from '@/lib/server/mongodb';
 import type { QuestionDocument } from '@/types/question';
+import type { WithId } from 'mongodb';
 import { fetchCompetenciesByExamId } from '@/lib/server/competencies';
 import type { ExplanationSource } from '@/types/explanation';
 
@@ -28,11 +29,12 @@ export async function GET(request: Request, context: RouteParams) {
     const filter: Record<string, unknown> = { examId };
 
     // Filter by specific question IDs if provided
+    let parsedIds: string[] | null = null;
     if (idsParam) {
       try {
-        const ids = JSON.parse(decodeURIComponent(idsParam)) as string[];
+        parsedIds = JSON.parse(decodeURIComponent(idsParam)) as string[];
         const { ObjectId } = await import('mongodb');
-        filter._id = { $in: ids.map(id => new ObjectId(id)) };
+        filter._id = { $in: parsedIds.map(id => new ObjectId(id)) };
       } catch (e) {
         console.error('Failed to parse ids parameter:', e);
       }
@@ -46,34 +48,44 @@ export async function GET(request: Request, context: RouteParams) {
       filter.flaggedForReview = true;
     }
 
-    // Get total count for pagination metadata
-    const total = await col.countDocuments(filter);
+    // Build projection once for reuse
+    const projection = {
+      _id: 1,
+      examId: 1,
+      question: 1,
+      options: 1,
+      answer: 1,
+      question_type: 1,
+      explanation: 1,
+      explanationGeneratedByAI: 1,
+      explanationSources: 1,
+      competencyIds: 1,
+      createdAt: 1,
+      updatedAt: 1,
+      flaggedForReview: 1,
+      flaggedReason: 1,
+      flaggedAt: 1,
+      flaggedBy: 1,
+    } as const;
 
-    const docs = await col
-      .find(filter, {
-        projection: {
-          _id: 1,
-          examId: 1,
-          question: 1,
-          options: 1,
-          answer: 1,
-          question_type: 1,
-          explanation: 1,
-          explanationGeneratedByAI: 1,
-          explanationSources: 1,
-          competencyIds: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          flaggedForReview: 1,
-          flaggedReason: 1,
-          flaggedAt: 1,
-          flaggedBy: 1,
-        },
-      })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(validLimit)
-      .toArray();
+    let docs: WithId<QuestionDocument>[];
+    let total = 0;
+
+    if (parsedIds && parsedIds.length > 0) {
+      // When fetching by specific IDs, return all matches without pagination
+      docs = await col
+        .find(filter, { projection })
+        .toArray();
+    } else {
+      // Paginated fetch for general queries
+      total = await col.countDocuments(filter);
+      docs = await col
+        .find(filter, { projection })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(validLimit)
+        .toArray();
+    }
 
     // Fetch competencies for this exam to populate on questions
     const competencies = await fetchCompetenciesByExamId(examId);
@@ -103,7 +115,7 @@ export async function GET(request: Request, context: RouteParams) {
     }));
 
     // When fetching specific IDs, return questions directly without pagination
-    if (idsParam) {
+    if (parsedIds) {
       return NextResponse.json(questions, { headers: { 'Cache-Control': 'no-store' } });
     }
 
