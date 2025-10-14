@@ -121,6 +121,7 @@ async function main() {
               answer: q.answer,
               question_type: q.question_type,
               explanation: q.explanation,
+              explanationSources: (q as { explanationSources?: unknown }).explanationSources,
               study: q.study,
               createdAt: now,
               updatedAt: now,

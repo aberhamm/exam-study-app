@@ -73,6 +73,7 @@ async function main() {
                 examId,
                 createdAt: now,
                 explanation: q.explanation, // set only when inserting new docs
+                explanationSources: (q as { explanationSources?: unknown }).explanationSources,
               },
               $set: {
                 question: q.question,

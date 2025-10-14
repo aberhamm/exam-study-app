@@ -186,17 +186,33 @@ async function main() {
               doc.embedding
             );
 
-            // Update the question with the explanation
-            await qCol.updateOne(
-              { _id: new ObjectId(questionId) },
-              {
-                $set: {
-                  explanation: result.explanation,
-                  explanationGeneratedByAI: true,
-                  updatedAt: new Date()
-                }
-              }
-            );
+            // Update the question with the explanation and sources
+            const now = new Date();
+            const updateOps: Record<string, unknown> = {
+              $set: {
+                explanation: result.explanation,
+                explanationGeneratedByAI: true,
+                explanationSources: result.sources,
+                updatedAt: now,
+              },
+            };
+
+            // If recomputing and an explanation existed, append history before replacing
+            if (recompute && typeof doc.explanation === 'string' && doc.explanation.trim().length > 0) {
+              (updateOps as { $push?: Record<string, unknown> }).$push = {
+                explanationHistory: {
+                  id: new ObjectId().toString(),
+                  savedAt: now,
+                  savedBy: null, // script context; no user
+                  aiGenerated: doc.explanationGeneratedByAI,
+                  reason: 'recompute',
+                  explanation: doc.explanation,
+                  sources: (doc as { explanationSources?: unknown }).explanationSources,
+                },
+              };
+            }
+
+            await qCol.updateOne({ _id: new ObjectId(questionId) }, updateOps);
 
             console.log(`  ✓ Success for ${questionId} (${result.explanation.length} chars, ${result.sources.length} sources)`);
 
