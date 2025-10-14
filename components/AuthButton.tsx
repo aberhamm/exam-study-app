@@ -1,11 +1,12 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut, Shield } from 'lucide-react';
 
-export function AuthButton() {
+function AuthButtonInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -68,5 +69,13 @@ export function AuthButton() {
       <LogIn className="h-4 w-4 mr-2" />
       Admin Login
     </Button>
+  );
+}
+
+export function AuthButton() {
+  return (
+    <Suspense fallback={null}>
+      <AuthButtonInner />
+    </Suspense>
   );
 }

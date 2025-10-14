@@ -21,6 +21,13 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
+  // Override rules for plain JS files (e.g., Jest mocks)
+  {
+    files: ["**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

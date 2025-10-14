@@ -435,12 +435,13 @@ export function QuizApp({
         // Remove from deleted list since explanation was auto-generated and saved
         deletedExplanationsRef.current.delete(currentQuestion.id);
 
-        const updatedQuestions = questions.map(q =>
-          q.id === currentQuestion.id
-            ? { ...q, explanation: data.explanation, explanationGeneratedByAI: true }
-            : q
+        setQuestions((prev) =>
+          prev.map((q) =>
+            q.id === currentQuestion.id
+              ? { ...q, explanation: data.explanation, explanationGeneratedByAI: true }
+              : q
+          )
         );
-        setQuestions(updatedQuestions);
         setAiExplanation(null); // Clear AI explanation since it's now the default
         toast.success('Explanation generated and saved!');
       } else {
@@ -456,7 +457,7 @@ export function QuizApp({
     } finally {
       setIsGeneratingExplanation(false);
     }
-  }, [currentQuestion, examId, questions]);
+  }, [currentQuestion, examId]);
 
   const saveExplanation = useCallback(async () => {
     if (!currentQuestion || !examId || !aiExplanation) return;
@@ -489,12 +490,13 @@ export function QuizApp({
       deletedExplanationsRef.current.delete(currentQuestion.id);
 
       // Update the current question with the explanation and AI flag
-      const updatedQuestions = questions.map(q =>
-        q.id === currentQuestion.id
-          ? { ...q, explanation: aiExplanation, explanationGeneratedByAI: true }
-          : q
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === currentQuestion.id
+            ? { ...q, explanation: aiExplanation, explanationGeneratedByAI: true }
+            : q
+        )
       );
-      setQuestions(updatedQuestions);
 
       // Clear AI explanation state since it's now the default
       setAiExplanation(null);
@@ -508,7 +510,7 @@ export function QuizApp({
     } finally {
       setIsSavingExplanation(false);
     }
-  }, [currentQuestion, examId, aiExplanation, questions]);
+  }, [currentQuestion, examId, aiExplanation]);
 
   const deleteExplanation = useCallback(async () => {
     if (!currentQuestion || !examId) return;
@@ -535,12 +537,13 @@ export function QuizApp({
       deletedExplanationsRef.current.add(currentQuestion.id);
 
       // Update the questions state to remove the explanation
-      const updatedQuestions = questions.map(q =>
-        q.id === currentQuestion.id
-          ? { ...q, explanation: undefined, explanationGeneratedByAI: undefined }
-          : q
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === currentQuestion.id
+            ? { ...q, explanation: undefined, explanationGeneratedByAI: undefined }
+            : q
+        )
       );
-      setQuestions(updatedQuestions);
 
       toast.success('Explanation deleted successfully!');
 
@@ -551,7 +554,7 @@ export function QuizApp({
     } finally {
       setIsDeletingExplanation(false);
     }
-  }, [currentQuestion, examId, questions]);
+  }, [currentQuestion, examId]);
 
   // Auto-generate explanation when user selects an answer and question doesn't have one
   useEffect(() => {
@@ -702,7 +705,7 @@ export function QuizApp({
     } finally {
       setIsFlaggingQuestion(false);
     }
-  }, [currentQuestion, examId, questions]);
+  }, [currentQuestion, examId]);
 
   const handleUnflagQuestion = useCallback(async () => {
     if (!currentQuestion || !examId) return;
@@ -755,7 +758,7 @@ export function QuizApp({
     } finally {
       setIsFlaggingQuestion(false);
     }
-  }, [currentQuestion, examId, questions]);
+  }, [currentQuestion, examId]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

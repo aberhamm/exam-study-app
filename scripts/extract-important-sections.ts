@@ -13,7 +13,7 @@ import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
 import path from 'node:path';
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 
 const DOCS_DIR = path.resolve(process.cwd(), 'data-pipelines/data/markdown-to-embeddings/output');
 const OUTPUT_FILE = path.resolve(process.cwd(), 'data/important-sections.json');
@@ -261,6 +261,7 @@ async function main() {
 
   // Ensure output directory exists
   const outputDir = path.dirname(OUTPUT_FILE);
+  await mkdir(outputDir, { recursive: true });
   await writeFile(OUTPUT_FILE, JSON.stringify(allSections, null, 2), 'utf-8');
 
   console.log(`\nSaved to ${OUTPUT_FILE}`);

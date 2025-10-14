@@ -78,45 +78,43 @@ export function QuestionCard({
                     Edit Question
                   </Button>
                 )}
-                {question.flaggedForReview ? (
-                  onUnflagQuestion && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onUnflagQuestion}
-                      disabled={isFlaggingQuestion}
-                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:text-orange-300 dark:hover:bg-orange-950/50"
-                      title={question.flaggedReason || 'Flagged for review'}
-                    >
-                      {isFlaggingQuestion ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <FlagOff className="h-4 w-4 mr-1" />
-                          Unflag
-                        </>
-                      )}
-                    </Button>
-                  )
-                ) : (
-                  onFlagQuestion && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onFlagQuestion}
-                      disabled={isFlaggingQuestion}
-                    >
-                      {isFlaggingQuestion ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Flag className="h-4 w-4 mr-1" />
-                          Flag
-                        </>
-                      )}
-                    </Button>
-                  )
-                )}
+                {question.flaggedForReview
+                  ? onUnflagQuestion && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onUnflagQuestion}
+                        disabled={isFlaggingQuestion}
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:text-orange-300 dark:hover:bg-orange-950/50"
+                        title={question.flaggedReason || 'Flagged for review'}
+                      >
+                        {isFlaggingQuestion ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <FlagOff className="h-4 w-4 mr-1" />
+                            Unflag
+                          </>
+                        )}
+                      </Button>
+                    )
+                  : onFlagQuestion && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onFlagQuestion}
+                        disabled={isFlaggingQuestion}
+                      >
+                        {isFlaggingQuestion ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Flag className="h-4 w-4 mr-1" />
+                            Flag
+                          </>
+                        )}
+                      </Button>
+                    )}
               </div>
             )}
             {showFeedback && (
@@ -230,7 +228,7 @@ export function QuestionCard({
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{String.fromCharCode(65 + index)}.</span>
+                  <span className="font-medium self-start">{String.fromCharCode(65 + index)}.</span>
                   <span>{choice}</span>
                 </div>
                 {question.questionType === 'multiple' && (

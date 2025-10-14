@@ -13,6 +13,10 @@ export type DocumentChunk = {
   sectionPath?: string;
   nearestHeading?: string;
   score: number;
+  // Optional positional metadata for smarter reconstruction
+  chunkIndex?: number;
+  startIndex?: number;
+  endIndex?: number;
 };
 
 export type ExplanationResult = {
@@ -182,8 +186,24 @@ async function searchDocumentChunks(
     const ids = vectorResults.map((r) => r._id);
     const scoreMap = new Map(vectorResults.map((r) => [String(r._id), r.score]));
 
-    const documents = await embeddingsCol
-      .find({ _id: { $in: ids } } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+    type DocProjection = {
+      _id: unknown;
+      text?: string;
+      url?: string;
+      title?: string;
+      description?: string;
+      sourceFile?: string;
+      sourceBasename?: string;
+      sectionPath?: string;
+      nearestHeading?: string;
+      chunkIndex?: number;
+      chunkTotal?: number;
+      startIndex?: number;
+      endIndex?: number;
+    };
+
+    const documents = (await embeddingsCol
+      .find({ _id: { $in: ids } } as unknown as Record<string, unknown>)
       .project({
         _id: 1,
         text: 1,
@@ -194,8 +214,12 @@ async function searchDocumentChunks(
         sourceBasename: 1,
         sectionPath: 1,
         nearestHeading: 1,
+        chunkIndex: 1,
+        chunkTotal: 1,
+        startIndex: 1,
+        endIndex: 1,
       })
-      .toArray();
+      .toArray()) as DocProjection[];
 
     // Map results with scores
     const results = documents.map((doc) => ({
@@ -206,6 +230,9 @@ async function searchDocumentChunks(
       sectionPath: doc.sectionPath,
       nearestHeading: doc.nearestHeading,
       score: scoreMap.get(String(doc._id)) || 0,
+      chunkIndex: doc.chunkIndex,
+      startIndex: doc.startIndex,
+      endIndex: doc.endIndex,
     }));
 
     // Reset circuit breaker on success
@@ -239,34 +266,105 @@ async function searchDocumentChunks(
   }
 }
 
-function deduplicateAndClampChunks(chunks: DocumentChunk[]): DocumentChunk[] {
-  const maxChunks = envConfig.pipeline.maxContextChunks;
+/**
+ * Rebuild full documents from retrieved chunks, grouped by source file.
+ * - Sorts by startIndex (or chunkIndex) to ensure correct order
+ * - Merges overlapping text regions using original indices
+ * - Clamps each rebuilt document to maxChunkChars
+ * - Returns top N documents by max chunk score in each group
+ */
+function rebuildDocumentsFromChunks(chunks: DocumentChunk[]): DocumentChunk[] {
+  if (!chunks || chunks.length === 0) return [];
+
+  const maxDocs = envConfig.pipeline.maxContextChunks;
   const maxChars = envConfig.pipeline.maxChunkChars;
 
-  // Deduplicate by (sourceFile, url)
-  const seen = new Set<string>();
-  const unique: DocumentChunk[] = [];
-
-  for (const chunk of chunks) {
-    const key = `${chunk.sourceFile}::${chunk.url || ''}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-
-      // Clamp text length
-      const clampedChunk = {
-        ...chunk,
-        text: chunk.text.length > maxChars ? chunk.text.substring(0, maxChars) + '...' : chunk.text,
-      };
-
-      unique.push(clampedChunk);
-
-      if (unique.length >= maxChunks) {
-        break;
-      }
-    }
+  // Group chunks by sourceFile
+  const bySource = new Map<string, DocumentChunk[]>();
+  for (const c of chunks) {
+    const key = c.sourceFile || 'unknown';
+    const arr = bySource.get(key) || [];
+    arr.push(c);
+    bySource.set(key, arr);
   }
 
-  return unique;
+  // For each group, sort and merge
+  const rebuilt: DocumentChunk[] = [];
+
+  for (const [sourceFile, group] of bySource.entries()) {
+    // Use the highest scoring chunk for metadata
+    const top = group.reduce((a, b) => (a.score >= b.score ? a : b));
+
+    // Sort by startIndex, then chunkIndex as fallback
+    const sorted = [...group].sort((a, b) => {
+      const aHasStart = typeof a.startIndex === 'number';
+      const bHasStart = typeof b.startIndex === 'number';
+      if (aHasStart && bHasStart) return (a.startIndex as number) - (b.startIndex as number);
+      if (aHasStart) return -1;
+      if (bHasStart) return 1;
+      // Fallback to chunkIndex if available
+      const ai = typeof a.chunkIndex === 'number' ? (a.chunkIndex as number) : Number.MAX_SAFE_INTEGER;
+      const bi = typeof b.chunkIndex === 'number' ? (b.chunkIndex as number) : Number.MAX_SAFE_INTEGER;
+      return ai - bi;
+    });
+
+    // Merge text with overlap handling using start/end indices
+    let merged = '';
+    let currentEnd = -1;
+
+    for (const ch of sorted) {
+      const text = ch.text || '';
+      const hasPos = typeof ch.startIndex === 'number' && typeof ch.endIndex === 'number';
+
+      if (!hasPos) {
+        // No positional data; append with a separator if needed
+        merged += (merged ? '\n\n' : '') + text;
+        continue;
+      }
+
+      const start = ch.startIndex as number;
+      const end = ch.endIndex as number;
+
+      if (merged.length === 0) {
+        merged = text;
+        currentEnd = end;
+      } else {
+        if (start <= currentEnd) {
+          // Overlap: compute overlap length within current text
+          const overlap = Math.max(0, currentEnd - start + 1);
+          const suffix = overlap > 0 ? text.slice(overlap) : text;
+          merged += suffix;
+          currentEnd = Math.max(currentEnd, end);
+        } else {
+          // Gap: add minimal separator
+          merged += '\n\n' + text;
+          currentEnd = end;
+        }
+      }
+
+      // Optional early clamp to avoid excessive growth
+      if (merged.length > maxChars * 1.5) {
+        merged = merged.slice(0, Math.ceil(maxChars * 1.5));
+      }
+    }
+
+    // Final clamp per document
+    if (merged.length > maxChars) {
+      merged = merged.slice(0, maxChars) + '...';
+    }
+
+    rebuilt.push({
+      text: merged,
+      url: top.url,
+      title: top.title,
+      sourceFile,
+      score: top.score,
+    });
+  }
+
+  // Sort rebuilt docs by score desc and keep top N
+  rebuilt.sort((a, b) => b.score - a.score);
+  return rebuilt.slice(0, maxDocs);
 }
 
 async function generateExplanationWithLLM(
@@ -294,7 +392,7 @@ async function generateExplanationWithLLM(
           question.choices[question.answerIndex]
         }`;
 
-    // Prepare context from document chunks with citation IDs
+    // Prepare context from rebuilt document sections with citation IDs
     const contextSections = documentChunks
       .map((chunk, index) => {
         const header = chunk.nearestHeading || chunk.sectionPath || 'Documentation';
@@ -503,8 +601,8 @@ export async function generateQuestionExplanation(
       }
     }
 
-    // Deduplicate and clamp chunks (now sorted by relevance)
-    const processedChunks = deduplicateAndClampChunks(allChunks);
+    // Rebuild full documents from retrieved chunks grouped by source file
+    const processedChunks = rebuildDocumentsFromChunks(allChunks);
 
     if (featureFlags.debugRetrieval) {
       console.info(
@@ -515,7 +613,7 @@ export async function generateQuestionExplanation(
     // Generate explanation using LLM
     const explanation = await generateExplanationWithLLM(question, processedChunks);
 
-    // Extract unique sources
+    // Extract sources at document level
     const sources = processedChunks.map((chunk) => ({
       url: chunk.url,
       title: chunk.title,

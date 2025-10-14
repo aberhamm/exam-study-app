@@ -16,7 +16,7 @@ class MongoClient {
     return;
   }
 
-  db(name) {
+  db() {
     return {
       collection: jest.fn(),
     };
