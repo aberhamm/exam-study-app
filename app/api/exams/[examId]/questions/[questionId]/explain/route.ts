@@ -81,6 +81,7 @@ export async function POST(request: Request, context: RouteParams) {
           ...questionDoc,
           explanation: result.explanation,
           explanationGeneratedByAI: true,
+          explanationSources: result.sources,
         };
         await updateQuestion(examId, questionId, updatedQuestion);
         savedAsDefault = true;

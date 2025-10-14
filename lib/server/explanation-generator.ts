@@ -303,8 +303,10 @@ function rebuildDocumentsFromChunks(chunks: DocumentChunk[]): DocumentChunk[] {
       if (aHasStart) return -1;
       if (bHasStart) return 1;
       // Fallback to chunkIndex if available
-      const ai = typeof a.chunkIndex === 'number' ? (a.chunkIndex as number) : Number.MAX_SAFE_INTEGER;
-      const bi = typeof b.chunkIndex === 'number' ? (b.chunkIndex as number) : Number.MAX_SAFE_INTEGER;
+      const ai =
+        typeof a.chunkIndex === 'number' ? (a.chunkIndex as number) : Number.MAX_SAFE_INTEGER;
+      const bi =
+        typeof b.chunkIndex === 'number' ? (b.chunkIndex as number) : Number.MAX_SAFE_INTEGER;
       return ai - bi;
     });
 
@@ -446,18 +448,6 @@ FORMAT
 - If the excerpt did not help, do not cite it.
 - If the answer is justified by common knowledge, do not cite any excerpts.
 - If the answer is ambiguous, explain why the other possibly likely answers are wrong without citing excerpts.
-
-
-SOURCES SECTION FORMAT:
-- Use at least one source if you cited any excerpts.
-- Multiple sources are OK if they add value.
-- List each source only once, even if cited multiple times.
-- End your explanation with:
-
-_Sources:_
-- [Source Title | Website Name](URL)
-- [Another Source Title | Website Name](URL)
-- (etc)
 `;
 
     const userPrompt = `Question:

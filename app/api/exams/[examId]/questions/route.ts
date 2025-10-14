@@ -59,6 +59,7 @@ export async function GET(request: Request, context: RouteParams) {
           question_type: 1,
           explanation: 1,
           explanationGeneratedByAI: 1,
+          explanationSources: 1,
           competencyIds: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -87,6 +88,7 @@ export async function GET(request: Request, context: RouteParams) {
       question_type: doc.question_type,
       explanation: doc.explanation,
       explanationGeneratedByAI: doc.explanationGeneratedByAI,
+      explanationSources: (doc as unknown as { explanationSources?: unknown }).explanationSources as unknown,
       competencyIds: doc.competencyIds,
       competencies: doc.competencyIds
         ?.map(cid => competencyMap.get(cid))

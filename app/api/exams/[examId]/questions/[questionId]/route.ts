@@ -4,6 +4,7 @@ import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName 
 import type { ExternalQuestion } from '@/types/external-question';
 import { requireAdmin } from '@/lib/auth';
 import { buildQuestionTextForEmbedding, generateEmbedding } from '@/lib/server/embeddings';
+import type { ExplanationVersion } from '@/types/explanation';
 
 type RouteParams = {
   params: Promise<{ examId: string; questionId: string }>;
@@ -14,8 +15,10 @@ export async function DELETE(_request: Request, context: RouteParams) {
   let questionId = 'unknown';
   try {
     // Require admin authentication
+    let adminUser: { id: string; username: string } | null = null;
     try {
-      await requireAdmin();
+      const user = await requireAdmin();
+      adminUser = { id: user.id, username: user.username };
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Forbidden' },
@@ -53,8 +56,10 @@ export async function PATCH(request: Request, context: RouteParams) {
   let questionId = 'unknown';
   try {
     // Require admin authentication
+    let adminUser: { id: string; username: string } | null = null;
     try {
-      await requireAdmin();
+      const user = await requireAdmin();
+      adminUser = { id: user.id, username: user.username };
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Forbidden' },
@@ -91,6 +96,7 @@ export async function PATCH(request: Request, context: RouteParams) {
       question_type: payload.question_type ?? 'single',
       explanation: payload.explanation,
       explanationGeneratedByAI: payload.explanationGeneratedByAI,
+      explanationSources: payload.explanationSources,
       study: payload.study,
       updatedAt: new Date(),
     };
@@ -109,9 +115,36 @@ export async function PATCH(request: Request, context: RouteParams) {
       updateDoc.flaggedBy = payload.flaggedBy;
     }
 
+    // Load current doc to capture previous explanation for history
+    const existing = await qCol.findOne({ _id: new ObjectId(questionId), examId });
+
+    // Build update operations with optional history push
+    const now = new Date();
+    const updateOps: Record<string, unknown> = { $set: updateDoc };
+
+    if (existing && typeof existing.explanation === 'string') {
+      const incomingExplanation = typeof payload.explanation === 'string' ? payload.explanation : undefined;
+      const prevExplanation = existing.explanation as string | undefined;
+      if ((incomingExplanation ?? '').trim() !== (prevExplanation ?? '').trim()) {
+        const historyItem: ExplanationVersion = {
+          id: new ObjectId().toString(),
+          savedAt: now,
+          savedBy: adminUser,
+          aiGenerated: existing.explanationGeneratedByAI as boolean | undefined,
+          reason: 'edit',
+          explanation: prevExplanation || '',
+          sources: (existing as { explanationSources?: unknown }).explanationSources as ExplanationVersion['sources'],
+        };
+        (updateOps as { $push?: Record<string, unknown> }).$push = {
+          ...(updateOps as { $push?: Record<string, unknown> }).$push,
+          explanationHistory: historyItem,
+        };
+      }
+    }
+
     const doc = await qCol.findOneAndUpdate(
       { _id: new ObjectId(questionId), examId },
-      { $set: updateDoc },
+      updateOps,
       { returnDocument: 'after' }
     );
 
@@ -154,7 +187,7 @@ export async function PATCH(request: Request, context: RouteParams) {
     }
 
     // Return the updated question in external format
-    const responseBody: ExternalQuestion & { id: string } = {
+  const responseBody: ExternalQuestion & { id: string } = {
       id: doc._id.toString(),
       question: doc.question,
       options: doc.options,
@@ -162,6 +195,7 @@ export async function PATCH(request: Request, context: RouteParams) {
       question_type: doc.question_type,
       explanation: doc.explanation,
       explanationGeneratedByAI: doc.explanationGeneratedByAI,
+      explanationSources: (doc as unknown as { explanationSources?: unknown }).explanationSources as unknown,
       study: doc.study,
       flaggedForReview: doc.flaggedForReview,
       flaggedReason: doc.flaggedReason,

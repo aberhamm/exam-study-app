@@ -1,5 +1,6 @@
 // src/types/external-question.ts
 import type { WelcomeConfig } from './normalized';
+import type { ExplanationSource } from './explanation';
 
 export type StudyLink = {
   chunkId: string;
@@ -16,6 +17,7 @@ export type ExternalQuestion = {
   question_type?: 'single' | 'multiple';
   explanation?: string;
   explanationGeneratedByAI?: boolean;
+  explanationSources?: ExplanationSource[];
   study?: StudyLink[];
   competencyIds?: string[];
   competencies?: Array<{ id: string; title: string }>;

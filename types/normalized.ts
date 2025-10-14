@@ -7,6 +7,7 @@ export type NormalizedQuestion = {
   questionType: 'single' | 'multiple';
   explanation?: string;
   explanationGeneratedByAI?: boolean;
+  explanationSources?: { url?: string; title?: string; sourceFile: string; sectionPath?: string }[];
   study?: { chunkId: string; url?: string; anchor?: string; excerpt?: string }[];
   competencyIds?: string[];
   competencies?: Array<{ id: string; title: string }>;

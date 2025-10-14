@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StudyPanel } from '@/components/StudyPanel';
 import { MarkdownContent } from '@/components/ui/markdown';
+import { ExplanationSources as ExplanationSourcesList } from '@/components/ExplanationSources';
 import type { NormalizedQuestion } from '@/types/normalized';
 import { useSession } from 'next-auth/react';
 import { Sparkles, Save, Loader2, Trash2, Flag, FlagOff } from 'lucide-react';
@@ -31,6 +32,8 @@ type Props = {
   isSavingExplanation?: boolean;
   isDeletingExplanation?: boolean;
   aiExplanation?: string | null;
+  aiExplanationSources?: { url?: string; title?: string; sourceFile: string; sectionPath?: string }[] | null;
+  onOpenHistory?: () => void;
 };
 
 export function QuestionCard({
@@ -53,6 +56,8 @@ export function QuestionCard({
   isSavingExplanation = false,
   isDeletingExplanation = false,
   aiExplanation,
+  aiExplanationSources,
+  onOpenHistory,
 }: Props) {
   // Get competencies directly from the question
   const competencies = question.competencies || [];
@@ -304,6 +309,17 @@ export function QuestionCard({
                     </div>
                   )}
                 </div>
+                {isAdmin && (
+                  <Button
+                    onClick={onOpenHistory}
+                    disabled={isDeletingExplanation}
+                    variant="outline"
+                    size="sm"
+                    className="h-7"
+                  >
+                    History
+                  </Button>
+                )}
                 {isAdmin && onDeleteExplanation && (
                   <Button
                     onClick={onDeleteExplanation}
@@ -327,6 +343,7 @@ export function QuestionCard({
                 )}
               </div>
               <MarkdownContent variant="explanation">{question.explanation}</MarkdownContent>
+              <ExplanationSourcesList sources={question.explanationSources} />
             </div>
           )}
 
@@ -352,6 +369,7 @@ export function QuestionCard({
                         </span>
                       </div>
                       <MarkdownContent variant="explanation">{aiExplanation}</MarkdownContent>
+                      <ExplanationSourcesList sources={aiExplanationSources} />
                     </div>
 
                     {/* Action buttons when AI explanation exists */}

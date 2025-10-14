@@ -1,6 +1,7 @@
 // src/lib/validation.ts
 import { z } from 'zod';
 import type { ExamDetail, ExternalQuestion, StudyLink } from '@/types/external-question';
+import type { ExplanationSource } from '@/types/explanation';
 
 export const StudyLinkZ = z.object({
   chunkId: z.string().min(1),
@@ -8,6 +9,13 @@ export const StudyLinkZ = z.object({
   anchor: z.string().optional(),
   excerpt: z.string().optional(),
 });
+
+export const ExplanationSourceZ = z.object({
+  url: z.string().url().optional(),
+  title: z.string().optional(),
+  sourceFile: z.string().min(1),
+  sectionPath: z.string().optional(),
+}) as unknown as z.ZodType<ExplanationSource>;
 
 export const ExternalQuestionZ = z.object({
   id: z.string().min(1).optional(),
@@ -25,6 +33,7 @@ export const ExternalQuestionZ = z.object({
   ]),
   question_type: z.enum(['single', 'multiple']).optional().default('single'),
   explanation: z.string().optional(),
+  explanationSources: z.array(ExplanationSourceZ).optional(),
   study: z.array(StudyLinkZ).optional(),
 });
 
@@ -117,6 +126,11 @@ export function coerceExternalQuestion(q: unknown): ExternalQuestion {
   // Normalize study: only accept arrays; coerce null/other to undefined
   const study = Array.isArray(qq.study) ? (qq.study as StudyLink[]) : undefined;
 
+  // Normalize explanationSources: accept arrays of objects
+  const explanationSources = Array.isArray((qq as { explanationSources?: unknown }).explanationSources)
+    ? ((qq as { explanationSources?: unknown[] }).explanationSources as unknown[]).map((s) => s as unknown as ExplanationSource)
+    : undefined;
+
   // Normalize options: ensure structure exists (Zod will validate contents)
   const options = qq.options as ExternalQuestion['options'];
 
@@ -127,6 +141,7 @@ export function coerceExternalQuestion(q: unknown): ExternalQuestion {
     answer: qq.answer as ExternalQuestion['answer'],
     question_type: (qq.question_type as 'single' | 'multiple' | undefined) ?? 'single',
     explanation: typeof qq.explanation === 'string' ? qq.explanation : undefined,
+    explanationSources,
     study,
   } as ExternalQuestion;
 }

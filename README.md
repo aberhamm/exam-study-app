@@ -5,12 +5,14 @@ An interactive quiz application built with Next.js for studying Sitecore XM Clou
 ## Features
 
 ### 🎛️ **Test Configuration**
+
 - **Question Type Filtering**: Choose between all questions, single select only, or multiple select only
 - **Configurable Question Count**: Select from presets (10, 25, 50, 75, 100) or enter custom amount
 - **Smart Validation**: Real-time validation ensures valid configuration based on available questions
 - **Session Persistence**: Test settings automatically saved and restored
 
 ### 🎯 **Interactive Quiz Experience**
+
 - **Mixed Question Types**: Support for both single select and multiple select questions
 - **Immediate Feedback**: Instant response validation with explanations
 - **Visual Question Indicators**: Clear display of question type (radio vs checkbox)
@@ -18,6 +20,7 @@ An interactive quiz application built with Next.js for studying Sitecore XM Clou
 - **Progress Tracking**: Visual progress indicator and final score
 
 ### 🎨 **User Interface**
+
 - **Test Settings Display**: Current configuration shown throughout quiz
 - **Easy Navigation**: Back to settings available at any time
 - **Dark/Light Mode**: System-aware theme with manual toggle
@@ -25,6 +28,7 @@ An interactive quiz application built with Next.js for studying Sitecore XM Clou
 - **Keyboard Navigation**: Full keyboard support with dynamic instructions
 
 ### 📚 **Learning Features**
+
 - **Study Materials**: Linked documentation and excerpts for deeper learning
 - **Detailed Explanations**: Comprehensive answer explanations
 - **Review Incorrect**: Review wrong answers with visual feedback after completion
@@ -46,7 +50,8 @@ An interactive quiz application built with Next.js for studying Sitecore XM Clou
 ### Docker Deployment (Recommended for Production)
 
 For production environments, Docker deployment is recommended. See the complete [Docker Deployment Guide](./DOCKER.md) for instructions on:
-- Quick setup with docker-compose
+
+- Quick setup with docker-compose (`docker compose --env-file .env.docker up -d`)
 - Environment configuration
 - Database seeding
 - Monitoring and maintenance
@@ -135,6 +140,7 @@ pnpm seed:exams
 ```
 
 This validates JSON files in `data/exams/` and upserts:
+
 - Exam metadata into `MONGODB_EXAMS_COLLECTION` (no embedded questions)
 - Questions into `MONGODB_QUESTIONS_COLLECTION` (stable ids). Existing explanation fields are preserved and not overwritten.
 
@@ -154,6 +160,7 @@ pnpm remove:legacy-questions [--exam <id>] [--dry-run]
 ```
 
 Notes:
+
 - Explanations are never overwritten during migration/sync; they’re set only on insert.
 - The API reads exclusively from the dedicated questions collection.
 
@@ -191,6 +198,7 @@ curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/search" \
 ```
 
 Requirements:
+
 - Populate `question_embeddings` (see Embeddings above)
 - Create a MongoDB Atlas Vector Search index on `question_embeddings.embedding`
 - Set `OPENAI_API_KEY` and (optionally) `QUESTIONS_EMBEDDING_DIMENSIONS`
@@ -203,16 +211,19 @@ The application uses NextAuth.js (Auth.js v5) for authentication with role-based
 #### Setup
 
 1. **Generate AUTH_SECRET**:
+
 ```bash
 openssl rand -base64 32
 ```
 
 Add the generated secret to your `.env.local`:
+
 ```
 AUTH_SECRET=your-generated-secret-here
 ```
 
 2. **Create Admin User**:
+
 ```bash
 # Using default credentials (username: admin, password: admin123)
 pnpm seed:admin
@@ -222,6 +233,7 @@ ADMIN_USERNAME=youradmin ADMIN_PASSWORD=yourpassword pnpm seed:admin
 ```
 
 3. **Access Admin Features**:
+
 - Visit `/login` to sign in
 - Admin features are available at `/admin` and `/import`
 - Admin API endpoints require authentication
@@ -229,11 +241,13 @@ ADMIN_USERNAME=youradmin ADMIN_PASSWORD=yourpassword pnpm seed:admin
 #### Protected Routes
 
 Admin-only routes (require authentication + admin role):
+
 - `/admin/*` - Admin dashboard and tools
 - `/import` - Question import interface
 - Admin API endpoints (dedupe, embeddings, imports, etc.)
 
 Public routes (no authentication required):
+
 - `/` - Home and exam configuration
 - `/exam/:examId` - Taking exams
 - Read-only API endpoints (stats, question preparation)
@@ -264,10 +278,9 @@ Response:
 ```
 
 Client usage:
+
 - The exam route uses `usePreparedQuestions(examId, settings)` to POST to this endpoint and render the returned subset.
 - Resuming an in-progress exam bypasses the endpoint and uses the saved snapshot from localStorage.
-
-
 
 ### Generating Questions from Important Documentation Sections
 
@@ -289,6 +302,7 @@ pnpm generate:important-questions
 See the detailed guide: [Generating Questions from Important Sections](./docs/generating-questions-from-important-sections.md)
 
 **Features:**
+
 - Extracts 31+ important sections from documentation
 - Generates 1-3 high-quality questions per section
 - Optional auto-embedding generation
@@ -369,6 +383,7 @@ scxmcl-study-util/
 Questions are stored in JSON format and validated using Zod schemas. The application supports both single select and multiple select question types:
 
 ### Single Select Question
+
 ```json
 {
   "question": "What architecture does Sitecore XM Cloud utilize?",
@@ -392,6 +407,7 @@ Questions are stored in JSON format and validated using Zod schemas. The applica
 ```
 
 ### Multiple Select Question
+
 ```json
 {
   "question": "Which of the following are benefits of using Sitecore XM Cloud? (Select all that apply)",
@@ -415,6 +431,7 @@ Questions are stored in JSON format and validated using Zod schemas. The applica
 ```
 
 ### Question Format Notes
+
 - `question_type`: Optional field, defaults to "single" for backward compatibility
 - `answer`: Single letter (A-D) for single select, array of letters for multiple select
 - All other fields remain the same for both question types

@@ -1,4 +1,5 @@
 import type { StudyLink } from './external-question';
+import type { ExplanationSource, ExplanationVersion } from './explanation';
 
 export type QuestionDocument = {
   // Note: MongoDB _id is the primary identifier, mapped to 'id' in external API responses
@@ -9,6 +10,8 @@ export type QuestionDocument = {
   question_type?: 'single' | 'multiple';
   explanation?: string;
   explanationGeneratedByAI?: boolean;
+  explanationSources?: ExplanationSource[];
+  explanationHistory?: ExplanationVersion[];
   study?: StudyLink[];
   competencyIds?: string[];
   competencies?: Array<{ id: string; title: string }>; // Populated at runtime in API responses, not stored in DB
@@ -24,4 +27,3 @@ export type QuestionDocument = {
 };
 
 export type QuestionWithId = QuestionDocument;
-

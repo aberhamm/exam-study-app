@@ -12,6 +12,7 @@ import { QuestionCard } from '@/components/quiz/QuestionCard';
 import { QuizResults } from '@/components/quiz/QuizResults';
 import { QuizControls } from '@/components/quiz/QuizControls';
 import { QuitDialog } from '@/components/quiz/QuitDialog';
+import { ExplanationHistoryDialog } from '@/components/ExplanationHistoryDialog';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { TestSettings } from '@/lib/test-settings';
 import { shuffleArray } from '@/lib/question-utils';
@@ -72,6 +73,9 @@ export function QuizApp({
   // AI Explanation state
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [aiExplanationSources, setAiExplanationSources] = useState<
+    { url?: string; title?: string; sourceFile: string; sectionPath?: string }[] | null
+  >(null);
   const [isSavingExplanation, setIsSavingExplanation] = useState(false);
   const [isDeletingExplanation, setIsDeletingExplanation] = useState(false);
 
@@ -358,6 +362,7 @@ export function QuizApp({
       setQuizState(newState);
       // Clear AI explanation when moving to next question
       setAiExplanation(null);
+      setAiExplanationSources(null);
     }
   }, [isLastQuestion, quizState, finishQuiz]);
 
@@ -380,6 +385,7 @@ export function QuizApp({
       setQuizState(newState);
       // Clear AI explanation when moving to previous question
       setAiExplanation(null);
+      setAiExplanationSources(null);
     }
   }, [quizState]);
 
@@ -411,6 +417,7 @@ export function QuizApp({
 
     // Clear AI explanation state
     setAiExplanation(null);
+    setAiExplanationSources(null);
   };
 
   const generateExplanation = useCallback(async () => {
@@ -438,15 +445,22 @@ export function QuizApp({
         setQuestions((prev) =>
           prev.map((q) =>
             q.id === currentQuestion.id
-              ? { ...q, explanation: data.explanation, explanationGeneratedByAI: true }
+              ? {
+                  ...q,
+                  explanation: data.explanation,
+                  explanationGeneratedByAI: true,
+                  explanationSources: (data.sources as typeof aiExplanationSources) || [],
+                }
               : q
           )
         );
         setAiExplanation(null); // Clear AI explanation since it's now the default
+        setAiExplanationSources(null);
         toast.success('Explanation generated and saved!');
       } else {
         // Has existing explanation, show in AI section for user to decide
         setAiExplanation(data.explanation);
+        setAiExplanationSources((data.sources as typeof aiExplanationSources) || []);
         toast.success('Explanation generated! Click "Replace Default" to save.');
       }
 
@@ -470,6 +484,7 @@ export function QuizApp({
         ...currentQuestion,
         explanation: aiExplanation,
         explanationGeneratedByAI: true,
+        explanationSources: aiExplanationSources || [],
       };
 
       // Use PATCH endpoint to update the question
@@ -489,17 +504,23 @@ export function QuizApp({
       // Remove from deleted list since user manually saved a new explanation
       deletedExplanationsRef.current.delete(currentQuestion.id);
 
-      // Update the current question with the explanation and AI flag
+      // Update the current question with the explanation, AI flag, and sources
       setQuestions((prev) =>
         prev.map((q) =>
           q.id === currentQuestion.id
-            ? { ...q, explanation: aiExplanation, explanationGeneratedByAI: true }
+            ? {
+                ...q,
+                explanation: aiExplanation,
+                explanationGeneratedByAI: true,
+                explanationSources: aiExplanationSources || [],
+              }
             : q
         )
       );
 
       // Clear AI explanation state since it's now the default
       setAiExplanation(null);
+      setAiExplanationSources(null);
 
       toast.success('Explanation saved as default!');
 
@@ -510,7 +531,7 @@ export function QuizApp({
     } finally {
       setIsSavingExplanation(false);
     }
-  }, [currentQuestion, examId, aiExplanation]);
+  }, [currentQuestion, examId, aiExplanation, aiExplanationSources]);
 
   const deleteExplanation = useCallback(async () => {
     if (!currentQuestion || !examId) return;
@@ -576,7 +597,13 @@ export function QuizApp({
     // Auto-generate explanation
     console.log('[QuizApp] Auto-generating explanation for question without one:', currentQuestion.id);
     generateExplanation();
-  }, [quizState.showFeedback, currentQuestion, isGeneratingExplanation, aiExplanation, generateExplanation]);
+  }, [
+    quizState.showFeedback,
+    currentQuestion,
+    isGeneratingExplanation,
+    aiExplanation,
+    generateExplanation,
+  ]);
 
   const handleTimeUp = useCallback(() => {
     finishQuiz();
@@ -598,6 +625,18 @@ export function QuizApp({
     if (!currentQuestion) return;
     setEditingQuestion(currentQuestion);
     setEditDialogOpen(true);
+  };
+
+  // Admin: Explanation history dialog state and handlers
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const handleReverted = (updated: NormalizedQuestion) => {
+    setQuestions((prev) => prev.map((q) => (q.id === updated.id ? updated : q)));
+    setQuizState((prev) => ({
+      ...prev,
+      incorrectAnswers: prev.incorrectAnswers.map((entry) =>
+        entry.question.id === updated.id ? { ...entry, question: updated } : entry
+      ),
+    }));
   };
 
   const handleQuestionSave = async (updatedQuestion: NormalizedQuestion) => {
@@ -968,6 +1007,8 @@ export function QuizApp({
           isSavingExplanation={isSavingExplanation}
           isDeletingExplanation={isDeletingExplanation}
           aiExplanation={aiExplanation}
+          aiExplanationSources={aiExplanationSources}
+          onOpenHistory={() => setHistoryOpen(true)}
         />
       )}
 
@@ -1012,6 +1053,16 @@ export function QuizApp({
         currentReason={currentQuestion?.flaggedReason}
         isFlagged={currentQuestion?.flaggedForReview || false}
       />
+
+      {currentQuestion && (
+        <ExplanationHistoryDialog
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          examId={examId}
+          questionId={currentQuestion.id}
+          onReverted={handleReverted}
+        />
+      )}
     </div>
   );
 }

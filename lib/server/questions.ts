@@ -18,7 +18,7 @@ function sanitizeStudy(value: unknown): ExternalQuestion['study'] | undefined {
 }
 
 function mapQuestionDocToExternal(q: QuestionDocument & { _id: ObjectId }): ExternalQuestion & { id: string } {
-  const { _id, question, options, answer, question_type, explanation, explanationGeneratedByAI, study } = q;
+  const { _id, question, options, answer, question_type, explanation, explanationGeneratedByAI, explanationSources, study } = q;
   return {
     id: _id.toString(),
     question,
@@ -27,6 +27,7 @@ function mapQuestionDocToExternal(q: QuestionDocument & { _id: ObjectId }): Exte
     question_type,
     explanation,
     explanationGeneratedByAI,
+    explanationSources,
     study: sanitizeStudy(study as unknown),
   };
 }
@@ -90,6 +91,7 @@ export async function addExamQuestions(
       answer: q.answer,
       question_type: q.question_type,
       explanation: q.explanation,
+      explanationSources: q.explanationSources,
       study: q.study,
       createdAt: now,
       updatedAt: now,
