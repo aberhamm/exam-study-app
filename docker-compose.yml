@@ -7,7 +7,7 @@ services:
     container_name: scxmcl-app
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - '${APP_PORT:-3000}:3000'
     environment:
       # Node environment
       NODE_ENV: production
@@ -47,8 +47,20 @@ services:
       API_TIMEOUT_MS: ${API_TIMEOUT_MS:-30000}
       MAX_RETRIES: ${MAX_RETRIES:-3}
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/db-status', (r) => {let d='';r.on('data',c=>d+=c);r.on('end',()=>{try{const j=JSON.parse(d);process.exit(j.connected?0:1)}catch(e){process.exit(1)}}})"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/api/db-status', (r) => {let d='';r.on('data',c=>d+=c);r.on('end',()=>{try{const j=JSON.parse(d);process.exit(j.connected?0:1)}catch(e){process.exit(1)}}})",
+        ]
       interval: 30s
       timeout: 15s
       retries: 3
       start_period: 40s
+    networks:
+      - shared-mongo-net
+
+networks:
+  shared-mongo-net:
+    external: true
