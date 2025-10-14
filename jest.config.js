@@ -32,7 +32,7 @@ const customJestConfig = {
     '**/__tests__/**/*.(test|spec).{js,jsx,ts,tsx}',
   ],
   transformIgnorePatterns: [
-    '/node_modules/(?!(bson|mongodb|@mongodb-js)/)',
+    '/node_modules/(?!(bson|mongodb|@mongodb-js|react-markdown|remark-gfm)/)',
   ],
 }
 
