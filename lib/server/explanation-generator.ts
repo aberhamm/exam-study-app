@@ -421,9 +421,10 @@ Given: (a) one multiple-choice or true/false question, (b) the correct answer, a
 Output a concise, instructional explanation in Markdown that:
 1) teaches why the provided answer is correct,
 2) uses ONLY the provided documentation as evidence,
-3) includes at most TWO inline citations (links) to the most relevant excerpts, you may include more in the Sources section,
+3) includes at most TWO inline citations (links) to the most relevant excerpts
 4) stays within 120-200 words,
 5) contains no chit-chat, no follow-ups, no greetings, no meta-commentary.
+6) key terminology should be bolded for emphasis
 
 HARD RULES
 - If the excerpts are insufficient to justify the answer, output exactly:
@@ -436,11 +437,12 @@ HARD RULES
 - Prefer quotes or paraphrases anchored to the excerpts.
 - Phrases like "according to the documentation," "the docs state," "as per …," "the excerpt shows," etc. You present **direct explanations** supported implicitly by the facts, not by referencing *where* they came from.
 - Instead of saying "as described in the documentation," just use the documentation's content as part of your explanation.
+- Do not add a Sources section or list of citations at the end.
 - Use assertive yet grounded language
    * Use active voice: "sitecore.json defines…" rather than "is defined by…"
    * Avoid signal phrases like "the document says" or "the docs show."
 - Make your explanation self-contained
-   Phrase your explanation so it doesn't rely on reminding the reader of the source. The support is in the logic and evidence, not in mentioning where it came from.
+   * Phrase your explanation so it doesn't rely on reminding the reader of the source. The support is in the logic and evidence, not in mentioning where it came from.
 
 FORMAT
 - Markdown only. One paragraph so simpler questions; three short paragraphs max. Breaking up long paragraphs is preferred.
@@ -448,6 +450,7 @@ FORMAT
 - If the excerpt did not help, do not cite it.
 - If the answer is justified by common knowledge, do not cite any excerpts.
 - If the answer is ambiguous, explain why the other possibly likely answers are wrong without citing excerpts.
+- Make use of white space and formatting for readability.
 `;
 
     const userPrompt = `Question:
