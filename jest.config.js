@@ -15,6 +15,7 @@ const customJestConfig = {
     '^mongodb$': '<rootDir>/__tests__/__mocks__/mongodb.js',
     '^bson$': '<rootDir>/__tests__/__mocks__/bson.js',
     '^nanoid$': '<rootDir>/__tests__/__mocks__/nanoid.js',
+    '^next-auth/react$': '<rootDir>/__tests__/__mocks__/next-auth-react.js',
   },
   testEnvironment: 'jest-environment-jsdom',
   collectCoverageFrom: [

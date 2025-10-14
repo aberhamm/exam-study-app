@@ -41,13 +41,12 @@ export const DEFAULT_TEST_SETTINGS: TestSettings = {
   timerDuration: TEST_SETTINGS.DEFAULT_TIMER_DURATION,
   explanationFilter: 'all',
   showCompetencies: false,
-  competencyFilter: 'all',
-  newQuestionsOnly: false
+  competencyFilter: 'all'
 };
 
 // Utility functions for test settings
 export function validateTestSettings(settings: Partial<TestSettings>): TestSettings {
-  return {
+  const base: TestSettings = {
     questionCount: Math.max(
       TEST_SETTINGS.MIN_QUESTION_COUNT,
       Math.min(
@@ -66,8 +65,15 @@ export function validateTestSettings(settings: Partial<TestSettings>): TestSetti
     explanationFilter: settings.explanationFilter || 'all',
     showCompetencies: settings.showCompetencies ?? false,
     competencyFilter: settings.competencyFilter || 'all',
-    newQuestionsOnly: settings.newQuestionsOnly ?? false
   };
+
+  // Only include newQuestionsOnly if explicitly provided
+  if (typeof settings.newQuestionsOnly !== 'undefined') {
+    // @ts-expect-error - extending base with optional property
+    base.newQuestionsOnly = settings.newQuestionsOnly;
+  }
+
+  return base;
 }
 
 export function saveTestSettings(settings: TestSettings): void {

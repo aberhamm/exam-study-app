@@ -112,7 +112,7 @@ export const pipelineConfig = {
   },
 
   get maxContextChunks(): number {
-    return parseInt(process.env.MAX_CONTEXT_CHUNKS || '10');
+    return parseInt(process.env.MAX_CONTEXT_CHUNKS || '4');
   },
 
   get maxChunkChars(): number {
