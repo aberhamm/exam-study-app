@@ -4,7 +4,7 @@ import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName 
 import type { ExternalQuestion } from '@/types/external-question';
 import { requireAdmin } from '@/lib/auth';
 import { buildQuestionTextForEmbedding, generateEmbedding } from '@/lib/server/embeddings';
-import type { ExplanationVersion } from '@/types/explanation';
+import type { ExplanationVersion, ExplanationSource } from '@/types/explanation';
 
 type RouteParams = {
   params: Promise<{ examId: string; questionId: string }>;
@@ -15,10 +15,8 @@ export async function DELETE(_request: Request, context: RouteParams) {
   let questionId = 'unknown';
   try {
     // Require admin authentication
-    let adminUser: { id: string; username: string } | null = null;
     try {
-      const user = await requireAdmin();
-      adminUser = { id: user.id, username: user.username };
+      await requireAdmin();
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Forbidden' },
@@ -195,7 +193,7 @@ export async function PATCH(request: Request, context: RouteParams) {
       question_type: doc.question_type,
       explanation: doc.explanation,
       explanationGeneratedByAI: doc.explanationGeneratedByAI,
-      explanationSources: (doc as unknown as { explanationSources?: unknown }).explanationSources as unknown,
+      explanationSources: (doc as unknown as { explanationSources?: unknown }).explanationSources as ExplanationSource[] | undefined,
       study: doc.study,
       flaggedForReview: doc.flaggedForReview,
       flaggedReason: doc.flaggedReason,

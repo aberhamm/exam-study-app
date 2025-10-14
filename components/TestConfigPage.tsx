@@ -3,6 +3,14 @@
 import Link from 'next/link';
 import { useMemo, useState, useEffect } from 'react';
 import { Card, CardHeader, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter as UIDialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
 import { MarkdownContent } from '@/components/ui/markdown';
@@ -20,6 +28,7 @@ import {
 import type { NormalizedQuestion, ExamMetadata } from '@/types/normalized';
 import { getMissedQuestionIds, getAllQuestionMetrics, clearIncorrect } from '@/lib/question-metrics';
 import type { ExamStatsResponse } from '@/types/api';
+import { shuffleArray } from '@/lib/question-utils';
 
 type StartTestOptions = {
   overrideQuestions?: NormalizedQuestion[];
@@ -47,6 +56,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [seenQuestionIds, setSeenQuestionIds] = useState<string[]>([]);
   const [starting, setStarting] = useState(false);
   const [competencies, setCompetencies] = useState<Array<{ id: string; title: string; questionCount?: number }>>([]);
+  const [missedDialogOpen, setMissedDialogOpen] = useState(false);
+  const [missedCountInput, setMissedCountInput] = useState<string>('');
 
   // Configure header on mount and when exam title loads
   useEffect(() => {
@@ -358,14 +369,24 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     }
   };
 
-  const handleStartMissedQuestions = async () => {
+  const openMissedCountDialog = () => {
+    if (!examMetadata?.examId || missedQuestionIds.length === 0) return;
+    const defaultCount = Math.min(TEST_SETTINGS.DEFAULT_QUESTION_COUNT, missedQuestionIds.length);
+    setMissedCountInput(String(defaultCount));
+    setMissedDialogOpen(true);
+  };
+
+  const startMissedQuestions = async (desiredCount: number) => {
     if (!examMetadata?.examId || missedQuestionIds.length === 0) return;
 
     try {
       setStarting(true);
 
-      // Fetch the missed questions from the API
-      const idsParam = encodeURIComponent(JSON.stringify(missedQuestionIds));
+      const count = Math.max(1, Math.min(missedQuestionIds.length, Math.floor(desiredCount)));
+      const selectedIds = shuffleArray([...missedQuestionIds]).slice(0, count);
+
+      // Fetch the selected missed questions from the API
+      const idsParam = encodeURIComponent(JSON.stringify(selectedIds));
       const response = await fetch(`/api/exams/${examMetadata.examId}/questions?ids=${idsParam}`);
 
       if (!response.ok) {
@@ -387,6 +408,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
       };
 
       await onStartTest(practiceSettings, { overrideQuestions: missedQuestions });
+      setMissedDialogOpen(false);
     } catch (err) {
       console.error('Failed to start missed questions review:', err);
     } finally {
@@ -442,6 +464,11 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
   const validationState = getValidationState();
   const isValidConfiguration = validationState.valid;
+  const parsedMissedCount = parseInt(missedCountInput || '', 10);
+  const isMissedCountValid =
+    !Number.isNaN(parsedMissedCount) &&
+    parsedMissedCount >= 1 &&
+    parsedMissedCount <= missedQuestionIds.length;
 
   if (loading) {
     return (
@@ -577,7 +604,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
                   <Button
                     type="button"
-                    onClick={handleStartMissedQuestions}
+                    onClick={openMissedCountDialog}
                     disabled={missedQuestionIds.length === 0 || starting}
                     className="flex-1"
                   >
@@ -994,6 +1021,52 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
           </div>
         </Card>
       )}
+      {/* Missed Questions Count Dialog */}
+      <Dialog open={missedDialogOpen} onOpenChange={setMissedDialogOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Review Missed Questions</DialogTitle>
+            <DialogDescription>
+              You have {missedQuestionIds.length} missed question{missedQuestionIds.length === 1 ? '' : 's'}. How
+              many do you want to practice now?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <label htmlFor="missed-count" className="text-sm font-medium">
+              Number of questions
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                id="missed-count"
+                type="number"
+                min={1}
+                max={missedQuestionIds.length}
+                value={missedCountInput}
+                onChange={(e) => setMissedCountInput(e.target.value)}
+                placeholder={`1 - ${missedQuestionIds.length}`}
+                className="w-28 rounded-lg border bg-background px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              />
+              <span className="text-xs text-muted-foreground">
+                Max {missedQuestionIds.length} available
+              </span>
+            </div>
+          </div>
+
+          <UIDialogFooter className="gap-2">
+            <Button variant="outline" type="button" onClick={() => setMissedDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => startMissedQuestions(parsedMissedCount)}
+              disabled={starting || !isMissedCountValid}
+            >
+              {starting ? 'Loading…' : 'Start'}
+            </Button>
+          </UIDialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

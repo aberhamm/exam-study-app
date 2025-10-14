@@ -69,7 +69,6 @@ export function validateTestSettings(settings: Partial<TestSettings>): TestSetti
 
   // Only include newQuestionsOnly if explicitly provided
   if (typeof settings.newQuestionsOnly !== 'undefined') {
-    // @ts-expect-error - extending base with optional property
     base.newQuestionsOnly = settings.newQuestionsOnly;
   }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDb, getQuestionsCollectionName } from '@/lib/server/mongodb';
 import type { QuestionDocument } from '@/types/question';
 import { fetchCompetenciesByExamId } from '@/lib/server/competencies';
+import type { ExplanationSource } from '@/types/explanation';
 
 type RouteParams = { params: Promise<{ examId: string }> };
 
@@ -88,7 +89,7 @@ export async function GET(request: Request, context: RouteParams) {
       question_type: doc.question_type,
       explanation: doc.explanation,
       explanationGeneratedByAI: doc.explanationGeneratedByAI,
-      explanationSources: (doc as unknown as { explanationSources?: unknown }).explanationSources as unknown,
+      explanationSources: (doc as unknown as { explanationSources?: unknown }).explanationSources as ExplanationSource[] | undefined,
       competencyIds: doc.competencyIds,
       competencies: doc.competencyIds
         ?.map(cid => competencyMap.get(cid))

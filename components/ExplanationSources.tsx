@@ -5,10 +5,9 @@ export type ExplanationSource = { url?: string; title?: string; sourceFile: stri
 type Props = {
   sources?: ExplanationSource[] | null;
   className?: string;
-  compact?: boolean;
 };
 
-export function ExplanationSources({ sources, className = '', compact = true }: Props) {
+export function ExplanationSources({ sources, className = '' }: Props) {
   if (!sources || sources.length === 0) return null;
 
   return (
