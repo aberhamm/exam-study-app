@@ -83,12 +83,14 @@ export async function POST(request: Request, context: RouteParams) {
         console.warn(`[search] Missing OPENAI_API_KEY; returning empty results. examId=${examId} topK=${topK}`);
         return NextResponse.json({ examId, topK, count: 0, results: [] }, { headers: { 'Cache-Control': 'no-store' } });
       }
-      console.info(`[search] Creating query embedding via OpenAI model=${envConfig.openai.embeddingModel} dims=${envConfig.openai.embeddingDimensions} examId=${examId} topK=${topK}`);
+      if (envConfig.app.isDevelopment) {
+        console.info(`[search] Creating query embedding via OpenAI model=${envConfig.openai.embeddingModel} dims=${envConfig.openai.embeddingDimensions} examId=${examId} topK=${topK}`);
+      }
       embedding = await embedQuery(query);
       if (!embedding || embedding.length === 0) {
-        console.warn('[search] Received empty embedding from provider.');
+        if (envConfig.app.isDevelopment) console.warn('[search] Received empty embedding from provider.');
       } else {
-        console.info(`[search] Embedding created. length=${embedding.length}`);
+        if (envConfig.app.isDevelopment) console.info(`[search] Embedding created. length=${embedding.length}`);
       }
     }
 
@@ -98,10 +100,12 @@ export async function POST(request: Request, context: RouteParams) {
     }
 
     const results = await searchSimilarQuestions(examId, embedding, topK);
-    if (results.length === 0) {
-      console.info(`[search] Vector search returned 0 results. examId=${examId} topK=${topK}`);
-    } else {
-      console.info(`[search] Vector search returned ${results.length} result(s). bestScore=${results[0]?.score?.toFixed?.(4) ?? 'n/a'}`);
+    if (envConfig.app.isDevelopment) {
+      if (results.length === 0) {
+        console.info(`[search] Vector search returned 0 results. examId=${examId} topK=${topK}`);
+      } else {
+        console.info(`[search] Vector search returned ${results.length} result(s). bestScore=${results[0]?.score?.toFixed?.(4) ?? 'n/a'}`);
+      }
     }
 
     // Populate competencies on search results

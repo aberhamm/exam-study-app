@@ -61,7 +61,9 @@ export function CompetencyCard({ competency, onUpdate, onDelete }: CompetencyCar
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-foreground">{competency.title}</h3>
           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{competency.examPercentage}% of exam</span>
+            <span className="font-medium text-foreground">
+              {competency.examPercentage}% of exam
+            </span>
             {competency.questionCount !== undefined && (
               <span>
                 {competency.questionCount} question{competency.questionCount !== 1 ? 's' : ''}
@@ -100,7 +102,7 @@ export function CompetencyCard({ competency, onUpdate, onDelete }: CompetencyCar
         <div className="flex gap-2">
           {competency.questionCount !== undefined && competency.questionCount > 0 && (
             <Link
-              href={`/dev/competencies/${competency.examId}/${competency.id}/questions`}
+              href={`/admin/competencies/${competency.examId}/${competency.id}/questions`}
               className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
               View {competency.questionCount} Question{competency.questionCount !== 1 ? 's' : ''}

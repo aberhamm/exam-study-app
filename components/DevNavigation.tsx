@@ -5,7 +5,14 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 type DevNavigationProps = {
-  currentPage?: 'search' | 'exams' | 'dedupe' | 'import' | 'competencies' | 'docs' | 'document-embeddings';
+  currentPage?:
+    | 'search'
+    | 'exams'
+    | 'dedupe'
+    | 'import'
+    | 'competencies'
+    | 'docs'
+    | 'document-embeddings';
 };
 
 export function DevNavigation({ currentPage }: DevNavigationProps) {
@@ -65,7 +72,7 @@ export function DevNavigation({ currentPage }: DevNavigationProps) {
                 Import Questions
               </Link>
               <Link
-                href="/dev/exams"
+                href="/admin/exams"
                 onClick={() => setIsExamMenuOpen(false)}
                 className={`block px-4 py-2 text-sm ${
                   currentPage === 'exams'
@@ -76,7 +83,7 @@ export function DevNavigation({ currentPage }: DevNavigationProps) {
                 Exam Settings
               </Link>
               <Link
-                href="/dev/competencies"
+                href="/admin/competencies"
                 onClick={() => setIsExamMenuOpen(false)}
                 className={`block px-4 py-2 text-sm ${
                   currentPage === 'competencies'
@@ -88,7 +95,7 @@ export function DevNavigation({ currentPage }: DevNavigationProps) {
               </Link>
               <div className="my-1 border-t border-border" />
               <Link
-                href="/dev/dedupe"
+                href="/admin/dedupe"
                 onClick={() => setIsExamMenuOpen(false)}
                 className={`block px-4 py-2 text-sm ${
                   currentPage === 'dedupe'
@@ -105,7 +112,7 @@ export function DevNavigation({ currentPage }: DevNavigationProps) {
 
       {/* Search - Standalone Link */}
       <Link
-        href="/dev/search"
+        href="/admin/search"
         className={`text-sm ${
           currentPage === 'search'
             ? 'text-foreground font-medium'
@@ -133,7 +140,7 @@ export function DevNavigation({ currentPage }: DevNavigationProps) {
           <div className="absolute top-full left-0 mt-2 w-48 rounded-md border border-border bg-background shadow-lg z-50">
             <div className="py-1">
               <Link
-                href="/dev/docs"
+                href="/admin/docs"
                 onClick={() => setIsDocsMenuOpen(false)}
                 className={`block px-4 py-2 text-sm ${
                   currentPage === 'docs'
@@ -144,7 +151,7 @@ export function DevNavigation({ currentPage }: DevNavigationProps) {
                 Dev Docs
               </Link>
               <Link
-                href="/dev/document-embeddings"
+                href="/admin/document-embeddings"
                 onClick={() => setIsDocsMenuOpen(false)}
                 className={`block px-4 py-2 text-sm ${
                   currentPage === 'document-embeddings'

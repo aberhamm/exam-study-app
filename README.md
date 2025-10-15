@@ -187,6 +187,8 @@ Environment:
 
 MongoDB Atlas Vector Search (optional): create a vector index on `question_embeddings.embedding` with cosine similarity and the chosen dimensions. Name it via `MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX`.
 
+Sampling strategy for question preparation: by default, the server uses `$sample`. To toggle an alternative strategy that sorts by `$rand` and limits (which can perform better on some clusters), set `USE_RAND_SORT_SAMPLING=1`.
+
 ### Semantic Search (optional)
 
 A development search endpoint is available to retrieve similar questions by semantic meaning:
@@ -237,6 +239,8 @@ ADMIN_USERNAME=youradmin ADMIN_PASSWORD=yourpassword pnpm seed:admin
 - Visit `/login` to sign in
 - Admin features are available at `/admin` and `/import`
 - Admin API endpoints require authentication
+
+Admin-only LLM usage: Only admins can generate explanations or embeddings via server endpoints. The system enforces per-admin concurrency and a short rate window to control cost.
 
 #### Protected Routes
 
@@ -336,6 +340,19 @@ curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/questions/import" \
 ```
 
 The endpoint validates each question, generates stable `id` values, and returns the inserted records. If a generated `id` collides with an existing question, the API responds with HTTP 409 and a list of duplicate IDs so you can adjust the payload.
+
+### Fetching Questions (Admin & Tools)
+
+`GET /api/exams/:examId/questions` supports pagination by default and also a flat array when querying specific ids.
+
+- Pagination (default):
+  - Query: `?page=1&limit=20`
+  - Response: `{ questions: [...], pagination: { page, limit, total, totalPages } }`
+
+- Fetch by ids (flat array by default):
+  - Query: `?ids=["<id1>","<id2>"]`
+  - Response: `[ ...questions ]`
+  - Optional: `&format=object` returns the normalized object shape `{ questions, pagination }` for consistency.
 
 ### Question Metrics Storage
 

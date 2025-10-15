@@ -5,6 +5,7 @@ import type { ExternalQuestion } from '@/types/external-question';
 import { requireAdmin } from '@/lib/auth';
 import { buildQuestionTextForEmbedding, generateEmbedding } from '@/lib/server/embeddings';
 import type { ExplanationVersion, ExplanationSource } from '@/types/explanation';
+import { ExternalQuestionUpdateZ, ExplanationSourceZ } from '@/lib/validation';
 
 type RouteParams = {
   params: Promise<{ examId: string; questionId: string }>;
@@ -73,11 +74,14 @@ export async function PATCH(request: Request, context: RouteParams) {
       return NextResponse.json({ error: 'Invalid question ID format' }, { status: 400 });
     }
 
+    // Parse known fields
     let payload: ExternalQuestion & { id: string };
+    let rawBody: unknown;
     try {
-      payload = (await request.json()) as ExternalQuestion & { id: string };
+      rawBody = await request.json();
+      payload = ExternalQuestionUpdateZ.parse(rawBody) as ExternalQuestion & { id: string };
     } catch {
-      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
     if (!payload || typeof payload.id !== 'string' || payload.id !== questionId) {
@@ -100,17 +104,18 @@ export async function PATCH(request: Request, context: RouteParams) {
     };
 
     // Support flagging fields if provided
-    if (payload.flaggedForReview !== undefined) {
-      updateDoc.flaggedForReview = payload.flaggedForReview;
+    const bodyAny = rawBody as { flaggedForReview?: boolean; flaggedReason?: string; flaggedAt?: string | Date; flaggedBy?: string };
+    if (bodyAny.flaggedForReview !== undefined) {
+      updateDoc.flaggedForReview = bodyAny.flaggedForReview;
     }
-    if (payload.flaggedReason !== undefined) {
-      updateDoc.flaggedReason = payload.flaggedReason;
+    if (bodyAny.flaggedReason !== undefined) {
+      updateDoc.flaggedReason = bodyAny.flaggedReason;
     }
-    if (payload.flaggedAt !== undefined) {
-      updateDoc.flaggedAt = payload.flaggedAt;
+    if (bodyAny.flaggedAt !== undefined) {
+      updateDoc.flaggedAt = new Date(bodyAny.flaggedAt);
     }
-    if (payload.flaggedBy !== undefined) {
-      updateDoc.flaggedBy = payload.flaggedBy;
+    if (bodyAny.flaggedBy !== undefined) {
+      updateDoc.flaggedBy = bodyAny.flaggedBy;
     }
 
     // Load current doc to capture previous explanation for history
@@ -184,8 +189,16 @@ export async function PATCH(request: Request, context: RouteParams) {
       console.error(`Failed to regenerate embedding for question ${questionId}:`, embeddingError);
     }
 
-    // Return the updated question in external format
-  const responseBody: ExternalQuestion & { id: string } = {
+    // Return the updated question in external format (validate sources defensively)
+    const rawSources = (doc as unknown as { explanationSources?: unknown }).explanationSources;
+    const parsedSources: ExplanationSource[] | undefined = Array.isArray(rawSources)
+      ? (rawSources as unknown[])
+          .map((s) => ExplanationSourceZ.safeParse(s))
+          .filter((r): r is { success: true; data: ExplanationSource } => r.success)
+          .map((r) => r.data)
+      : undefined;
+
+    const responseBody: ExternalQuestion & { id: string } = {
       id: doc._id.toString(),
       question: doc.question,
       options: doc.options,
@@ -193,7 +206,7 @@ export async function PATCH(request: Request, context: RouteParams) {
       question_type: doc.question_type,
       explanation: doc.explanation,
       explanationGeneratedByAI: doc.explanationGeneratedByAI,
-      explanationSources: (doc as unknown as { explanationSources?: unknown }).explanationSources as ExplanationSource[] | undefined,
+      explanationSources: parsedSources,
       study: doc.study,
       flaggedForReview: doc.flaggedForReview,
       flaggedReason: doc.flaggedReason,

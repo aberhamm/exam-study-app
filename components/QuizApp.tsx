@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
@@ -100,6 +101,10 @@ export function QuizApp({
   const scoredQuestionsRef = useRef<Set<string>>(new Set());
   const persistEnabledRef = useRef<boolean>(true);
   const deletedExplanationsRef = useRef<Set<string>>(new Set());
+
+  // Session for role gating (only admins can trigger LLM usage)
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
 
   const evaluateAnswer = useCallback(
     (question: NormalizedQuestion, selected: number | number[] | null): 'correct' | 'incorrect' | 'unanswered' => {
@@ -578,7 +583,10 @@ export function QuizApp({
   }, [currentQuestion, examId]);
 
   // Auto-generate explanation when user selects an answer and question doesn't have one
+  // Note: This is admin-only to avoid incidental cost from regular users.
   useEffect(() => {
+    // Only admins are allowed to trigger LLM usage (cost control)
+    if (!isAdmin) return;
     if (!currentQuestion || !quizState.showFeedback) return;
 
     // Check if question has no explanation
@@ -603,6 +611,7 @@ export function QuizApp({
     isGeneratingExplanation,
     aiExplanation,
     generateExplanation,
+    isAdmin,
   ]);
 
   const handleTimeUp = useCallback(() => {

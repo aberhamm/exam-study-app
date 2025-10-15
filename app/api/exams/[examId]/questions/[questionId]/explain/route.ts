@@ -3,6 +3,7 @@ import { generateQuestionExplanation } from '@/lib/server/explanation-generator'
 import { getQuestionById } from '@/lib/server/questions';
 import { normalizeQuestions } from '@/lib/normalize';
 import { requireAdmin } from '@/lib/auth';
+import { acquireLlmSlot } from '@/lib/server/llm-guard';
 
 type RouteParams = {
   params: Promise<{
@@ -22,6 +23,19 @@ export async function POST(request: Request, context: RouteParams) {
     examId = params.examId;
     questionId = params.questionId;
 
+    // Require admin for any explanation generation (LLM usage gated to admins).
+    // Defense-in-depth: middleware protects this route as well.
+    let adminUser: { id: string; username: string } | null = null;
+    try {
+      const user = await requireAdmin();
+      adminUser = { id: user.id, username: user.username };
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
     // Get the question first to check if it has an explanation
     const questionDoc = await getQuestionById(examId, questionId);
     if (!questionDoc) {
@@ -29,20 +43,6 @@ export async function POST(request: Request, context: RouteParams) {
         { error: 'Question not found' },
         { status: 404 }
       );
-    }
-
-    // Only require admin auth if the question already has an explanation
-    // (for regenerating/replacing existing explanations)
-    const hasExistingExplanation = questionDoc.explanation && questionDoc.explanation.trim().length > 0;
-    if (hasExistingExplanation) {
-      try {
-        await requireAdmin();
-      } catch (error) {
-        return NextResponse.json(
-          { error: error instanceof Error ? error.message : 'Forbidden' },
-          { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
-        );
-      }
     }
 
     // Get the exam to access documentGroups
@@ -63,7 +63,15 @@ export async function POST(request: Request, context: RouteParams) {
       choicesCount: normalizedQuestion.choices.length,
     });
 
-    const result = await generateQuestionExplanation(normalizedQuestion, documentGroups, questionDoc.embedding);
+    // Acquire per-admin LLM slot to control concurrency and rate.
+    // Always release in finally to avoid slot leaks on errors/timeouts.
+    const guard = acquireLlmSlot(adminUser!.id);
+    let result: { explanation: string; sources: Array<{ url?: string; title?: string; sourceFile: string; sectionPath?: string }> };
+    try {
+      result = await generateQuestionExplanation(normalizedQuestion, documentGroups, questionDoc.embedding);
+    } finally {
+      guard.release();
+    }
 
     console.info(`[explain] Generated explanation result:`, {
       explanationLength: result.explanation.length,
@@ -74,7 +82,7 @@ export async function POST(request: Request, context: RouteParams) {
     // Auto-save if no existing explanation
     let savedAsDefault = false;
 
-    if (!hasExistingExplanation) {
+    if (!(questionDoc.explanation && questionDoc.explanation.trim().length > 0)) {
       try {
         const { updateQuestion } = await import('@/lib/server/questions');
         const updatedQuestion = {

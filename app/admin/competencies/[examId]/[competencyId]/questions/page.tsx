@@ -28,24 +28,29 @@ export default function CompetencyQuestionsPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchQuestions = useCallback(async (page: number) => {
-    setLoading(true);
-    setError(null);
+  const fetchQuestions = useCallback(
+    async (page: number) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const questionsResponse = await fetch(`/api/exams/${examId}/questions?competencyId=${competencyId}&page=${page}&limit=20`);
-      if (!questionsResponse.ok) {
-        throw new Error('Failed to fetch questions');
+      try {
+        const questionsResponse = await fetch(
+          `/api/exams/${examId}/questions?competencyId=${competencyId}&page=${page}&limit=20`
+        );
+        if (!questionsResponse.ok) {
+          throw new Error('Failed to fetch questions');
+        }
+        const questionsData = await questionsResponse.json();
+        setQuestions(questionsData.questions || []);
+        setPagination(questionsData.pagination);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
       }
-      const questionsData = await questionsResponse.json();
-      setQuestions(questionsData.questions || []);
-      setPagination(questionsData.pagination);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  }, [examId, competencyId]);
+    },
+    [examId, competencyId]
+  );
 
   useEffect(() => {
     async function fetchCompetency() {
@@ -73,7 +78,7 @@ export default function CompetencyQuestionsPage({ params }: PageProps) {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Link
-              href="/dev/competencies"
+              href="/admin/competencies"
               className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
               ← Back to Competencies
@@ -105,7 +110,7 @@ export default function CompetencyQuestionsPage({ params }: PageProps) {
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Link
-            href="/dev/competencies"
+            href="/admin/competencies"
             className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
             ← Back to Competencies
@@ -115,7 +120,11 @@ export default function CompetencyQuestionsPage({ params }: PageProps) {
           {competency?.title || 'Competency Questions'}
         </h1>
         <p className="text-muted-foreground">
-          {pagination ? `${pagination.total} question${pagination.total !== 1 ? 's' : ''} assigned to this competency` : 'Loading...'}
+          {pagination
+            ? `${pagination.total} question${
+                pagination.total !== 1 ? 's' : ''
+              } assigned to this competency`
+            : 'Loading...'}
         </p>
       </div>
 

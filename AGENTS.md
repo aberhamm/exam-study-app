@@ -17,7 +17,7 @@ TypeScript runs in strict mode, so annotate props, context values, and pipeline 
 
 ## Testing Guidelines
 
-Automated tests are not yet present, so lean on `pnpm lint` and TypeScript for fast feedback. Exercise critical quiz flows manually via `pnpm dev`, covering timer behavior, question selection, and markdown-driven content. For pipelines, direct output to `data/output/`, spot-check schema compliance, and re-run conversions whenever source markdown changes.
+Automated tests are present under `__tests__/`. Use `pnpm test` to run the suite (Jest + @testing-library). Lean on `pnpm lint` and TypeScript for fast feedback. Manually exercise critical quiz flows via `pnpm dev`, covering timer behavior, question selection, and markdown-driven content. For pipelines, direct output to `data/output/`, spot-check schema compliance, and re-run conversions whenever source markdown changes.
 
 ## Commit & Pull Request Guidelines
 

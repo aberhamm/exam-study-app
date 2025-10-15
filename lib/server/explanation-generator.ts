@@ -35,7 +35,7 @@ let circuitBreakerUntil: number | null = null;
 const CIRCUIT_BREAKER_THRESHOLD = 3;
 const CIRCUIT_BREAKER_DURATION_MS = 2 * 60 * 1000; // 2 minutes
 
-// Helper to create hash for logging
+// Helper to create a short hash from arbitrary text for logging and caching keys
 function hashText(text: string): string {
   return crypto.createHash('sha256').update(text).digest('hex').substring(0, 8);
 }
@@ -83,11 +83,30 @@ async function getEmbeddingsCollection(): Promise<Collection<EmbeddingChunkDocum
   return db.collection<EmbeddingChunkDocument>(envConfig.pipeline.documentEmbeddingsCollection);
 }
 
+/**
+ * Create an embedding for the provided text.
+ *
+ * Notes:
+ * - Wrapped in retry/backoff with a request-timeout abort.
+ * - Uses a simple in-process LRU cache keyed by (model, dimensions, hash(text))
+ *   to avoid duplicate paid calls within the same server process.
+ * - This cache is NOT shared across instances and resets on deploy.
+ */
 async function createEmbedding(text: string): Promise<number[]> {
   return retryWithBackoff(async () => {
     const apiKey = envConfig.openai.apiKey;
     const model = envConfig.openai.embeddingModel;
     const dimensions = envConfig.openai.embeddingDimensions;
+
+    // In‑memory LRU cache keyed by model+dimensions+hash(text)
+    const key = `${model}:${dimensions}:${hashText(text)}`;
+    const cached = embeddingCache.get(key);
+    if (cached) {
+      if (featureFlags.debugRetrieval) {
+        console.info(`[createEmbedding] cache hit key=${key}`);
+      }
+      return cached;
+    }
 
     const body = { model, input: text, dimensions };
 
@@ -110,7 +129,10 @@ async function createEmbedding(text: string): Promise<number[]> {
       throw new Error('Invalid embedding response');
     }
 
-    return json.data[0].embedding;
+    const embedding = json.data[0].embedding;
+    // Insert into LRU cache
+    embeddingCacheSet(key, embedding);
+    return embedding;
   });
 }
 
@@ -633,5 +655,29 @@ export async function generateQuestionExplanation(
     throw new Error(
       `Failed to generate explanation: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
+  }
+}
+
+// --- Simple LRU cache for embeddings (process memory)
+//
+// Why: During an editing session it's common to request the same embedding
+// multiple times (e.g., same question payload or answer text). Caching saves
+// round-trips and token spend. This is a best-effort, per-process cache.
+// Not suitable for cross-instance deduplication.
+const embeddingCache: Map<string, number[]> = new Map();
+// Upper bound for entries kept in memory. Adjust to balance memory vs hit-rate.
+const MAX_CACHE_ENTRIES = 500;
+
+/** Insert/refresh an entry in the LRU cache, trimming the oldest if needed */
+function embeddingCacheSet(key: string, value: number[]): void {
+  // If exists, refresh insertion order
+  if (embeddingCache.has(key)) {
+    embeddingCache.delete(key);
+  }
+  embeddingCache.set(key, value);
+  // Trim oldest
+  if (embeddingCache.size > MAX_CACHE_ENTRIES) {
+    const firstKey = embeddingCache.keys().next().value as string | undefined;
+    if (firstKey !== undefined) embeddingCache.delete(firstKey);
   }
 }

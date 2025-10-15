@@ -17,6 +17,7 @@ export default auth((req) => {
       pathname.includes('/questions/embed') ||
       pathname.includes('/questions/process') ||
       pathname.includes('/explain') ||
+      pathname.includes('/explanation') ||
       pathname.includes('/competencies') ||
       pathname.includes('/dedupe')
     );
@@ -37,11 +38,13 @@ export default auth((req) => {
 
     // Require admin role
     if (session.user.role !== 'admin') {
-      // Return 403 for both UI and API routes
+      // API routes: return 403 JSON
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
       }
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      // UI routes: redirect to a friendly Forbidden page
+      const forbiddenUrl = new URL('/forbidden', req.url);
+      return NextResponse.redirect(forbiddenUrl);
     }
   }
 
@@ -59,6 +62,8 @@ export const config = {
     '/api/exams/:examId/questions/embed',
     '/api/exams/:examId/questions/process',
     '/api/exams/:examId/questions/:questionId/explain',
+    '/api/exams/:examId/questions/:questionId/explanation',
+    '/api/exams/:examId/questions/:questionId/explanation/:path*',
     '/api/exams/:examId/questions/:questionId/competencies',
     '/api/exams/:examId/dedupe',
     '/api/exams/:examId/dedupe/:path*',

@@ -168,28 +168,38 @@ export type CompetencyStats = {
   examPercentage: number;
 };
 
+/**
+ * Aggregate question counts per competency for a given exam.
+ *
+ * Implementation details:
+ * - Unwinds competencyIds and groups by id, returning a single query result.
+ * - Avoids N+1 queries over the competencies list.
+ */
 export async function getCompetencyAssignmentStats(examId: string): Promise<CompetencyStats[]> {
   const db = await getDb();
   const questionsCol = db.collection(envConfig.mongo.questionsCollection);
 
   // Get all competencies for this exam
   const competencies = await fetchCompetenciesByExamId(examId);
+  const compById = new Map(competencies.map(c => [c.id, c]));
 
-  // Count questions for each competency
-  const stats: CompetencyStats[] = [];
-  for (const comp of competencies) {
-    const count = await questionsCol.countDocuments({
-      examId,
-      competencyIds: comp.id,
-    });
+  // Aggregate counts grouped by competencyIds
+  type CountRow = { _id: string; count: number };
+  const counts = await questionsCol.aggregate<CountRow>([
+    { $match: { examId, competencyIds: { $exists: true, $ne: [] } } },
+    { $unwind: '$competencyIds' },
+    { $group: { _id: '$competencyIds', count: { $sum: 1 } } },
+  ]).toArray();
 
-    stats.push({
-      competencyId: comp.id,
-      title: comp.title,
-      questionCount: count,
-      examPercentage: comp.examPercentage,
-    });
-  }
+  const countMap = new Map(counts.map(r => [r._id, r.count]));
+
+  // Build stats in the order of competencies list
+  const stats: CompetencyStats[] = competencies.map((comp) => ({
+    competencyId: comp.id,
+    title: comp.title,
+    questionCount: countMap.get(comp.id) || 0,
+    examPercentage: comp.examPercentage,
+  }));
 
   return stats;
 }

@@ -1,115 +1,39 @@
 # TODO List
 
-## ✅ Completed Tasks
+## Next Up (Short-Term Plan)
 
-### Similarity Clustering System
-- [x] **Implement clustering algorithm for grouping similar questions**
-  - Connected components algorithm to group similar questions
-  - Configurable similarity thresholds and cluster metrics
-  - Support for splitting and merging clusters
+- RAG/Explanation Pipeline
+  - Admin tool to batch-generate missing explanations with a dry‑run cost estimate.
 
-- [x] **Add database schema for questionClusters collection**
-  - New `questionClusters` collection with status tracking
-  - Cluster metadata (similarity scores, timestamps, status)
-  - Integration with existing MongoDB setup
+- Admin UX & DX
+  - Explanation history audit UI (diff‑friendly view) in admin pages.
+  - Gate noisy logs across explanation routes/generator behind `DEBUG_RETRIEVAL` or dev checks.
 
-- [x] **Add API endpoints for cluster operations**
-  - `GET/POST /api/exams/[examId]/dedupe/clusters` - Generate and retrieve clusters
-  - `GET/POST/DELETE /api/exams/[examId]/dedupe/clusters/[clusterId]` - Manage individual clusters
-  - Support for cluster actions (approve, exclude, split, reset)
+- API & Types
+  - Audit remaining endpoints for strict parsing of `explanationSources` (avoid `unknown` casts).
 
-- [x] **Create new cluster view UI component for the dedupe page**
-  - New "Similarity Groups" tab in dedupe interface
-  - Expandable cluster cards showing all questions in groups
-  - Visual status indicators and question previews
+- Docs & Config
+  - Quick pass on `.env` docs to confirm alignment with hardcoded collection names and new flags (e.g., `USE_RAND_SORT_SAMPLING`).
 
-- [x] **Implement cluster management features (split, merge, exclude)**
-  - Bulk actions: "Keep as Variants", "Mark as Duplicates"
-  - Individual question exclusion from clusters
-  - Cluster status management and audit trail
+## Mid-Term
 
-- [x] **Test the clustering functionality with real data**
-  - Successfully generated 34 clusters from sitecore-xmc exam
-  - Verified API endpoints and UI functionality
-  - Confirmed vector similarity processing works correctly
+- Bulk operations: batch assign competencies; batch embed/regenerate; show estimated token cost.
+- Optional analytics: allow users to opt-in to send anonymized local metrics for aggregated insights.
+- Study mode: delay correctness feedback; emphasize sources and explanations on demand.
 
-## 📋 Pending Tasks
+## Future Enhancements
 
-### Performance & User Experience
-- [ ] **Implement background processor for cluster generation to avoid UI timeouts**
-  - Create job queue system using MongoDB
-  - Background worker script for processing cluster jobs
-  - Real-time progress updates and status tracking
-  - Non-blocking UI with polling for job completion
-  - Support for multiple concurrent clustering jobs
+- Clustering improvements
+  - Advanced cluster splitting algorithms (auto + manual tooling).
+  - Cluster quality metrics (coherence scoring, validation).
 
-### Environment Configuration
-- [ ] **Add MONGODB_QUESTION_CLUSTERS_COLLECTION to .env.example**
-  - Document the new environment variable for cluster storage
-  - Update configuration documentation
-  - Ensure proper setup instructions for new deployments
+- Exam management
+  - Exam constraint enforcement: avoid highly similar items in a single quiz session; substitute on conflict.
 
-### Exam Competencies System
-- [x] **Implement exam competencies collection and infrastructure**
-  - ✅ Database schema with embeddings support
-  - ✅ API endpoints for CRUD operations
-  - ✅ Vector search for semantic competency assignment
-  - ✅ Scripts for embedding and auto-assignment
-  - ✅ Management UI at /dev/competencies
+- Analytics & Reporting
+  - Clustering/duplication analytics dashboard (distribution, efficiency, trends).
 
-- [ ] **Integrate competencies into question preparation**
-  - Filter questions by competency in exam preparation
-  - Ensure balanced competency distribution
-  - Display competency assignments in question views
+## Performance & Background Work
 
-### UI/UX Improvements
-- [ ] **Implement react-markdown to enable editing markdown better**
-  - Improve markdown editing experience across the application
-  - Better preview and editing capabilities
-
-- [ ] **Create exam control panel for editing config/messages**
-  - Centralized interface for exam configuration management
-  - Ability to edit exam messages and settings
-
-- [ ] **Break sources out of explanation and create relation between question and document chunk**
-  - Remove embedded sources from explanation text
-  - Create proper relation between questions and document chunks
-  - Display sources in a prettier, more structured way using URLs from document chunks
-
-## 🎯 Future Enhancements
-
-### Clustering Improvements
-- [ ] **Advanced cluster splitting algorithms**
-  - Implement automatic cluster splitting based on sub-similarity thresholds
-  - Manual cluster editing and reorganization tools
-
-- [ ] **Cluster quality metrics**
-  - Add coherence scoring for cluster quality assessment
-  - Cluster validation and recommendation system
-
-### Exam Management
-- [ ] **Exam constraint enforcement**
-  - Prevent similar questions from appearing on same exam
-  - Warning system for potential duplicates during exam generation
-  - Automatic question substitution from different clusters
-
-### Analytics & Reporting
-- [ ] **Clustering analytics dashboard**
-  - Cluster distribution statistics
-  - Duplicate detection efficiency metrics
-  - Historical clustering trends
-
----
-
-## Notes
-
-### Current System Status
-- ✅ Clustering system fully functional
-- ✅ UI provides comprehensive cluster management
-- ⚠️ Cluster generation takes 60+ seconds (needs background processing)
-
-### Key Features Delivered
-- **Smart Question Grouping**: Automatically clusters similar questions using vector embeddings
-- **Batch Decision Making**: Review entire groups instead of individual pairs
-- **Flexible Management**: Exclude questions, approve variants, or mark duplicates
-- **Visual Interface**: Expandable cards with full question content and actions
+- Background processor for cluster generation to avoid UI timeouts
+  - Job queue (Mongo-backed), worker script, progress updates, non-blocking UI with polling, concurrent job support.

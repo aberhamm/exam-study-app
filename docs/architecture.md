@@ -2,7 +2,7 @@
 
 ## System Architecture
 
-The SCXMCL Study Utility is built using a modern React-based architecture with Next.js 15 and the App Router pattern. The application follows a client-side state management approach with hooks and context for theme management.
+The SCXMCL Study Utility is built using a modern React-based architecture with Next.js 15 and the App Router pattern. The application uses MongoDB for persistence (exams, questions, competencies, embeddings) and typed server-side API routes for data access. Client UI state is managed with hooks and context.
 
 ## High-Level Architecture
 
@@ -42,7 +42,7 @@ The SCXMCL Study Utility is built using a modern React-based architecture with N
 - State maintained entirely on the client side
 
 ### 2. Data-First Architecture
-- Questions loaded from static JSON files
+- Questions loaded from MongoDB via server API routes
 - Data validation using Zod schemas at runtime
 - Normalization layer to convert external format to internal types
 - Immutable data flow with functional state updates
@@ -75,9 +75,9 @@ QuizApp with prepared subset
 
 ### Question Loading Flow
 ```
-API → Fetch → Zod Validation → Normalization → Component State
+API (MongoDB) → Fetch → Zod Validation → Normalization → Component State
     ↓
-POST /api/exams/:examId/questions/prepare
+POST /api/exams/:examId/questions/prepare (server filters + samples)
     ↓
 usePreparedQuestions Hook
     ↓
@@ -188,10 +188,9 @@ src/
 - Conditional rendering to avoid DOM manipulation
 
 ### Data Loading
-- Static JSON files served from CDN
-- No database queries or API calls
-- Questions loaded once and cached in memory
-- Chunked question files for potential future optimization
+- Questions, exams, and competencies are provided by server API routes backed by MongoDB
+- Question preparation occurs on the server; the client receives only the prepared subset
+- Vector search and LLM explanations are admin-only endpoints and rely on embeddings collections
 
 ## Error Handling
 
@@ -208,8 +207,8 @@ src/
 ## Security Considerations
 
 ### Client-Side Security
-- No user authentication or sensitive data
-- Static content only, no dynamic data exposure
+- Admin authentication and role-based access with NextAuth.js
+- Sensitive operations (imports, embeddings, explanations, dedupe) require admin
 - CSP headers can be added via Next.js config
 
 ### Data Integrity
@@ -219,10 +218,9 @@ src/
 
 ## Deployment Architecture
 
-### Static Generation
-- Next.js can generate static files for CDN deployment
-- No server-side rendering required for this application
-- Questions bundled at build time
+### Server Runtime
+- Uses serverless/Node runtimes for API routes and middleware
+- Client UI remains SPA-style, but data flows through server APIs
 
 ### Hosting Options
 - Vercel (optimized for Next.js)
@@ -233,10 +231,9 @@ src/
 ## Future Architecture Considerations
 
 ### Scalability
-- Database integration for dynamic question management
-- User authentication and progress tracking
-- Question categorization and filtering
-- Analytics and usage tracking
+- Shard/scale MongoDB; offload rate-limited operations to background workers
+- User authentication and progress tracking (local or optional server aggregation)
+- Question categorization/filtering and analytics via server APIs
 
 ### Performance Enhancements
 - Virtual scrolling for large question sets

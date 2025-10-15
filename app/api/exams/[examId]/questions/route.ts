@@ -4,6 +4,7 @@ import type { QuestionDocument } from '@/types/question';
 import type { WithId } from 'mongodb';
 import { fetchCompetenciesByExamId } from '@/lib/server/competencies';
 import type { ExplanationSource } from '@/types/explanation';
+import { ExplanationSourceZ } from '@/lib/validation';
 
 type RouteParams = { params: Promise<{ examId: string }> };
 
@@ -17,6 +18,8 @@ export async function GET(request: Request, context: RouteParams) {
     const flaggedOnly = searchParams.get('flaggedOnly') === 'true';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
+    // Optional output format when querying by specific ids; default remains flat array
+    const format = (searchParams.get('format') || '').toLowerCase(); // 'flat' | 'object'
 
     // Validate pagination params
     const validPage = Math.max(1, page);
@@ -101,7 +104,12 @@ export async function GET(request: Request, context: RouteParams) {
       question_type: doc.question_type,
       explanation: doc.explanation,
       explanationGeneratedByAI: doc.explanationGeneratedByAI,
-      explanationSources: (doc as unknown as { explanationSources?: unknown }).explanationSources as ExplanationSource[] | undefined,
+      explanationSources: (Array.isArray((doc as unknown as { explanationSources?: unknown }).explanationSources)
+        ? ((doc as unknown as { explanationSources?: unknown[] }).explanationSources as unknown[])
+            .map((s) => ExplanationSourceZ.safeParse(s))
+            .filter((r): r is { success: true; data: ExplanationSource } => r.success)
+            .map((r) => r.data)
+        : undefined) as ExplanationSource[] | undefined,
       competencyIds: doc.competencyIds,
       competencies: doc.competencyIds
         ?.map(cid => competencyMap.get(cid))
@@ -116,6 +124,22 @@ export async function GET(request: Request, context: RouteParams) {
 
     // When fetching specific IDs, return questions directly without pagination
     if (parsedIds) {
+      if (format === 'object') {
+        // Wrap in a normalized object shape when requested explicitly
+        return NextResponse.json(
+          {
+            questions,
+            pagination: {
+              page: 1,
+              limit: questions.length,
+              total: questions.length,
+              totalPages: 1,
+            },
+          },
+          { headers: { 'Cache-Control': 'no-store' } }
+        );
+      }
+      // Default: flat array for specific ids (backward compatible)
       return NextResponse.json(questions, { headers: { 'Cache-Control': 'no-store' } });
     }
 

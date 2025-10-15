@@ -4,6 +4,7 @@ import type { QuestionDocument, QuestionWithId } from '@/types/question';
 import { getDb, getExamsCollectionName, getQuestionsCollectionName } from './mongodb';
 import { ExamNotFoundError } from '@/lib/server/exams';
 import { ObjectId as MongoObjectId } from 'mongodb';
+import { ExplanationSourceZ } from '@/lib/validation';
 
 type ExamDocument = ExamDetail & {
   _id?: unknown;
@@ -18,7 +19,14 @@ function sanitizeStudy(value: unknown): ExternalQuestion['study'] | undefined {
 }
 
 function mapQuestionDocToExternal(q: QuestionDocument & { _id: ObjectId }): ExternalQuestion & { id: string } {
-  const { _id, question, options, answer, question_type, explanation, explanationGeneratedByAI, explanationSources, study } = q;
+  const { _id, question, options, answer, question_type, explanation, explanationGeneratedByAI, study } = q;
+  const rawSources = (q as unknown as { explanationSources?: unknown }).explanationSources;
+  const parsedSources = Array.isArray(rawSources)
+    ? rawSources
+        .map((s) => ExplanationSourceZ.safeParse(s))
+        .filter((r): r is { success: true; data: ExternalQuestion['explanationSources'][number] } => r.success)
+        .map((r) => r.data)
+    : undefined;
   return {
     id: _id.toString(),
     question,
@@ -27,27 +35,36 @@ function mapQuestionDocToExternal(q: QuestionDocument & { _id: ObjectId }): Exte
     question_type,
     explanation,
     explanationGeneratedByAI,
-    explanationSources,
+    explanationSources: parsedSources,
     study: sanitizeStudy(study as unknown),
   };
+}
+
+// Lazily ensure indexes only once per process to avoid overhead on hot paths.
+let ensureIndexesPromise: Promise<void> | null = null;
+
+async function ensureQuestionsIndexes(collection: Collection<QuestionDocument>): Promise<void> {
+  if (!ensureIndexesPromise) {
+    const textIndex = { question: 'text' } as unknown as IndexSpecification;
+    ensureIndexesPromise = Promise.allSettled([
+      collection.createIndex({ examId: 1 }, { name: 'examId_1' }),
+      collection.createIndex(textIndex, { name: 'question_text' }),
+      collection.createIndex({ examId: 1, competencyIds: 1 }, { name: 'examId_competencyIds' }),
+      collection.createIndex({ examId: 1, flaggedForReview: 1 }, { name: 'examId_flaggedForReview' }),
+      collection.createIndex({ flaggedForReview: 1, flaggedAt: -1 }, { name: 'flaggedForReview_flaggedAt' }),
+    ])
+      // Swallow errors here to avoid blocking; operations are idempotent
+      .then(() => undefined)
+      .catch(() => undefined);
+  }
+  await ensureIndexesPromise;
 }
 
 async function getQuestionsCollection(): Promise<Collection<QuestionDocument>> {
   const db = await getDb();
   const collection = db.collection<QuestionDocument>(getQuestionsCollectionName());
-
-  // Ensure indexes exist (idempotent)
-  const textIndex = { question: 'text' } as unknown as IndexSpecification;
-  await Promise.allSettled([
-    collection.createIndex({ examId: 1 }, { name: 'examId_1' }),
-    collection.createIndex(textIndex, { name: 'question_text' }),
-    // Index for filtering questions by competency
-    collection.createIndex({ examId: 1, competencyIds: 1 }, { name: 'examId_competencyIds' }),
-    // Index for filtering flagged questions
-    collection.createIndex({ examId: 1, flaggedForReview: 1 }, { name: 'examId_flaggedForReview' }),
-    // Index for admin flagged questions view
-    collection.createIndex({ flaggedForReview: 1, flaggedAt: -1 }, { name: 'flaggedForReview_flaggedAt' }),
-  ]);
+  // Ensure indexes once per process
+  await ensureQuestionsIndexes(collection);
 
   return collection;
 }

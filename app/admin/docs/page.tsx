@@ -91,8 +91,8 @@ export default function DocsPage() {
         </div>
         <div className="text-sm text-muted-foreground">
           💡 Tip: Manage competencies visually at{' '}
-          <Link href="/dev/competencies" className="text-blue-600 hover:underline">
-            /dev/competencies
+          <Link href="/admin/competencies" className="text-blue-600 hover:underline">
+            /admin/competencies
           </Link>
         </div>
       </Card>
@@ -148,7 +148,7 @@ export default function DocsPage() {
         <h2 className="text-2xl font-semibold">Related Tools</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link
-            href="/dev/search"
+            href="/admin/search"
             className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <h3 className="font-semibold mb-1">Semantic Search</h3>
@@ -157,7 +157,7 @@ export default function DocsPage() {
             </p>
           </Link>
           <Link
-            href="/dev/dedupe"
+            href="/admin/dedupe"
             className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <h3 className="font-semibold mb-1">Dedupe Tool</h3>
@@ -166,19 +166,18 @@ export default function DocsPage() {
             </p>
           </Link>
           <Link
-            href="/dev/competencies"
+            href="/admin/competencies"
             className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <h3 className="font-semibold mb-1">Competencies Manager</h3>
-            <p className="text-sm text-muted-foreground">
-              Define and manage exam competency areas
-            </p>
+            <p className="text-sm text-muted-foreground">Define and manage exam competency areas</p>
           </Link>
-          <Link href="/import" className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+          <Link
+            href="/import"
+            className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+          >
             <h3 className="font-semibold mb-1">Import Questions</h3>
-            <p className="text-sm text-muted-foreground">
-              Bulk import questions from JSON files
-            </p>
+            <p className="text-sm text-muted-foreground">Bulk import questions from JSON files</p>
           </Link>
         </div>
       </Card>

@@ -1,4 +1,0 @@
-- question can have many explanations, the newest is shown. the rest are for history. when a new explanation is added/generated, it gets set as the default explanation
-- option to have % of questions from competencies if possible
-- reorganize dev toolbar
-- tests for explanation generator

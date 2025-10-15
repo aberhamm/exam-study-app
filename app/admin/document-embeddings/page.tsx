@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { useEffect } from 'react';
@@ -29,7 +29,8 @@ export default function DocumentEmbeddingsDevPage() {
       <Card className="p-6 space-y-4">
         <h2 className="text-2xl font-semibold">Document Embeddings Management</h2>
         <p className="text-sm text-muted-foreground">
-          Tools for managing document embeddings used in AI explanation generation. This collection stores chunks of documentation with vector embeddings for semantic search.
+          Tools for managing document embeddings used in AI explanation generation. This collection
+          stores chunks of documentation with vector embeddings for semantic search.
         </p>
         <div className="rounded-md border p-4 bg-muted/40 font-mono text-sm space-y-2">
           <div>
@@ -38,16 +39,21 @@ export default function DocumentEmbeddingsDevPage() {
           </div>
           <div>
             <div className="font-semibold">Create vector index</div>
-            <pre className="mt-1">cd data-pipelines && pnpm tsx scripts/create-embeddings-index.ts</pre>
+            <pre className="mt-1">
+              cd data-pipelines && pnpm tsx scripts/create-embeddings-index.ts
+            </pre>
           </div>
           <div>
             <div className="font-semibold">Test document search</div>
-            <pre className="mt-1">cd data-pipelines && pnpm tsx scripts/test-embeddings-search.ts --query &quot;your text&quot;</pre>
+            <pre className="mt-1">
+              cd data-pipelines && pnpm tsx scripts/test-embeddings-search.ts --query &quot;your
+              text&quot;
+            </pre>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/dev/docs">
+          <Link href="/admin/docs">
             <Button variant="outline">Browse Documents</Button>
           </Link>
         </div>
