@@ -425,6 +425,7 @@ Output a concise, instructional explanation in Markdown that:
 4) stays within 120-200 words,
 5) contains no chit-chat, no follow-ups, no greetings, no meta-commentary.
 6) key terminology should be bolded for emphasis
+7) include a practical use-case example, a brief code snippet, or some other illustration to clarify the concept
 
 HARD RULES
 - If the excerpts are insufficient to justify the answer, output exactly:
