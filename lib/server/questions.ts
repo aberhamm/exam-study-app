@@ -5,6 +5,7 @@ import { getDb, getExamsCollectionName, getQuestionsCollectionName } from './mon
 import { ExamNotFoundError } from '@/lib/server/exams';
 import { ObjectId as MongoObjectId } from 'mongodb';
 import { ExplanationSourceZ } from '@/lib/validation';
+import type { ExplanationSource } from '@/types/explanation';
 
 type ExamDocument = ExamDetail & {
   _id?: unknown;
@@ -24,7 +25,7 @@ function mapQuestionDocToExternal(q: QuestionDocument & { _id: ObjectId }): Exte
   const parsedSources = Array.isArray(rawSources)
     ? rawSources
         .map((s) => ExplanationSourceZ.safeParse(s))
-        .filter((r): r is { success: true; data: ExternalQuestion['explanationSources'][number] } => r.success)
+        .filter((r): r is { success: true; data: ExplanationSource } => r.success)
         .map((r) => r.data)
     : undefined;
   return {

@@ -1,12 +1,30 @@
 import { NextResponse } from 'next/server';
 import { envConfig } from '@/lib/env-config';
-import { getDb, getQuestionEmbeddingsCollectionName, getQuestionsCollectionName, getQuestionClustersCollectionName } from '@/lib/server/mongodb';
-import { clusterQuestionsBySimilarity, type SimilarityPair } from '@/lib/server/clustering';
+import { getDb, getQuestionEmbeddingsCollectionName, getQuestionsCollectionName, getQuestionClustersCollectionName, getDedupePairsCollectionName } from '@/lib/server/mongodb';
+import { clusterQuestionsBySimilarity, type SimilarityPair, buildPairScoreIndex, calculateClusterMetricsExtended } from '@/lib/server/clustering';
 import type { Document } from 'mongodb';
 import type { QuestionDocument } from '@/types/question';
 import type { ClusterDocument, QuestionCluster } from '@/types/clusters';
 import type { OptionalId } from 'mongodb';
 import { requireAdmin } from '@/lib/auth';
+/**
+ * Clusters API (list/generate)
+ *
+ * Behavior
+ * - GET: return existing clusters for exam; optional `?regenerate=true` does a full rebuild
+ *   (historical behavior), but prefer POST for incremental updates.
+ * - POST: generate clusters from current embeddings. Supports two modes:
+ *   - `mode: 'incremental'` (default): add/update clusters without wiping decided/locked ones.
+ *   - `mode: 'force'`: replace non-locked clusters while preserving decided ones.
+ *
+ * Implementation
+ * - Build candidate clusters from vector neighbor pairs at the provided threshold.
+ * - Match candidates to existing clusters using Jaccard overlap; update matched clusters
+ *   (union of members) or create new clusters with stable UUIDs otherwise.
+ * - Locked/decided clusters are kept intact and never deleted.
+ * - Extended quality metrics are computed and stored with each cluster.
+ */
+import { randomUUID } from 'crypto';
 
 type RouteParams = {
   params: Promise<{ examId: string }>;
@@ -16,6 +34,7 @@ type ClusterBody = {
   threshold?: number;
   minClusterSize?: number;
   forceRegenerate?: boolean;
+  mode?: 'incremental' | 'force';
 };
 
 export async function GET(request: Request, context: RouteParams) {
@@ -61,7 +80,7 @@ export async function GET(request: Request, context: RouteParams) {
       }
     }
 
-    // Generate new clusters
+    // Generate new clusters (legacy GET regeneration path). Consider POST incremental instead.
     const minClusterSize = 2;
 
     const embCol = db.collection<Document>(getQuestionEmbeddingsCollectionName());
@@ -76,7 +95,26 @@ export async function GET(request: Request, context: RouteParams) {
     }
 
     // Generate similarity pairs
-    const pairs = await generateSimilarityPairs(embeddingDocs as unknown as Array<{ question_id: unknown; examId: string; embedding?: number[] }>, examId, threshold);
+    const rawPairs = await generateSimilarityPairs(embeddingDocs as unknown as Array<{ question_id: unknown; examId: string; embedding?: number[] }>, examId, threshold);
+
+    // Respect ignored pairs from flags
+    let pairs = rawPairs;
+    try {
+      const flagsCol = db.collection<Document>(getDedupePairsCollectionName());
+      const ignoreFlags = await flagsCol
+        .find({ examId, status: 'ignore' }, { projection: { _id: 0, aId: 1, bId: 1 } })
+        .toArray();
+      const ignoreSet = new Set(
+        ignoreFlags.map((f) => {
+          const a = String((f as { aId?: unknown }).aId);
+          const b = String((f as { bId?: unknown }).bId);
+          return [a, b].sort().join('::');
+        })
+      );
+      pairs = rawPairs.filter((p) => !ignoreSet.has([p.aId, p.bId].sort().join('::')));
+    } catch {
+      // ignore; proceed without flags if collection missing
+    }
 
     // Cluster the pairs
     const clusters = clusterQuestionsBySimilarity(pairs, minClusterSize, threshold);
@@ -132,6 +170,7 @@ export async function POST(request: Request, context: RouteParams) {
     const body = (await request.json().catch(() => ({}))) as ClusterBody;
     const threshold = Math.max(0, Math.min(1, Number(body?.threshold) || 0.85));
     const minClusterSize = Math.min(Math.max(Number(body?.minClusterSize) || 2, 2), 10);
+    const mode: 'incremental' | 'force' = (body?.mode === 'force' ? 'force' : 'incremental');
 
     const db = await getDb();
     const embCol = db.collection<Document>(getQuestionEmbeddingsCollectionName());
@@ -146,35 +185,139 @@ export async function POST(request: Request, context: RouteParams) {
     }
 
     // Generate similarity pairs
-    const pairs = await generateSimilarityPairs(embeddingDocs as unknown as Array<{ question_id: unknown; examId: string; embedding?: number[] }>, examId, threshold);
+    const rawPairs = await generateSimilarityPairs(embeddingDocs as unknown as Array<{ question_id: unknown; examId: string; embedding?: number[] }>, examId, threshold);
 
-    // Cluster the pairs
-    const clusters = clusterQuestionsBySimilarity(pairs, minClusterSize, threshold);
-
-    // Save clusters to database
-    const clustersCol = db.collection<ClusterDocument>(getQuestionClustersCollectionName());
-    const now = new Date();
-    const clusterDocs = clusters.map(cluster => ({
-      ...cluster,
-      examId,
-      status: 'pending' as const,
-      createdAt: now,
-      updatedAt: now
-    }));
-
-    if (clusterDocs.length > 0) {
-      // Clear existing clusters for this exam
-      await clustersCol.deleteMany({ examId });
-      await clustersCol.insertMany(clusterDocs as OptionalId<ClusterDocument>[]);
+    // Respect ignored pairs from flags
+    let pairs = rawPairs;
+    try {
+      const flagsCol = db.collection<Document>(getDedupePairsCollectionName());
+      const ignoreFlags = await flagsCol
+        .find({ examId, status: 'ignore' }, { projection: { _id: 0, aId: 1, bId: 1 } })
+        .toArray();
+      const ignoreSet = new Set(
+        ignoreFlags.map((f) => {
+          const a = String((f as { aId?: unknown }).aId);
+          const b = String((f as { bId?: unknown }).bId);
+          return [a, b].sort().join('::');
+        })
+      );
+      pairs = rawPairs.filter((p) => !ignoreSet.has([p.aId, p.bId].sort().join('::')));
+    } catch {
+      // ignore; proceed without flags if collection missing
     }
 
-    // Populate with question data
-    const populatedClusters = await populateClustersWithQuestions(clusterDocs as ClusterDocument[], examId);
+    // Cluster the pairs (candidates are ephemeral with membership-hash ids)
+    const candidateClusters = clusterQuestionsBySimilarity(pairs, minClusterSize, threshold);
+
+    const clustersCol = db.collection<ClusterDocument>(getQuestionClustersCollectionName());
+    const now = new Date();
+    const existing = await clustersCol.find({ examId }).toArray();
+    const existingById = new Map(existing.map(c => [c.id, c]));
+
+    // Utility to compute overlap
+    function jaccard(a: Set<string>, b: Set<string>): number {
+      const inter = new Set([...a].filter(x => b.has(x))).size;
+      const uni = new Set([...a, ...b]).size;
+      return uni === 0 ? 0 : inter / uni;
+    }
+
+    // Lock semantics
+    function isLocked(c: ClusterDocument): boolean {
+      return c.locked === true || c.status === 'approved_duplicates' || c.status === 'approved_variants';
+    }
+
+    const pairIndex = buildPairScoreIndex(pairs);
+
+    let created = 0;
+    let updated = 0;
+    const toInsert: OptionalId<ClusterDocument>[] = [];
+    const toUpdate: Array<{ id: string; doc: Partial<ClusterDocument> }> = [];
+
+    const usedExisting = new Set<string>();
+
+    for (const cand of candidateClusters) {
+      const candSet = new Set<string>(cand.questionIds);
+      let bestId: string | null = null;
+      let bestScore = 0;
+      for (const ex of existing) {
+        if (isLocked(ex)) continue;
+        if (usedExisting.has(ex.id)) continue;
+        const exSet = new Set<string>(ex.questionIds);
+        const score = jaccard(candSet, exSet);
+        if (score > bestScore) {
+          bestScore = score;
+          bestId = ex.id;
+        }
+      }
+
+      if (bestId && (bestScore >= 0.6 || (cand.questionIds.length <= 4 && bestScore >= 0.5))) {
+        const ex = existingById.get(bestId)!;
+        const merged = Array.from(new Set<string>([...ex.questionIds, ...cand.questionIds]));
+        const metrics = calculateClusterMetricsExtended(merged, pairIndex);
+        toUpdate.push({ id: ex.id, doc: { questionIds: merged, avgSimilarity: metrics.avgSimilarity, maxSimilarity: metrics.maxSimilarity, minSimilarity: metrics.minSimilarity, cohesionScore: metrics.cohesionScore, stdDevSimilarity: metrics.stdDevSimilarity, edgeCount: metrics.edgeCount, possibleEdgeCount: metrics.possibleEdgeCount, density: metrics.density, medoidId: metrics.medoidId, updatedAt: now } });
+        usedExisting.add(ex.id);
+        updated += 1;
+      } else {
+        const metrics = calculateClusterMetricsExtended(cand.questionIds, pairIndex);
+        const doc: OptionalId<ClusterDocument> = {
+          id: randomUUID(),
+          examId,
+          questionIds: cand.questionIds,
+          avgSimilarity: metrics.avgSimilarity,
+          maxSimilarity: metrics.maxSimilarity,
+          minSimilarity: metrics.minSimilarity,
+          cohesionScore: metrics.cohesionScore,
+          stdDevSimilarity: metrics.stdDevSimilarity,
+          edgeCount: metrics.edgeCount,
+          possibleEdgeCount: metrics.possibleEdgeCount,
+          density: metrics.density,
+          medoidId: metrics.medoidId,
+          status: 'pending',
+          locked: false,
+          createdAt: now,
+          updatedAt: now,
+        };
+        toInsert.push(doc);
+        created += 1;
+      }
+    }
+
+    if (mode === 'force') {
+      // Do not delete locked or decided clusters
+      const lockedExisting = existing.filter(isLocked);
+      await clustersCol.deleteMany({
+        examId,
+        $and: [
+          { $or: [{ locked: { $exists: false } }, { locked: false }] },
+          { status: { $nin: ['approved_duplicates', 'approved_variants'] } },
+        ],
+      });
+      if (lockedExisting.length > 0) {
+        // ensure locked docs remain untouched
+      }
+      if (toInsert.length > 0) await clustersCol.insertMany(toInsert);
+    } else {
+      if (toInsert.length > 0) await clustersCol.insertMany(toInsert);
+      for (const u of toUpdate) {
+        await clustersCol.updateOne({ examId, id: u.id }, { $set: u.doc });
+      }
+    }
+
+    // Return current clusters populated
+    const refreshed = await clustersCol
+      .find({ examId }, { projection: { _id: 0 } })
+      .sort({ avgSimilarity: -1 })
+      .toArray();
+    const populatedClusters = await populateClustersWithQuestions(refreshed, examId);
 
     return NextResponse.json({
       examId,
       count: populatedClusters.length,
-      clusters: populatedClusters
+      clusters: populatedClusters,
+      mode,
+      created,
+      updated,
+      generated: true
     }, { headers: { 'Cache-Control': 'no-store' } });
 
   } catch (error) {

@@ -1,14 +1,26 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ObjectId, type WithId } from 'mongodb';
-import { getDb, getQuestionsCollectionName } from '@/lib/server/mongodb';
+import { getDb, getQuestionsCollectionName, getQuestionClustersCollectionName } from '@/lib/server/mongodb';
 import type { QuestionDocument } from '@/types/question';
 import { normalizeQuestions } from '@/lib/normalize';
 import type { ExternalQuestion } from '@/types/external-question';
 import { envConfig } from '@/lib/env-config';
 import { ExplanationSourceZ } from '@/lib/validation';
+import type { ExplanationSource } from '@/types/explanation';
+import type { ClusterDocument } from '@/types/clusters';
 
 // Contract for the prepare endpoint. See inline docs below for sampling behavior.
+/**
+ * Prepare exam questions for a session.
+ *
+ * New options:
+ * - `avoidSimilar` (boolean): when true, filter sampled questions to avoid selecting
+ *   multiple items that belong to the same cluster for the same exam attempt.
+ * - `similarityPolicy` (enum):
+ *   - 'duplicates-only' (default): avoid clusters with status 'approved_duplicates' or 'pending'.
+ *   - 'all-clustered': avoid any cluster membership except 'approved_variants'.
+ */
 const StartRequestZ = z.object({
   questionType: z.enum(['all', 'single', 'multiple']).default('all'),
   explanationFilter: z.enum(['all', 'with-explanations', 'without-explanations']).default('all'),
@@ -16,6 +28,8 @@ const StartRequestZ = z.object({
   competencyFilter: z.string().optional(),
   excludeQuestionIds: z.array(z.string()).optional(),
   balancedByCompetency: z.boolean().optional().default(false),
+  avoidSimilar: z.boolean().optional().default(false),
+  similarityPolicy: z.enum(['duplicates-only', 'all-clustered']).optional().default('duplicates-only'),
 });
 
 type RouteParams = { params: Promise<{ examId: string }> };
@@ -86,6 +100,57 @@ export async function POST(request: Request, context: RouteParams) {
     // 4) Track a 'seen' set and a global exclude set across rounds to prevent duplicates.
     // 5) If still short, fill from the general pool to reach the requested total.
     const useBalanced = input.balancedByCompetency && (!input.competencyFilter || input.competencyFilter === 'all');
+
+    // Preload cluster membership when needed; map questionId -> array of (clusterId, status)
+    let clusterLookup: Map<string, Array<{ id: string; status: ClusterDocument['status'] }>> | null = null;
+    if (input.avoidSimilar) {
+      const clusters = await db
+        .collection<ClusterDocument>(getQuestionClustersCollectionName())
+        .find({ examId })
+        .project({ _id: 0, id: 1, status: 1, questionIds: 1 })
+        .toArray();
+      clusterLookup = new Map();
+      for (const c of clusters) {
+        for (const qid of c.questionIds) {
+          const arr = clusterLookup.get(qid) || [];
+          arr.push({ id: c.id, status: c.status });
+          clusterLookup.set(qid, arr);
+        }
+      }
+    }
+
+    function filterBySimilarityPreservingOrder(idsInOrder: string[]): { selected: Set<string>; excludedCount: number } {
+      if (!clusterLookup || !input.avoidSimilar) return { selected: new Set(idsInOrder), excludedCount: 0 };
+      const usedClusters = new Set<string>();
+      const selected = new Set<string>();
+      let excludedCount = 0;
+      for (const id of idsInOrder) {
+        const mem = clusterLookup.get(id) || [];
+        let conflict = false;
+        for (const m of mem) {
+          if (input.similarityPolicy === 'duplicates-only') {
+            if ((m.status === 'approved_duplicates' || m.status === 'pending') && usedClusters.has(m.id)) {
+              conflict = true; break;
+            }
+          } else {
+            if (m.status !== 'approved_variants' && usedClusters.has(m.id)) {
+              conflict = true; break;
+            }
+          }
+        }
+        if (conflict) { excludedCount += 1; continue; }
+        selected.add(id);
+        for (const m of mem) {
+          if (input.similarityPolicy === 'duplicates-only') {
+            if (m.status === 'approved_duplicates' || m.status === 'pending') usedClusters.add(m.id);
+          } else {
+            if (m.status !== 'approved_variants') usedClusters.add(m.id);
+          }
+        }
+        if (selected.size >= input.questionCount) break;
+      }
+      return { selected, excludedCount };
+    }
     if (useBalanced) {
       // Fetch competencies for this exam
       const comps = await db
@@ -102,11 +167,11 @@ export async function POST(request: Request, context: RouteParams) {
 
         const excludeIds = new Set<string>((input.excludeQuestionIds || []).filter(ObjectId.isValid));
         const useRandSort = String(process.env.USE_RAND_SORT_SAMPLING || '').toLowerCase();
-        const results: WithId<QuestionDocument>[] = [] as any;
+        const results: WithId<QuestionDocument>[] = [];
         const seen = new Set<string>();
 
         for (const comp of comps) {
-          let take = base + (remainder > 0 ? 1 : 0);
+          const take = base + (remainder > 0 ? 1 : 0);
           if (remainder > 0) remainder -= 1;
           if (take <= 0) continue;
 
@@ -132,12 +197,12 @@ export async function POST(request: Request, context: RouteParams) {
             compPipeline.push({ $sample: { size: take } } as object);
           }
 
-          const compDocs = await col.aggregate(compPipeline).toArray();
+          const compDocs = await col.aggregate<WithId<QuestionDocument>>(compPipeline).toArray();
           for (const d of compDocs) {
-            const key = (d as any)._id.toString(); // eslint-disable-line @typescript-eslint/no-explicit-any
+            const key = d._id.toString();
             if (!seen.has(key)) {
               seen.add(key);
-              results.push(d as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+              results.push(d);
               excludeIds.add(key);
             }
           }
@@ -164,19 +229,31 @@ export async function POST(request: Request, context: RouteParams) {
           } else {
             fillPipeline.push({ $sample: { size: remaining } } as object);
           }
-          const fillDocs = await col.aggregate(fillPipeline).toArray();
+          const fillDocs = await col.aggregate<WithId<QuestionDocument>>(fillPipeline).toArray();
           for (const d of fillDocs) {
-            const key = (d as any)._id.toString(); // eslint-disable-line @typescript-eslint/no-explicit-any
+            const key = d._id.toString();
             if (!seen.has(key)) {
               seen.add(key);
-              results.push(d as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+              results.push(d);
             }
           }
         }
 
         // Now transform results into ExternalQuestion without $lookup (embed minimal competency data)
-        const external: ExternalQuestion[] = results.map((d) => ({
-          id: (d as any)._id.toString(), // eslint-disable-line @typescript-eslint/no-explicit-any
+        // Optionally enforce similarity constraint
+        let selectedIds: Set<string> | null = null;
+        let excludedBySimilarity = 0;
+        if (input.avoidSimilar) {
+          const idsOrdered = results.map((d) => d._id.toString());
+          const f = filterBySimilarityPreservingOrder(idsOrdered);
+          selectedIds = f.selected;
+          excludedBySimilarity = f.excludedCount;
+        }
+
+        const external: ExternalQuestion[] = results
+          .filter((d) => !selectedIds || selectedIds.has(d._id.toString()))
+          .map((d) => ({
+          id: d._id.toString(),
           question: d.question,
           options: d.options,
           answer: d.answer,
@@ -186,7 +263,7 @@ export async function POST(request: Request, context: RouteParams) {
           explanationSources: (Array.isArray((d as unknown as { explanationSources?: unknown }).explanationSources)
             ? ((d as unknown as { explanationSources?: unknown[] }).explanationSources as unknown[])
                 .map((s) => ExplanationSourceZ.safeParse(s))
-                .filter((r): r is { success: true; data: ExternalQuestion['explanationSources'][number] } => r.success)
+                .filter((r): r is { success: true; data: ExplanationSource } => r.success)
                 .map((r) => r.data)
             : undefined) as ExternalQuestion['explanationSources'],
           study: d.study,
@@ -196,11 +273,11 @@ export async function POST(request: Request, context: RouteParams) {
                 .map((cid: string) => comps.find((c) => c.id === cid))
                 .filter((c): c is { id: string; title: string } => !!c)
                 .map((c) => ({ id: c.id, title: c.title }))
-            : undefined) as any,
+            : undefined) as ExternalQuestion['competencies'],
         }));
         // Normalize to the client-friendly question shape
         const normalized = normalizeQuestions(external);
-        return NextResponse.json({ examId, count: normalized.length, questions: normalized }, { headers: { 'Cache-Control': 'no-store' } });
+        return NextResponse.json({ examId, count: normalized.length, excludedBySimilarity, questions: normalized }, { headers: { 'Cache-Control': 'no-store' } });
       }
       // If no competencies found, fall through to default behavior below
     }
@@ -248,7 +325,20 @@ export async function POST(request: Request, context: RouteParams) {
     });
 
     const docs = await col.aggregate(pipeline).toArray();
-    const external: ExternalQuestion[] = docs.map((d) => ({
+
+    // Optionally enforce similarity constraint
+    let selectedIds: Set<string> | null = null;
+    let excludedBySimilarity = 0;
+    if (input.avoidSimilar) {
+      const idsOrdered = docs.map((d) => d._id.toString());
+      const f = filterBySimilarityPreservingOrder(idsOrdered);
+      selectedIds = f.selected;
+      excludedBySimilarity = f.excludedCount;
+    }
+
+    const external: ExternalQuestion[] = docs
+      .filter((d) => !selectedIds || selectedIds.has(d._id.toString()))
+      .map((d) => ({
       id: d._id.toString(),
       question: d.question,
       options: d.options,
@@ -259,7 +349,7 @@ export async function POST(request: Request, context: RouteParams) {
       explanationSources: (Array.isArray((d as unknown as { explanationSources?: unknown }).explanationSources)
         ? ((d as unknown as { explanationSources?: unknown[] }).explanationSources as unknown[])
             .map((s) => ExplanationSourceZ.safeParse(s))
-            .filter((r): r is { success: true; data: ExternalQuestion['explanationSources'][number] } => r.success)
+            .filter((r): r is { success: true; data: ExplanationSource } => r.success)
             .map((r) => r.data)
         : undefined) as ExternalQuestion['explanationSources'],
       study: d.study,
@@ -268,7 +358,7 @@ export async function POST(request: Request, context: RouteParams) {
     }));
     const normalized = normalizeQuestions(external);
 
-    return NextResponse.json({ examId, count: normalized.length, questions: normalized }, { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ examId, count: normalized.length, excludedBySimilarity, questions: normalized }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error(`Failed to prepare questions for exam ${examId}`, error);
     return NextResponse.json({ error: 'Failed to prepare questions' }, { status: 500 });

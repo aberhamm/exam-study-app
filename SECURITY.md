@@ -32,11 +32,10 @@ The following API routes now enforce admin authentication at the handler level:
 - `DELETE /api/exams/:examId/questions/:questionId/competencies` - Remove competencies
 
 #### Deduplication
-- `GET /api/exams/:examId/dedupe/review` - Get review pairs
-- `GET /api/exams/:examId/dedupe/flags` - List flags
-- `POST /api/exams/:examId/dedupe/flags` - Update flags
+- `GET /api/exams/:examId/dedupe/flags` - List pair ignore flags
+- `POST /api/exams/:examId/dedupe/flags` - Upsert pair ignore flags
 - `GET /api/exams/:examId/dedupe/clusters/:clusterId` - Get cluster
-- `POST /api/exams/:examId/dedupe/clusters/:clusterId` - Perform cluster action
+- `POST /api/exams/:examId/dedupe/clusters/:clusterId` - Perform cluster action (approve, split, exclude, flag for review)
 - `DELETE /api/exams/:examId/dedupe/clusters/:clusterId` - Delete cluster
 
 #### Competencies

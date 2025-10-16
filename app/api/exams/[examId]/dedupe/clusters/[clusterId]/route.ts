@@ -1,9 +1,27 @@
 import { NextResponse } from 'next/server';
-import { getDb, getQuestionClustersCollectionName, getQuestionsCollectionName } from '@/lib/server/mongodb';
-// import { splitCluster } from '@/lib/server/clustering';
+import { getDb, getQuestionClustersCollectionName, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName, getDedupePairsCollectionName } from '@/lib/server/mongodb';
+import { computePairScoresFromEmbeddings, calculateClusterMetricsExtended, clusterQuestionsBySimilarity, splitClusterAuto } from '@/lib/server/clustering';
 import type { ClusterDocument, ClusterAction } from '@/types/clusters';
 import type { QuestionDocument } from '@/types/question';
 import { requireAdmin } from '@/lib/auth';
+import { randomUUID } from 'crypto';
+import type { Document, OptionalId } from 'mongodb';
+
+/**
+ * Cluster detail/actions API
+ *
+ * GET: fetch a single cluster with populated questions (for review).
+ * POST actions:
+ * - approve_duplicates: mark as duplicates; optionally delete all but one; locks the cluster.
+ * - approve_variants: mark as variants (keep all); locks the cluster.
+ * - exclude_question: remove a single question; delete cluster if <2 remain.
+ * - split: compute subclusters (auto/threshold); insert children; parent marked as split.
+ * - reset: unlock and set status back to pending.
+ *
+ * Notes
+ * - Splitting computes dense pairwise similarities from embeddings to avoid artifacts of sparse neighbor search.
+ * - Parent is preserved to maintain lineage; children receive fresh stable UUIDs and metrics.
+ */
 
 type RouteParams = {
   params: Promise<{ examId: string; clusterId: string }>;
@@ -59,8 +77,10 @@ export async function POST(request: Request, context: RouteParams) {
   let clusterId = 'unknown';
   try {
     // Require admin authentication
+    let adminUser: { id: string; username: string } | null = null;
     try {
-      await requireAdmin();
+      const u = await requireAdmin();
+      adminUser = { id: u.id, username: u.username };
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Forbidden' },
@@ -91,7 +111,7 @@ export async function POST(request: Request, context: RouteParams) {
         // Optionally keep one question and delete the rest
         await clustersCol.updateOne(
           { examId, id: clusterId },
-          { $set: { status: 'approved_duplicates', updatedAt: now } }
+          { $set: { status: 'approved_duplicates', locked: true, decidedAt: now, updatedAt: now } }
         );
 
         if (action.keepQuestionId) {
@@ -113,7 +133,7 @@ export async function POST(request: Request, context: RouteParams) {
         // Mark cluster as approved variants (keep all questions)
         await clustersCol.updateOne(
           { examId, id: clusterId },
-          { $set: { status: 'approved_variants', updatedAt: now } }
+          { $set: { status: 'approved_variants', locked: true, decidedAt: now, updatedAt: now } }
         );
 
         return NextResponse.json({
@@ -122,9 +142,56 @@ export async function POST(request: Request, context: RouteParams) {
         });
       }
 
+      case 'flag_review': {
+        const reason = typeof (action as { reason?: unknown }).reason === 'string' ? (action as { reason?: string }).reason : undefined;
+        await clustersCol.updateOne(
+          { examId, id: clusterId },
+          {
+            $set: {
+              flaggedForReview: true,
+              flaggedReason: reason,
+              flaggedAt: now,
+              flaggedBy: adminUser?.username,
+              updatedAt: now,
+            },
+          }
+        );
+        return NextResponse.json({ success: true, action: 'flag_review', reason });
+      }
+
+      case 'clear_review': {
+        await clustersCol.updateOne(
+          { examId, id: clusterId },
+          {
+            $set: { flaggedForReview: false, updatedAt: now },
+            $unset: { flaggedReason: '', flaggedAt: '', flaggedBy: '' },
+          }
+        );
+        return NextResponse.json({ success: true, action: 'clear_review' });
+      }
+
       case 'exclude_question': {
-        // Remove a question from the cluster
-        const newQuestionIds = cluster.questionIds.filter(id => id !== action.questionId);
+        // Remove a question from the cluster AND mark it not-similar to remaining members
+        const removedId = String((action as { questionId: unknown }).questionId || '');
+        const newQuestionIds = cluster.questionIds.filter(id => id !== removedId);
+
+        // Upsert ignore flags for removedId against all other members
+        try {
+          const flagsCol = db.collection<Document>(getDedupePairsCollectionName());
+          const ops = cluster.questionIds
+            .filter(id => id !== removedId)
+            .map(otherId => {
+              const [aId, bId] = [removedId, otherId].sort();
+              return flagsCol.updateOne(
+                { examId, aId, bId },
+                { $set: { examId, aId, bId, status: 'ignore', updatedAt: now }, $setOnInsert: { createdAt: now } },
+                { upsert: true }
+              );
+            });
+          await Promise.all(ops);
+        } catch {
+          // best-effort; continue cluster update even if flagging fails
+        }
 
         if (newQuestionIds.length < 2) {
           // Delete cluster if less than 2 questions remain
@@ -132,7 +199,7 @@ export async function POST(request: Request, context: RouteParams) {
           return NextResponse.json({
             success: true,
             action: 'cluster_deleted',
-            removedQuestion: action.questionId
+            removedQuestion: removedId
           });
         } else {
           // Update cluster with remaining questions
@@ -143,27 +210,133 @@ export async function POST(request: Request, context: RouteParams) {
           return NextResponse.json({
             success: true,
             action: 'question_excluded',
-            removedQuestion: action.questionId,
+            removedQuestion: removedId,
             remainingQuestions: newQuestionIds
           });
         }
       }
 
       case 'split': {
-        // Split cluster into smaller clusters based on higher threshold
-        const splitThreshold = action.threshold || 0.95;
+        const strategy: 'auto' | 'threshold' = action.type === 'split' && action.strategy === 'threshold' ? 'threshold' : 'auto';
+        const splitThreshold: number = action.type === 'split' && typeof action.threshold === 'number' ? action.threshold : 0.95;
+        const minClusterSize: number = Math.max(2, action.type === 'split' && typeof action.minClusterSize === 'number' ? action.minClusterSize : 2);
 
-        // This would need similarity pairs to work properly
-        // For now, we'll just mark as split and let user manually create new clusters
+        const db = await getDb();
+        const embCol = db.collection<Document>(getQuestionEmbeddingsCollectionName());
+
+        // Support multiple embedding schemas: question_id (ObjectId), questionId (ObjectId), or id (string)
+        const { ObjectId } = await import('mongodb');
+        const objectIds: typeof ObjectId.prototype[] = [];
+        const stringIds: string[] = [];
+        for (const id of cluster.questionIds) {
+          if (ObjectId.isValid(id) && /^[0-9a-f]{24}$/i.test(id)) {
+            objectIds.push(new ObjectId(id));
+          } else if (typeof id === 'string' && id) {
+            stringIds.push(id);
+          }
+        }
+
+        const embQuery: Document = { examId };
+        const or: Document[] = [];
+        if (objectIds.length) {
+          or.push({ question_id: { $in: objectIds } });
+          or.push({ questionId: { $in: objectIds } });
+        }
+        if (stringIds.length) {
+          or.push({ question_id: { $in: stringIds } });
+          or.push({ id: { $in: stringIds } });
+        }
+        if (or.length) (embQuery as any).$or = or; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        const embeddingDocs = await embCol
+          .find<{ question_id?: unknown; questionId?: unknown; id?: unknown; embedding?: number[] }>(embQuery, { projection: { _id: 0, question_id: 1, questionId: 1, id: 1, embedding: 1 } })
+          .toArray();
+        const byId = new Map<string, number[]>();
+        for (const d of embeddingDocs) {
+          const id = d.question_id ? String(d.question_id) : d.questionId ? String(d.questionId) : d.id ? String(d.id) : '';
+          const emb = Array.isArray(d.embedding) ? d.embedding : undefined;
+          if (id && Array.isArray(emb) && emb.length) byId.set(id, emb);
+        }
+        if (byId.size < 2) {
+          return NextResponse.json({ success: false, reason: 'insufficient_embeddings' });
+        }
+
+        const pairScores = computePairScoresFromEmbeddings(cluster.questionIds, byId);
+
+        // Respect ignored pairs: remove those edges from the similarity graph
+        try {
+          const flagsCol = db.collection<Document>(getDedupePairsCollectionName());
+          const ignoreFlags = await flagsCol
+            .find({ examId, status: 'ignore' }, { projection: { _id: 0, aId: 1, bId: 1 } })
+            .toArray();
+          for (const f of ignoreFlags) {
+            const a = String((f as { aId?: unknown }).aId);
+            const b = String((f as { bId?: unknown }).bId);
+            const key = [a, b].sort().join('::');
+            pairScores.delete(key);
+          }
+        } catch {
+          // proceed without flags if collection missing
+        }
+
+        let subclusters: Array<{ questionIds: string[] }>; // compute sets only
+        let chosenThreshold = splitThreshold;
+        if (strategy === 'threshold') {
+          const filtered: { aId: string; bId: string; score: number }[] = [];
+          for (let i = 0; i < cluster.questionIds.length; i++) {
+            for (let j = i + 1; j < cluster.questionIds.length; j++) {
+              const a = cluster.questionIds[i];
+              const b = cluster.questionIds[j];
+              const s = pairScores.get([a, b].sort().join('::')) ?? 0;
+              if (s >= splitThreshold) filtered.push({ aId: a, bId: b, score: s });
+            }
+          }
+          subclusters = clusterQuestionsBySimilarity(filtered, minClusterSize, splitThreshold).map(c => ({ questionIds: c.questionIds }));
+        } else {
+          const result = splitClusterAuto({ id: cluster.id, questionIds: cluster.questionIds, avgSimilarity: cluster.avgSimilarity, maxSimilarity: cluster.maxSimilarity, minSimilarity: cluster.minSimilarity }, pairScores, { minClusterSize });
+          chosenThreshold = result.threshold;
+          subclusters = result.clusters.filter(c => c.questionIds.length >= minClusterSize).map(c => ({ questionIds: c.questionIds }));
+        }
+
+        if (subclusters.length < 2) {
+          return NextResponse.json({ success: false, reason: 'no_split_found' });
+        }
+
+        const newDocs: OptionalId<ClusterDocument>[] = [];
+        for (const sc of subclusters) {
+          const m = calculateClusterMetricsExtended(sc.questionIds, pairScores);
+          newDocs.push({
+            id: randomUUID(),
+            examId,
+            questionIds: sc.questionIds,
+            avgSimilarity: m.avgSimilarity,
+            maxSimilarity: m.maxSimilarity,
+            minSimilarity: m.minSimilarity,
+            cohesionScore: m.cohesionScore,
+            stdDevSimilarity: m.stdDevSimilarity,
+            edgeCount: m.edgeCount,
+            possibleEdgeCount: m.possibleEdgeCount,
+            density: m.density,
+            medoidId: m.medoidId,
+            status: 'pending',
+            locked: false,
+            createdAt: now,
+            updatedAt: now,
+          } as ClusterDocument);
+        }
+
+        await clustersCol.insertMany(newDocs as OptionalId<ClusterDocument>[]);
         await clustersCol.updateOne(
           { examId, id: clusterId },
-          { $set: { status: 'split', updatedAt: now } }
+          { $set: { status: 'split', children: newDocs.map(d => d.id), updatedAt: now } }
         );
 
         return NextResponse.json({
           success: true,
-          action: 'marked_for_split',
-          threshold: splitThreshold
+          action: 'split',
+          threshold: chosenThreshold,
+          created: newDocs.map(d => ({ id: d.id, questionIds: d.questionIds })),
+          parent: { id: clusterId, status: 'split' }
         });
       }
 
@@ -171,7 +344,7 @@ export async function POST(request: Request, context: RouteParams) {
         // Reset cluster to pending state
         await clustersCol.updateOne(
           { examId, id: clusterId },
-          { $set: { status: 'pending', updatedAt: now } }
+          { $set: { status: 'pending', locked: false, updatedAt: now } }
         );
 
         return NextResponse.json({

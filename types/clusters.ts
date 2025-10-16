@@ -1,5 +1,18 @@
 import type { QuestionDocument } from './question';
+import type { ObjectId } from 'mongodb';
 
+/**
+ * Clusters are the canonical representation of question similarity.
+ *
+ * Rationale:
+ * - Pair-based dedupe is useful for triage, but clusters persist curation decisions.
+ * - Cluster IDs are stable UUIDs and are preserved across regenerations.
+ * - Admin decisions set `locked=true` to prevent incremental regeneration from overwriting them.
+ */
+
+/**
+ * Cluster document stored in MongoDB.
+ */
 export type QuestionCluster = {
   id: string;
   examId: string;
@@ -10,19 +23,42 @@ export type QuestionCluster = {
   status: 'pending' | 'approved_duplicates' | 'approved_variants' | 'split';
   createdAt: Date;
   updatedAt: Date;
+  // Optional metrics and management fields
+  cohesionScore?: number;
+  density?: number;
+  edgeCount?: number;
+  possibleEdgeCount?: number;
+  stdDevSimilarity?: number;
+  medoidId?: string;
+  silhouette?: number;
+  locked?: boolean;
+  decidedAt?: Date;
+  decisionBy?: string;
+  parents?: string[];
+  children?: string[];
+  // Review flags
+  flaggedForReview?: boolean;
+  flaggedReason?: string;
+  flaggedAt?: Date;
+  flaggedBy?: string;
   questions?: (QuestionDocument & { id: string })[];
 };
 
 export type ClusterDocument = QuestionCluster & {
-  _id?: unknown;
+  _id?: ObjectId;
 };
 
+/**
+ * Allowed admin actions on a cluster. See API route docs for behavior.
+ */
 export type ClusterAction =
   | { type: 'approve_duplicates'; keepQuestionId?: string }
   | { type: 'approve_variants' }
   | { type: 'exclude_question'; questionId: string }
-  | { type: 'split'; threshold?: number }
-  | { type: 'reset' };
+  | { type: 'split'; strategy?: 'auto' | 'threshold'; threshold?: number; minClusterSize?: number }
+  | { type: 'reset' }
+  | { type: 'flag_review'; reason?: string }
+  | { type: 'clear_review' };
 
 export type ClusterSummary = {
   id: string;

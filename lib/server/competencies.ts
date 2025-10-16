@@ -181,7 +181,6 @@ export async function getCompetencyAssignmentStats(examId: string): Promise<Comp
 
   // Get all competencies for this exam
   const competencies = await fetchCompetenciesByExamId(examId);
-  const compById = new Map(competencies.map(c => [c.id, c]));
 
   // Aggregate counts grouped by competencyIds
   type CountRow = { _id: string; count: number };
