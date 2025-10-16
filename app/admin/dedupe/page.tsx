@@ -351,7 +351,12 @@ export default function DedupeDevPage() {
           ) : (
             <div className="space-y-4">
               {clusters
-                .filter((c) => !reviewOnly || c.flaggedForReview)
+                .filter(
+                  (c) =>
+                    !reviewOnly ||
+                    c.flaggedForReview ||
+                    (Array.isArray((c as any).proposedAdditions) && (c as any).proposedAdditions.length > 0)
+                )
                 .map((cluster) => (
                   <ClusterCard
                     key={cluster.id}
@@ -401,6 +406,8 @@ function ClusterCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [proposed, setProposed] = useState<NormalizedQuestion[] | null>(null);
+  const [loadingProposed, setLoadingProposed] = useState(false);
 
   const performClusterAction = async (action: { type: string; [key: string]: unknown }) => {
     setProcessing(true);
@@ -427,6 +434,12 @@ function ClusterCard({
           break;
         case 'exclude_question':
           toast.success('Excluded question');
+          break;
+        case 'approve_additions':
+          toast.success('Accepted proposed addition');
+          break;
+        case 'reject_additions':
+          toast.success('Rejected proposed addition');
           break;
         case 'reset':
           toast.success('Reset to pending');
@@ -500,9 +513,9 @@ function ClusterCard({
           <span className={`px-2 py-1 rounded text-xs border ${statusColor}`}>
             {cluster.status.replace('_', ' ')}
           </span>
-          {cluster.flaggedForReview && (
+          {(cluster.flaggedForReview || (Array.isArray((cluster as any).proposedAdditions) && (cluster as any).proposedAdditions.length > 0)) && (
             <span className="px-2 py-1 rounded text-xs border bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300">
-              Review
+              Review{Array.isArray((cluster as any).proposedAdditions) && (cluster as any).proposedAdditions.length > 0 ? ` +${(cluster as any).proposedAdditions.length}` : ''}
             </span>
           )}
           <span className="text-xs text-muted-foreground font-mono">{cluster.id.slice(-8)}</span>
@@ -517,6 +530,86 @@ function ClusterCard({
 
       {expanded && (
         <div className="mt-4 space-y-4">
+          {(Array.isArray((cluster as any).proposedAdditions) && (cluster as any).proposedAdditions.length > 0) && (
+            <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-medium">Proposed Additions</div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    disabled={processing || loadingProposed || !proposed || proposed.length === 0}
+                    onClick={() => performClusterAction({ type: 'approve_additions', ids: (proposed || []).map((q) => q.id) })}
+                  >
+                    Accept All
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={processing || loadingProposed || !proposed || proposed.length === 0}
+                    onClick={() => performClusterAction({ type: 'reject_additions', ids: (proposed || []).map((q) => q.id) })}
+                  >
+                    Reject All
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {!proposed && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={loadingProposed}
+                    onClick={async () => {
+                      setLoadingProposed(true);
+                      try {
+                        const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/dedupe/clusters/${encodeURIComponent(cluster.id)}`, { cache: 'no-store' });
+                        const json = await resp.json();
+                        if (!resp.ok) throw new Error(typeof json?.error === 'string' ? json.error : 'Failed to load proposals');
+                        const pq = Array.isArray(json?.cluster?.proposedQuestions) ? json.cluster.proposedQuestions : [];
+                        const normalized = normalizeQuestions(pq.map((q: any) => ({ id: q.id || q._id?.toString?.() || '', question: q.question, options: q.options, answer: q.answer, question_type: q.question_type, explanation: q.explanation, study: q.study })));
+                        setProposed(normalized);
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : 'Failed to load proposals');
+                      } finally {
+                        setLoadingProposed(false);
+                      }
+                    }}
+                  >
+                    {loadingProposed ? 'Loading…' : 'Load Proposals'}
+                  </Button>
+                )}
+                {proposed && proposed.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No proposals to review.</p>
+                )}
+                {proposed && proposed.length > 0 && (
+                  <ul className="space-y-3">
+                    {proposed.map((pq) => (
+                      <li key={pq.id} className="rounded-md border bg-card p-3">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="text-xs font-medium text-muted-foreground">Proposed</div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="default" disabled={processing} onClick={() => performClusterAction({ type: 'approve_additions', ids: [pq.id] })}>Accept</Button>
+                            <Button size="sm" variant="destructive" disabled={processing} onClick={() => performClusterAction({ type: 'reject_additions', ids: [pq.id] })}>Reject</Button>
+                          </div>
+                        </div>
+                        <div className="font-medium mb-2">{pq.prompt}</div>
+                        <ul className="space-y-1 text-sm list-disc ml-5">
+                          {pq.choices.map((c, idx) => (
+                            <li key={idx}>{String.fromCharCode(65 + idx)}) {c}</li>
+                          ))}
+                        </ul>
+                        {pq.explanation && (
+                          <div className="mt-2 text-sm text-muted-foreground"><span className="font-medium text-foreground">Explanation:</span> {pq.explanation}</div>
+                        )}
+                        <div className="mt-1 text-xs text-muted-foreground font-mono">{pq.id}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-3">
             {normalizedQuestions.map((q, idx) => (
               <div key={q.id} className="rounded-md border bg-card p-3">

@@ -228,12 +228,31 @@ export async function POST(request: Request, context: RouteParams) {
 
     const pairIndex = buildPairScoreIndex(pairs);
 
+    // Build ignore set for convenience
+    const flagsCol = db.collection<Document>(getDedupePairsCollectionName());
+    let ignoreSet = new Set<string>();
+    try {
+      const ignoreFlags = await flagsCol
+        .find({ examId, status: 'ignore' }, { projection: { _id: 0, aId: 1, bId: 1 } })
+        .toArray();
+      ignoreSet = new Set(
+        ignoreFlags.map((f) => {
+          const a = String((f as { aId?: unknown }).aId);
+          const b = String((f as { bId?: unknown }).bId);
+          return [a, b].sort().join('::');
+        })
+      );
+    } catch {}
+
     let created = 0;
     let updated = 0;
     const toInsert: OptionalId<ClusterDocument>[] = [];
     const toUpdate: Array<{ id: string; doc: Partial<ClusterDocument> }> = [];
 
     const usedExisting = new Set<string>();
+
+    // Collect proposed additions for locked clusters
+    const proposalsByCluster = new Map<string, Map<string, { id: string; score?: number }>>();
 
     for (const cand of candidateClusters) {
       const candSet = new Set<string>(cand.questionIds);
@@ -280,6 +299,39 @@ export async function POST(request: Request, context: RouteParams) {
         toInsert.push(doc);
         created += 1;
       }
+
+      // For each locked cluster, collect proposals for additions that overlap this candidate
+      for (const ex of existing) {
+        if (!isLocked(ex)) continue;
+        const exSet = new Set<string>(ex.questionIds);
+        // Intersect candidate with locked cluster
+        const intersect = cand.questionIds.some((q) => exSet.has(q));
+        if (!intersect) continue;
+        // Potential additions: in candidate but not in locked cluster
+        const additions = cand.questionIds.filter((q) => !exSet.has(q));
+        if (additions.length === 0) continue;
+        for (const addId of additions) {
+          // Skip if ignored with any existing member
+          let blocked = false;
+          for (const m of ex.questionIds) {
+            const key = [addId, m].sort().join('::');
+            if (ignoreSet.has(key)) { blocked = true; break; }
+          }
+          if (blocked) continue;
+          // Require at least one edge at or above threshold to existing members
+          let best = 0;
+          for (const m of ex.questionIds) {
+            const key = [addId, m].sort().join('::');
+            const s = pairIndex.get(key) ?? 0;
+            if (s > best) best = s;
+          }
+          if (best >= threshold) {
+            const bucket = proposalsByCluster.get(ex.id) || new Map<string, { id: string; score?: number }>();
+            bucket.set(addId, { id: addId, score: best });
+            proposalsByCluster.set(ex.id, bucket);
+          }
+        }
+      }
     }
 
     if (mode === 'force') {
@@ -304,6 +356,28 @@ export async function POST(request: Request, context: RouteParams) {
     }
 
     // Return current clusters populated
+    // Apply proposals to locked clusters
+    if (proposalsByCluster.size > 0) {
+      const nowTs = new Date();
+      for (const [cid, items] of proposalsByCluster) {
+        const ex = existingById.get(cid);
+        if (!ex) continue;
+        const current = Array.isArray(ex.proposedAdditions) ? ex.proposedAdditions : [];
+        const existingIds = new Set(current.map((p) => p.id));
+        const merged = current.slice();
+        for (const it of items.values()) {
+          if (!existingIds.has(it.id)) merged.push({ id: it.id, score: it.score, proposedAt: nowTs } as any);
+        }
+        const update: Partial<ClusterDocument> = { proposedAdditions: merged } as any;
+        if (merged.length > 0) {
+          (update as any).flaggedForReview = true;
+          (update as any).flaggedReason = 'Proposed additions detected';
+          (update as any).flaggedAt = nowTs;
+        }
+        await clustersCol.updateOne({ examId, id: cid }, { $set: { ...update, updatedAt: nowTs } });
+      }
+    }
+
     const refreshed = await clustersCol
       .find({ examId }, { projection: { _id: 0 } })
       .sort({ avgSimilarity: -1 })

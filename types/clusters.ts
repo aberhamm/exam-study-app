@@ -41,11 +41,19 @@ export type QuestionCluster = {
   flaggedReason?: string;
   flaggedAt?: Date;
   flaggedBy?: string;
+  // Proposed additions awaiting review
+  proposedAdditions?: ProposedAddition[];
   questions?: (QuestionDocument & { id: string })[];
 };
 
 export type ClusterDocument = QuestionCluster & {
   _id?: ObjectId;
+};
+
+export type ProposedAddition = {
+  id: string;
+  score?: number;
+  proposedAt: Date;
 };
 
 /**
@@ -58,7 +66,9 @@ export type ClusterAction =
   | { type: 'split'; strategy?: 'auto' | 'threshold'; threshold?: number; minClusterSize?: number }
   | { type: 'reset' }
   | { type: 'flag_review'; reason?: string }
-  | { type: 'clear_review' };
+  | { type: 'clear_review' }
+  | { type: 'approve_additions'; ids: string[] }
+  | { type: 'reject_additions'; ids: string[] };
 
 export type ClusterSummary = {
   id: string;

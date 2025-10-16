@@ -59,10 +59,27 @@ export async function GET(_request: Request, context: RouteParams) {
       .find({ examId, id: { $in: cluster.questionIds } }, { projection: { _id: 0 } })
       .toArray();
 
+    // Load proposed additions' questions if present
+    let proposedQuestions: QuestionDocument[] | undefined = undefined;
+    const proposedIds = Array.isArray((cluster as { proposedAdditions?: Array<{ id: string }> }).proposedAdditions)
+      ? (cluster as { proposedAdditions?: Array<{ id: string }> }).proposedAdditions!.map((p) => p.id)
+      : [];
+    if (proposedIds.length > 0) {
+      // Resolve both ObjectId and legacy string id
+      const { ObjectId } = await import('mongodb');
+      const objectIds = proposedIds.filter((id) => ObjectId.isValid(id) && /^[0-9a-f]{24}$/i.test(id)).map((id) => new ObjectId(id));
+      const strIds = proposedIds.filter((id) => !(ObjectId.isValid(id) && /^[0-9a-f]{24}$/i.test(id)));
+      const pq: QuestionDocument[] = await qCol
+        .find({ examId, $or: [ ...(objectIds.length? [{ _id: { $in: objectIds } }]: []), ...(strIds.length? [{ id: { $in: strIds } }]: []) ] } as any)
+        .toArray();
+      proposedQuestions = pq;
+    }
+
     const populatedCluster = {
       ...cluster,
-      questions
-    };
+      questions,
+      proposedQuestions,
+    } as any;
 
     return NextResponse.json({ cluster: populatedCluster }, { headers: { 'Cache-Control': 'no-store' } });
 
@@ -338,6 +355,97 @@ export async function POST(request: Request, context: RouteParams) {
           created: newDocs.map(d => ({ id: d.id, questionIds: d.questionIds })),
           parent: { id: clusterId, status: 'split' }
         });
+      }
+
+      case 'approve_additions': {
+        const ids = Array.isArray((action as { ids?: unknown }).ids) ? ((action as { ids: unknown[] }).ids.map(String)) : [];
+        if (ids.length === 0) return NextResponse.json({ error: 'No ids provided' }, { status: 400 });
+
+        // Build pair scores via embeddings
+        const embCol = db.collection<Document>(getQuestionEmbeddingsCollectionName());
+        const { ObjectId } = await import('mongodb');
+        const allIds = Array.from(new Set<string>([...cluster.questionIds, ...ids]));
+        const objectIds = allIds.filter((id) => ObjectId.isValid(id) && /^[0-9a-f]{24}$/i.test(id)).map((id) => new ObjectId(id));
+        const stringIds = allIds.filter((id) => !(ObjectId.isValid(id) && /^[0-9a-f]{24}$/i.test(id)));
+        const embQuery: Document = { examId };
+        const or: Document[] = [];
+        if (objectIds.length) {
+          or.push({ question_id: { $in: objectIds } });
+          or.push({ questionId: { $in: objectIds } });
+        }
+        if (stringIds.length) {
+          or.push({ question_id: { $in: stringIds } });
+          or.push({ id: { $in: stringIds } });
+        }
+        if (or.length) (embQuery as any).$or = or;
+        const embeddingDocs = await embCol
+          .find<{ question_id?: unknown; questionId?: unknown; id?: unknown; embedding?: number[] }>(embQuery, { projection: { _id: 0, question_id: 1, questionId: 1, id: 1, embedding: 1 } })
+          .toArray();
+        const byId = new Map<string, number[]>();
+        for (const d of embeddingDocs) {
+          const id = d.question_id ? String(d.question_id) : d.questionId ? String(d.questionId) : d.id ? String(d.id) : '';
+          const emb = Array.isArray(d.embedding) ? d.embedding : undefined;
+          if (id && Array.isArray(emb) && emb.length) byId.set(id, emb);
+        }
+
+        const pairScores = computePairScoresFromEmbeddings(allIds, byId);
+        const m = calculateClusterMetricsExtended(allIds, pairScores);
+
+        // Merge questionIds and remove proposals for accepted ids
+        const newQuestionIds = Array.from(new Set<string>(allIds));
+        const remainingProposals = Array.isArray((cluster as any).proposedAdditions)
+          ? (cluster as any).proposedAdditions.filter((p: { id: string }) => !ids.includes(p.id))
+          : [];
+
+        const updateDoc: Partial<ClusterDocument> = {
+          questionIds: newQuestionIds,
+          avgSimilarity: m.avgSimilarity,
+          maxSimilarity: m.maxSimilarity,
+          minSimilarity: m.minSimilarity,
+          cohesionScore: m.cohesionScore,
+          stdDevSimilarity: m.stdDevSimilarity,
+          edgeCount: m.edgeCount,
+          possibleEdgeCount: m.possibleEdgeCount,
+          density: m.density,
+          medoidId: m.medoidId,
+          proposedAdditions: remainingProposals,
+          flaggedForReview: remainingProposals.length > 0 ? true : undefined,
+          updatedAt: now,
+        } as any;
+
+        await clustersCol.updateOne({ examId, id: clusterId }, { $set: updateDoc });
+
+        return NextResponse.json({ success: true, action: 'approve_additions', added: ids, remainingProposals: remainingProposals.length });
+      }
+
+      case 'reject_additions': {
+        const ids = Array.isArray((action as { ids?: unknown }).ids) ? ((action as { ids: unknown[] }).ids.map(String)) : [];
+        if (ids.length === 0) return NextResponse.json({ error: 'No ids provided' }, { status: 400 });
+        // Upsert ignore flags for each id vs current members
+        try {
+          const flagsCol = db.collection<Document>(getDedupePairsCollectionName());
+          const ops: Promise<unknown>[] = [];
+          for (const addId of ids) {
+            for (const m of cluster.questionIds) {
+              const [aId, bId] = [addId, m].sort();
+              ops.push(flagsCol.updateOne(
+                { examId, aId, bId },
+                { $set: { examId, aId, bId, status: 'ignore', updatedAt: now }, $setOnInsert: { createdAt: now } },
+                { upsert: true }
+              ));
+            }
+          }
+          await Promise.all(ops);
+        } catch {}
+
+        const remainingProposals = Array.isArray((cluster as any).proposedAdditions)
+          ? (cluster as any).proposedAdditions.filter((p: { id: string }) => !ids.includes(p.id))
+          : [];
+        await clustersCol.updateOne(
+          { examId, id: clusterId },
+          { $set: { proposedAdditions: remainingProposals, flaggedForReview: remainingProposals.length > 0 ? true : undefined, updatedAt: now } as any }
+        );
+        return NextResponse.json({ success: true, action: 'reject_additions', rejected: ids, remainingProposals: remainingProposals.length });
       }
 
       case 'reset': {
