@@ -5,7 +5,7 @@ import type { ClusterDocument, ClusterAction } from '@/types/clusters';
 import type { QuestionDocument } from '@/types/question';
 import { requireAdmin } from '@/lib/auth';
 import { randomUUID } from 'crypto';
-import type { Document, OptionalId } from 'mongodb';
+import type { Document, OptionalId, Filter } from 'mongodb';
 
 /**
  * Cluster detail/actions API
@@ -61,25 +61,29 @@ export async function GET(_request: Request, context: RouteParams) {
 
     // Load proposed additions' questions if present
     let proposedQuestions: QuestionDocument[] | undefined = undefined;
-    const proposedIds = Array.isArray((cluster as { proposedAdditions?: Array<{ id: string }> }).proposedAdditions)
-      ? (cluster as { proposedAdditions?: Array<{ id: string }> }).proposedAdditions!.map((p) => p.id)
+    const proposedIds = Array.isArray(cluster.proposedAdditions)
+      ? cluster.proposedAdditions.map((p) => p.id)
       : [];
     if (proposedIds.length > 0) {
       // Resolve both ObjectId and legacy string id
       const { ObjectId } = await import('mongodb');
       const objectIds = proposedIds.filter((id) => ObjectId.isValid(id) && /^[0-9a-f]{24}$/i.test(id)).map((id) => new ObjectId(id));
       const strIds = proposedIds.filter((id) => !(ObjectId.isValid(id) && /^[0-9a-f]{24}$/i.test(id)));
-      const pq: QuestionDocument[] = await qCol
-        .find({ examId, $or: [ ...(objectIds.length? [{ _id: { $in: objectIds } }]: []), ...(strIds.length? [{ id: { $in: strIds } }]: []) ] } as any)
-        .toArray();
+      const orFilters: Filter<QuestionDocument>[] = [];
+      if (objectIds.length) orFilters.push({ _id: { $in: objectIds } } as Filter<QuestionDocument>);
+      if (strIds.length) orFilters.push({ id: { $in: strIds } } as Filter<QuestionDocument>);
+      const filter: Filter<QuestionDocument> = orFilters.length
+        ? ({ examId, $or: orFilters } as Filter<QuestionDocument>)
+        : ({ examId } as Filter<QuestionDocument>);
+      const pq: QuestionDocument[] = await qCol.find(filter).toArray();
       proposedQuestions = pq;
     }
 
-    const populatedCluster = {
+    const populatedCluster: ClusterDocument & { questions: QuestionDocument[]; proposedQuestions?: QuestionDocument[] } = {
       ...cluster,
       questions,
       proposedQuestions,
-    } as any;
+    };
 
     return NextResponse.json({ cluster: populatedCluster }, { headers: { 'Cache-Control': 'no-store' } });
 
@@ -253,7 +257,7 @@ export async function POST(request: Request, context: RouteParams) {
           }
         }
 
-        const embQuery: Document = { examId };
+        const embQuery: Document & { $or?: Document[] } = { examId };
         const or: Document[] = [];
         if (objectIds.length) {
           or.push({ question_id: { $in: objectIds } });
@@ -263,7 +267,7 @@ export async function POST(request: Request, context: RouteParams) {
           or.push({ question_id: { $in: stringIds } });
           or.push({ id: { $in: stringIds } });
         }
-        if (or.length) (embQuery as any).$or = or; // eslint-disable-line @typescript-eslint/no-explicit-any
+        if (or.length) embQuery.$or = or;
 
         const embeddingDocs = await embCol
           .find<{ question_id?: unknown; questionId?: unknown; id?: unknown; embedding?: number[] }>(embQuery, { projection: { _id: 0, question_id: 1, questionId: 1, id: 1, embedding: 1 } })
@@ -377,7 +381,7 @@ export async function POST(request: Request, context: RouteParams) {
           or.push({ question_id: { $in: stringIds } });
           or.push({ id: { $in: stringIds } });
         }
-        if (or.length) (embQuery as any).$or = or;
+        if (or.length) (embQuery as Document & { $or?: Document[] }).$or = or;
         const embeddingDocs = await embCol
           .find<{ question_id?: unknown; questionId?: unknown; id?: unknown; embedding?: number[] }>(embQuery, { projection: { _id: 0, question_id: 1, questionId: 1, id: 1, embedding: 1 } })
           .toArray();
@@ -393,8 +397,8 @@ export async function POST(request: Request, context: RouteParams) {
 
         // Merge questionIds and remove proposals for accepted ids
         const newQuestionIds = Array.from(new Set<string>(allIds));
-        const remainingProposals = Array.isArray((cluster as any).proposedAdditions)
-          ? (cluster as any).proposedAdditions.filter((p: { id: string }) => !ids.includes(p.id))
+        const remainingProposals = Array.isArray(cluster.proposedAdditions)
+          ? cluster.proposedAdditions.filter((p) => !ids.includes(p.id))
           : [];
 
         const updateDoc: Partial<ClusterDocument> = {
@@ -411,7 +415,7 @@ export async function POST(request: Request, context: RouteParams) {
           proposedAdditions: remainingProposals,
           flaggedForReview: remainingProposals.length > 0 ? true : undefined,
           updatedAt: now,
-        } as any;
+        };
 
         await clustersCol.updateOne({ examId, id: clusterId }, { $set: updateDoc });
 
@@ -438,12 +442,12 @@ export async function POST(request: Request, context: RouteParams) {
           await Promise.all(ops);
         } catch {}
 
-        const remainingProposals = Array.isArray((cluster as any).proposedAdditions)
-          ? (cluster as any).proposedAdditions.filter((p: { id: string }) => !ids.includes(p.id))
+        const remainingProposals = Array.isArray(cluster.proposedAdditions)
+          ? cluster.proposedAdditions.filter((p) => !ids.includes(p.id))
           : [];
         await clustersCol.updateOne(
           { examId, id: clusterId },
-          { $set: { proposedAdditions: remainingProposals, flaggedForReview: remainingProposals.length > 0 ? true : undefined, updatedAt: now } as any }
+          { $set: { proposedAdditions: remainingProposals, flaggedForReview: remainingProposals.length > 0 ? true : undefined, updatedAt: now } }
         );
         return NextResponse.json({ success: true, action: 'reject_additions', rejected: ids, remainingProposals: remainingProposals.length });
       }

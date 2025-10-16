@@ -366,15 +366,16 @@ export async function POST(request: Request, context: RouteParams) {
         const existingIds = new Set(current.map((p) => p.id));
         const merged = current.slice();
         for (const it of items.values()) {
-          if (!existingIds.has(it.id)) merged.push({ id: it.id, score: it.score, proposedAt: nowTs } as any);
+          if (!existingIds.has(it.id)) merged.push({ id: it.id, score: it.score, proposedAt: nowTs });
         }
-        const update: Partial<ClusterDocument> = { proposedAdditions: merged } as any;
-        if (merged.length > 0) {
-          (update as any).flaggedForReview = true;
-          (update as any).flaggedReason = 'Proposed additions detected';
-          (update as any).flaggedAt = nowTs;
-        }
-        await clustersCol.updateOne({ examId, id: cid }, { $set: { ...update, updatedAt: nowTs } });
+        const update: Partial<ClusterDocument> = {
+          proposedAdditions: merged,
+          flaggedForReview: merged.length > 0 ? true : undefined,
+          flaggedReason: merged.length > 0 ? 'Proposed additions detected' : undefined,
+          flaggedAt: merged.length > 0 ? nowTs : undefined,
+          updatedAt: nowTs,
+        };
+        await clustersCol.updateOne({ examId, id: cid }, { $set: update });
       }
     }
 

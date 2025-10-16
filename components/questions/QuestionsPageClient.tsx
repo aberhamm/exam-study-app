@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import SpinnerButton from '@/components/ui/SpinnerButton';
 import type { QuestionDocument } from '@/types/question';
 import { QuestionList } from '@/components/questions/QuestionList';
 import { QuestionListSkeleton } from '@/components/questions/QuestionListSkeleton';
@@ -202,12 +203,14 @@ export function QuestionsPageClient({ examId, examTitle, exams }: QuestionsPageC
                 className="w-full pl-10 pr-4 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <Button
+            <SpinnerButton
               onClick={() => handleSearch(searchQuery)}
-              disabled={searching || !searchQuery.trim()}
+              disabled={!searchQuery.trim()}
+              loading={searching}
+              loadingText="Searching..."
             >
-              {searching ? 'Searching...' : 'Search'}
-            </Button>
+              Search
+            </SpinnerButton>
             {searchMode && (
               <Button variant="outline" onClick={clearSearch}>
                 <X className="h-4 w-4 mr-1" />

@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
 import type { ExamSummary } from '@/types/api';
 import type { ExamDetail } from '@/types/external-question';
 import { DevNavigation } from '@/components/DevNavigation';
+import SpinnerButton from '@/components/ui/SpinnerButton';
 
 export default function ExamsDevPage() {
   const { setConfig, resetConfig } = useHeader();
@@ -374,9 +375,9 @@ export default function ExamsDevPage() {
               )}
 
               <div className="flex gap-3">
-                <Button onClick={handleSave} disabled={saving || loadingGroups}>
-                  {saving ? 'Saving…' : 'Save Settings'}
-                </Button>
+                <SpinnerButton onClick={handleSave} disabled={loadingGroups} loading={saving} loadingText="Saving…">
+                  Save Settings
+                </SpinnerButton>
               </div>
             </>
           )}

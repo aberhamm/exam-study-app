@@ -10,7 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Flag, Loader2 } from 'lucide-react';
+import { Flag } from 'lucide-react';
+import SpinnerButton from '@/components/ui/SpinnerButton';
 
 type FlagQuestionDialogProps = {
   open: boolean;
@@ -88,19 +89,12 @@ export function FlagQuestionDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {isFlagged ? 'Updating...' : 'Flagging...'}
-                </>
-              ) : (
-                <>
-                  <Flag className="h-4 w-4 mr-2" />
-                  {isFlagged ? 'Update Flag' : 'Flag Question'}
-                </>
-              )}
-            </Button>
+            <SpinnerButton type="submit" disabled={false} loading={submitting} loadingText={isFlagged ? 'Updating...' : 'Flagging...'}>
+              <span className="inline-flex items-center">
+                <Flag className="h-4 w-4 mr-2" />
+                {isFlagged ? 'Update Flag' : 'Flag Question'}
+              </span>
+            </SpinnerButton>
           </DialogFooter>
         </form>
       </DialogContent>

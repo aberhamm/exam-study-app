@@ -2,6 +2,7 @@
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import SpinnerButton from '@/components/ui/SpinnerButton';
 import { StudyPanel } from '@/components/StudyPanel';
 import { MarkdownContent } from '@/components/ui/markdown';
 import { ExplanationSources as ExplanationSourcesList } from '@/components/ExplanationSources';
@@ -85,40 +86,30 @@ export function QuestionCard({
                 )}
                 {question.flaggedForReview
                   ? onUnflagQuestion && (
-                      <Button
+                      <SpinnerButton
                         variant="outline"
                         size="sm"
                         onClick={onUnflagQuestion}
-                        disabled={isFlaggingQuestion}
+                        loading={isFlaggingQuestion}
+                        loadingText="Unflagging..."
                         className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:text-orange-300 dark:hover:bg-orange-950/50"
                         title={question.flaggedReason || 'Flagged for review'}
                       >
-                        {isFlaggingQuestion ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <FlagOff className="h-4 w-4 mr-1" />
-                            Unflag
-                          </>
-                        )}
-                      </Button>
+                        <FlagOff className="h-4 w-4 mr-1" />
+                        Unflag
+                      </SpinnerButton>
                     )
                   : onFlagQuestion && (
-                      <Button
+                      <SpinnerButton
                         variant="outline"
                         size="sm"
                         onClick={onFlagQuestion}
-                        disabled={isFlaggingQuestion}
+                        loading={isFlaggingQuestion}
+                        loadingText="Flagging..."
                       >
-                        {isFlaggingQuestion ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Flag className="h-4 w-4 mr-1" />
-                            Flag
-                          </>
-                        )}
-                      </Button>
+                        <Flag className="h-4 w-4 mr-1" />
+                        Flag
+                      </SpinnerButton>
                     )}
               </div>
             )}
@@ -321,25 +312,17 @@ export function QuestionCard({
                   </Button>
                 )}
                 {isAdmin && onDeleteExplanation && (
-                  <Button
+                  <SpinnerButton
                     onClick={onDeleteExplanation}
-                    disabled={isDeletingExplanation}
+                    loading={isDeletingExplanation}
+                    loadingText="Deleting..."
                     variant="ghost"
                     size="sm"
                     className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/50"
                   >
-                    {isDeletingExplanation ? (
-                      <>
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                        Deleting...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Delete
-                      </>
-                    )}
-                  </Button>
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Delete
+                  </SpinnerButton>
                 )}
               </div>
               <MarkdownContent variant="explanation">{question.explanation}</MarkdownContent>
@@ -374,67 +357,45 @@ export function QuestionCard({
 
                     {/* Action buttons when AI explanation exists */}
                     <div className="flex gap-2 flex-wrap">
-                      <Button
+                      <SpinnerButton
                         onClick={onGenerateExplanation}
-                        disabled={isGeneratingExplanation || isSavingExplanation}
+                        disabled={isSavingExplanation}
+                        loading={isGeneratingExplanation}
+                        loadingText="Generating..."
                         variant="outline"
                         size="sm"
                       >
-                        {isGeneratingExplanation ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Generate New
-                          </>
-                        )}
-                      </Button>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate New
+                      </SpinnerButton>
 
                       {onSaveExplanation && (
-                        <Button
+                        <SpinnerButton
                           onClick={onSaveExplanation}
-                          disabled={isSavingExplanation}
+                          loading={isSavingExplanation}
+                          loadingText="Saving..."
                           size="sm"
                           variant="default"
                         >
-                          {isSavingExplanation ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Saving...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="h-4 w-4 mr-2" />
-                              {question.explanation ? 'Replace Current' : 'Save Explanation'}
-                            </>
-                          )}
-                        </Button>
+                          <Save className="h-4 w-4 mr-2" />
+                          {question.explanation ? 'Replace Current' : 'Save Explanation'}
+                        </SpinnerButton>
                       )}
                     </div>
                   </>
                 ) : (
                   /* Generate button when no AI explanation exists */
-                  <Button
+                  <SpinnerButton
                     onClick={onGenerateExplanation}
-                    disabled={isGeneratingExplanation || isSavingExplanation}
+                    disabled={isSavingExplanation}
+                    loading={isGeneratingExplanation}
+                    loadingText="Generating explanation..."
                     variant="default"
                     size="sm"
                   >
-                    {isGeneratingExplanation ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating explanation...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Generate {question.explanation ? 'New' : ''} Explanation with AI
-                      </>
-                    )}
-                  </Button>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate {question.explanation ? 'New' : ''} Explanation with AI
+                  </SpinnerButton>
                 )}
               </div>
             </div>

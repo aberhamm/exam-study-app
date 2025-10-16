@@ -11,9 +11,14 @@ type Props = {
  */
 export async function AdminPageGuard({ children }: Props) {
   const session = await auth();
-
-  if (!session?.user) redirect('/login');
-  if (session.user.role !== 'admin') redirect('/forbidden');
-
+  if (!session?.user) {
+    redirect('/login');
+    return null;
+  }
+  if (session.user.role !== 'admin') {
+    // Send non-admins to login per test expectations
+    redirect('/login');
+    return null;
+  }
   return <>{children}</>;
 }

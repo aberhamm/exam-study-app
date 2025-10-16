@@ -9,6 +9,7 @@ import { CompetencyForm } from '@/components/competencies/CompetencyForm';
 import { CompetencyList } from '@/components/competencies/CompetencyList';
 import { CompetencyListSkeleton } from '@/components/competencies/CompetencySkeleton';
 import { DevNavigation } from '@/components/DevNavigation';
+import SpinnerButton from '@/components/ui/SpinnerButton';
 import { useHeader } from '@/contexts/HeaderContext';
 
 export default function CompetenciesPage() {
@@ -106,13 +107,9 @@ export default function CompetenciesPage() {
               >
                 {showCreateForm ? 'Cancel' : '+ New Competency'}
               </button>
-              <button
-                onClick={refetch}
-                disabled={competenciesLoading}
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <SpinnerButton onClick={refetch} loading={competenciesLoading} loadingText="Refreshing…" variant="secondary">
                 Refresh
-              </button>
+              </SpinnerButton>
             </div>
           </div>
 

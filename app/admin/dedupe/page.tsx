@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import SpinnerButton from '@/components/ui/SpinnerButton';
 import { useHeader } from '@/contexts/HeaderContext';
 import type { ExamSummary } from '@/types/api';
 import type { NormalizedQuestion } from '@/types/normalized';
@@ -25,12 +26,13 @@ export default function DedupeDevPage() {
 
   const [examId, setExamId] = useState('');
   // Pair scan controls removed
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Pair list and flags removed
-  const [view, setView] = useState<'all' | 'review' | 'clusters'>('clusters');
+  const [view] = useState<'all' | 'review' | 'clusters'>('clusters');
   const [clusters, setClusters] = useState<QuestionCluster[]>([]);
-  const [clustersLoading, setClustersLoading] = useState(false);
+  const [clustersLoading, setClustersLoading] = useState(false); // retained for potential global disabled states
+  const [loadingAction, setLoadingAction] = useState<'load' | 'regenerate' | null>(null);
   const [clusterThreshold, setClusterThreshold] = useState(0.9);
   const [reviewOnly, setReviewOnly] = useState(false);
   const [editing, setEditing] = useState<{ which: 'A' | 'B'; q: NormalizedQuestion } | null>(null);
@@ -106,6 +108,7 @@ export default function DedupeDevPage() {
   const loadClusters = async (regenerate = false) => {
     if (!examId) return;
     setClustersLoading(true);
+    setLoadingAction(regenerate ? 'regenerate' : 'load');
     setError(null);
     try {
       if (regenerate) {
@@ -144,6 +147,7 @@ export default function DedupeDevPage() {
       setError(err instanceof Error ? err.message : 'Failed to load clusters');
     } finally {
       setClustersLoading(false);
+      setLoadingAction(null);
     }
   };
 
@@ -318,17 +322,19 @@ export default function DedupeDevPage() {
           )}
 
           <div className="flex items-center gap-3">
-            <Button type="submit" disabled={!canSubmit}>
-              {clustersLoading ? 'Loading…' : 'Load Groups'}
-            </Button>
-            <Button
+            <SpinnerButton type="submit" disabled={!canSubmit} loading={loadingAction === 'load'} loadingText="Loading…">
+              Load Groups
+            </SpinnerButton>
+            <SpinnerButton
               type="button"
               variant="outline"
               disabled={!canSubmit}
               onClick={() => loadClusters(true)}
+              loading={loadingAction === 'regenerate'}
+              loadingText="Regenerating…"
             >
               Regenerate Groups
-            </Button>
+            </SpinnerButton>
           </div>
         </form>
       </Card>
@@ -355,7 +361,7 @@ export default function DedupeDevPage() {
                   (c) =>
                     !reviewOnly ||
                     c.flaggedForReview ||
-                    (Array.isArray((c as any).proposedAdditions) && (c as any).proposedAdditions.length > 0)
+                    (Array.isArray(c.proposedAdditions) && c.proposedAdditions.length > 0)
                 )
                 .map((cluster) => (
                   <ClusterCard
@@ -405,12 +411,12 @@ function ClusterCard({
   onQuestionDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [processingKey, setProcessingKey] = useState<string | null>(null);
   const [proposed, setProposed] = useState<NormalizedQuestion[] | null>(null);
   const [loadingProposed, setLoadingProposed] = useState(false);
 
-  const performClusterAction = async (action: { type: string; [key: string]: unknown }) => {
-    setProcessing(true);
+  const performClusterAction = async (action: { type: string; [key: string]: unknown }, key?: string) => {
+    setProcessingKey(key ?? action.type);
     try {
       const resp = await fetch(
         `/api/exams/${encodeURIComponent(examId)}/dedupe/clusters/${encodeURIComponent(
@@ -456,7 +462,7 @@ function ClusterCard({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Action failed');
     } finally {
-      setProcessing(false);
+      setProcessingKey(null);
     }
   };
 
@@ -513,9 +519,9 @@ function ClusterCard({
           <span className={`px-2 py-1 rounded text-xs border ${statusColor}`}>
             {cluster.status.replace('_', ' ')}
           </span>
-          {(cluster.flaggedForReview || (Array.isArray((cluster as any).proposedAdditions) && (cluster as any).proposedAdditions.length > 0)) && (
+          {(cluster.flaggedForReview || (Array.isArray(cluster.proposedAdditions) && cluster.proposedAdditions.length > 0)) && (
             <span className="px-2 py-1 rounded text-xs border bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300">
-              Review{Array.isArray((cluster as any).proposedAdditions) && (cluster as any).proposedAdditions.length > 0 ? ` +${(cluster as any).proposedAdditions.length}` : ''}
+              Review{Array.isArray(cluster.proposedAdditions) && cluster.proposedAdditions.length > 0 ? ` +${cluster.proposedAdditions.length}` : ''}
             </span>
           )}
           <span className="text-xs text-muted-foreground font-mono">{cluster.id.slice(-8)}</span>
@@ -530,43 +536,48 @@ function ClusterCard({
 
       {expanded && (
         <div className="mt-4 space-y-4">
-          {(Array.isArray((cluster as any).proposedAdditions) && (cluster as any).proposedAdditions.length > 0) && (
+          {(Array.isArray(cluster.proposedAdditions) && cluster.proposedAdditions.length > 0) && (
             <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-medium">Proposed Additions</div>
                 <div className="flex items-center gap-2">
-                  <Button
+                  <SpinnerButton
                     size="sm"
                     variant="default"
-                    disabled={processing || loadingProposed || !proposed || proposed.length === 0}
-                    onClick={() => performClusterAction({ type: 'approve_additions', ids: (proposed || []).map((q) => q.id) })}
+                    disabled={loadingProposed || !proposed || proposed.length === 0}
+                    loading={processingKey === 'approve_additions_all'}
+                    loadingText="Processing…"
+                    onClick={() => performClusterAction({ type: 'approve_additions', ids: (proposed || []).map((q) => q.id) }, 'approve_additions_all')}
                   >
                     Accept All
-                  </Button>
-                  <Button
+                  </SpinnerButton>
+                  <SpinnerButton
                     size="sm"
                     variant="destructive"
-                    disabled={processing || loadingProposed || !proposed || proposed.length === 0}
-                    onClick={() => performClusterAction({ type: 'reject_additions', ids: (proposed || []).map((q) => q.id) })}
+                    disabled={loadingProposed || !proposed || proposed.length === 0}
+                    loading={processingKey === 'reject_additions_all'}
+                    loadingText="Processing…"
+                    onClick={() => performClusterAction({ type: 'reject_additions', ids: (proposed || []).map((q) => q.id) }, 'reject_additions_all')}
                   >
                     Reject All
-                  </Button>
+                  </SpinnerButton>
                 </div>
               </div>
               <div className="space-y-3">
                 {!proposed && (
-                  <Button
+                  <SpinnerButton
                     variant="outline"
                     size="sm"
-                    disabled={loadingProposed}
+                    loading={loadingProposed}
+                    loadingText="Loading…"
                     onClick={async () => {
                       setLoadingProposed(true);
                       try {
                         const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/dedupe/clusters/${encodeURIComponent(cluster.id)}`, { cache: 'no-store' });
                         const json = await resp.json();
                         if (!resp.ok) throw new Error(typeof json?.error === 'string' ? json.error : 'Failed to load proposals');
-                        const pq = Array.isArray(json?.cluster?.proposedQuestions) ? json.cluster.proposedQuestions : [];
-                        const normalized = normalizeQuestions(pq.map((q: any) => ({ id: q.id || q._id?.toString?.() || '', question: q.question, options: q.options, answer: q.answer, question_type: q.question_type, explanation: q.explanation, study: q.study })));
+                        const pq = Array.isArray(json?.cluster?.proposedQuestions) ? json.cluster.proposedQuestions : [] as Array<ExternalQuestion & { _id?: { toString?: () => string } }>;
+                        const normalized = normalizeQuestions(pq.map((q) => ({ id: q.id || q._id?.toString?.() || '', question: q.question, options: q.options, answer: q.answer, question_type: q.question_type, explanation: q.explanation, study: q.study })));
                         setProposed(normalized);
                       } catch (e) {
                         toast.error(e instanceof Error ? e.message : 'Failed to load proposals');
@@ -575,8 +586,8 @@ function ClusterCard({
                       }
                     }}
                   >
-                    {loadingProposed ? 'Loading…' : 'Load Proposals'}
-                  </Button>
+                    Load Proposals
+                  </SpinnerButton>
                 )}
                 {proposed && proposed.length === 0 && (
                   <p className="text-sm text-muted-foreground">No proposals to review.</p>
@@ -588,8 +599,8 @@ function ClusterCard({
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="text-xs font-medium text-muted-foreground">Proposed</div>
                           <div className="flex items-center gap-2">
-                            <Button size="sm" variant="default" disabled={processing} onClick={() => performClusterAction({ type: 'approve_additions', ids: [pq.id] })}>Accept</Button>
-                            <Button size="sm" variant="destructive" disabled={processing} onClick={() => performClusterAction({ type: 'reject_additions', ids: [pq.id] })}>Reject</Button>
+                            <SpinnerButton size="sm" variant="default" loading={processingKey === `approve_additions_${pq.id}`} loadingText="Processing…" onClick={() => performClusterAction({ type: 'approve_additions', ids: [pq.id] }, `approve_additions_${pq.id}`)}>Accept</SpinnerButton>
+                            <SpinnerButton size="sm" variant="destructive" loading={processingKey === `reject_additions_${pq.id}`} loadingText="Processing…" onClick={() => performClusterAction({ type: 'reject_additions', ids: [pq.id] }, `reject_additions_${pq.id}`)}>Reject</SpinnerButton>
                           </div>
                         </div>
                         <div className="font-medium mb-2">{pq.prompt}</div>
@@ -624,16 +635,17 @@ function ClusterCard({
                     <Button variant="outline" size="sm" onClick={() => onQuestionEdit(q)}>
                       Edit
                     </Button>
-                    <Button
+                    <SpinnerButton
                       variant="secondary"
                       size="sm"
                       onClick={() =>
-                        performClusterAction({ type: 'exclude_question', questionId: q.id })
+                        performClusterAction({ type: 'exclude_question', questionId: q.id }, `exclude_${q.id}`)
                       }
-                      disabled={processing}
+                      loading={processingKey === `exclude_${q.id}`}
+                      loadingText="Processing…"
                     >
                       Exclude
-                    </Button>
+                    </SpinnerButton>
                   </div>
                 </div>
                 <div className="font-medium mb-2">{q.prompt}</div>
@@ -668,27 +680,29 @@ function ClusterCard({
 
           {cluster.status === 'pending' && (
             <div className="flex items-center gap-2 pt-2 border-t">
-              <Button
+              <SpinnerButton
                 variant="default"
                 size="sm"
-                onClick={() => performClusterAction({ type: 'approve_variants' })}
-                disabled={processing}
+                onClick={() => performClusterAction({ type: 'approve_variants' }, 'approve_variants')}
+                loading={processingKey === 'approve_variants'}
+                loadingText="Processing…"
               >
                 Keep as Variants
-              </Button>
-              <Button
+              </SpinnerButton>
+              <SpinnerButton
                 variant="secondary"
                 size="sm"
-                onClick={() =>
-                  performClusterAction(
-                    cluster.flaggedForReview ? { type: 'clear_review' } : { type: 'flag_review' }
-                  )
-                }
-                disabled={processing}
+                onClick={() => {
+                  const act = cluster.flaggedForReview ? { type: 'clear_review' } : { type: 'flag_review' };
+                  const key = (act.type as string);
+                  void performClusterAction(act, key);
+                }}
+                loading={processingKey === (cluster.flaggedForReview ? 'clear_review' : 'flag_review')}
+                loadingText="Processing…"
               >
                 {cluster.flaggedForReview ? 'Clear Review Flag' : 'Flag for Review'}
-              </Button>
-              <Button
+              </SpinnerButton>
+              <SpinnerButton
                 variant="destructive"
                 size="sm"
                 onClick={async () => {
@@ -699,7 +713,7 @@ function ClusterCard({
                     )
                   )
                     return;
-                  setProcessing(true);
+                  setProcessingKey('not_similar');
                   try {
                     // Mark all pairwise combinations as ignored
                     const ids = questions.map((q) => String(q.id));
@@ -750,38 +764,41 @@ function ClusterCard({
                       err instanceof Error ? err.message : 'Failed to mark not similar'
                     );
                   } finally {
-                    setProcessing(false);
+                    setProcessingKey(null);
                   }
                 }}
-                disabled={processing}
+                loading={processingKey === 'not_similar'}
+                loadingText="Processing…"
               >
                 Not Similar
-              </Button>
+              </SpinnerButton>
             </div>
           )}
 
           {cluster.status !== 'pending' && (
             <div className="flex items-center gap-2 pt-2 border-t">
-              <Button
+              <SpinnerButton
                 variant="ghost"
                 size="sm"
-                onClick={() => performClusterAction({ type: 'reset' })}
-                disabled={processing}
+                onClick={() => performClusterAction({ type: 'reset' }, 'reset')}
+                loading={processingKey === 'reset'}
+                loadingText="Processing…"
               >
                 Reset to Pending
-              </Button>
-              <Button
+              </SpinnerButton>
+              <SpinnerButton
                 variant="secondary"
                 size="sm"
-                onClick={() =>
-                  performClusterAction(
-                    cluster.flaggedForReview ? { type: 'clear_review' } : { type: 'flag_review' }
-                  )
-                }
-                disabled={processing}
+                onClick={() => {
+                  const act = cluster.flaggedForReview ? { type: 'clear_review' } : { type: 'flag_review' };
+                  const key = act.type as string;
+                  void performClusterAction(act, key);
+                }}
+                loading={processingKey === (cluster.flaggedForReview ? 'clear_review' : 'flag_review')}
+                loadingText="Processing…"
               >
                 {cluster.flaggedForReview ? 'Clear Review Flag' : 'Flag for Review'}
-              </Button>
+              </SpinnerButton>
             </div>
           )}
         </div>

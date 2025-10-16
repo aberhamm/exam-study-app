@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import SpinnerButton from '@/components/ui/SpinnerButton';
+import { Button } from '@/components/ui/button';
 import type { CompetencyDocument } from '@/types/competency';
 
 type CompetencyFormProps = {
@@ -102,21 +104,22 @@ export function CompetencyForm({
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button
+        <SpinnerButton
           type="submit"
-          disabled={submitting || !title || !description}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!title || !description}
+          loading={submitting}
+          loadingText="Saving..."
         >
-          {submitting ? 'Saving...' : submitLabel}
-        </button>
-        <button
+          {submitLabel}
+        </SpinnerButton>
+        <Button
           type="button"
           onClick={onCancel}
           disabled={submitting}
-          className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          variant="secondary"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

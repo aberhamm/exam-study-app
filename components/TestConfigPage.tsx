@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import SpinnerButton from '@/components/ui/SpinnerButton';
 import { useHeader } from '@/contexts/HeaderContext';
 import { MarkdownContent } from '@/components/ui/markdown';
 import { History, BookOpen } from 'lucide-react';
@@ -54,7 +55,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [missedQuestionIds, setMissedQuestionIds] = useState<string[]>([]);
   const [missedThreshold, setMissedThreshold] = useState<number>(1);
   const [seenQuestionIds, setSeenQuestionIds] = useState<string[]>([]);
-  const [starting, setStarting] = useState(false);
+  const [startLoading, setStartLoading] = useState<'welcome' | 'summary' | 'missed-dialog' | null>(null);
   const [competencies, setCompetencies] = useState<Array<{ id: string; title: string; questionCount?: number }>>([]);
   const [missedDialogOpen, setMissedDialogOpen] = useState(false);
   const [missedCountInput, setMissedCountInput] = useState<string>('');
@@ -358,14 +359,14 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     }
   };
 
-  const handleStartTest = async () => {
+  const handleStartTest = async (source: 'welcome' | 'summary' = 'welcome') => {
     const finalSettings = validateTestSettings(settings);
     saveTestSettings(finalSettings);
     try {
-      setStarting(true);
+      setStartLoading(source);
       await onStartTest(finalSettings);
     } finally {
-      setStarting(false);
+      setStartLoading(null);
     }
   };
 
@@ -380,7 +381,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     if (!examMetadata?.examId || missedQuestionIds.length === 0) return;
 
     try {
-      setStarting(true);
+      setStartLoading('missed-dialog');
 
       const count = Math.max(1, Math.min(missedQuestionIds.length, Math.floor(desiredCount)));
       const selectedIds = shuffleArray([...missedQuestionIds]).slice(0, count);
@@ -412,7 +413,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     } catch (err) {
       console.error('Failed to start missed questions review:', err);
     } finally {
-      setStarting(false);
+      setStartLoading(null);
     }
   };
 
@@ -528,27 +529,25 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
           {/* Quick Start Button or Configuration Toggle */}
           <div className="space-y-2" aria-live="polite">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
-              <Button
-                onClick={handleStartTest}
+              <SpinnerButton
+                onClick={() => handleStartTest('welcome')}
                 size="lg"
                 className="px-8 py-3 text-lg"
-                disabled={!isValidConfiguration || starting}
+                disabled={!isValidConfiguration || startLoading !== null}
+                loading={startLoading === 'welcome'}
+                loadingText="Loading questions…"
               >
-                {starting
-                  ? 'Loading questions…'
-                  : (
-                    examMetadata?.welcomeConfig?.ctaText ||
-                    `Start Exam (${settings.questionCount} ${
-                      settings.questionType === 'all' ? '' : settings.questionType
-                    } ${
-                      settings.explanationFilter === 'all'
-                        ? ''
-                        : settings.explanationFilter === 'with-explanations'
-                        ? 'explained '
-                        : 'non-explained '
-                    }questions)`
-                  )}
-              </Button>
+                {examMetadata?.welcomeConfig?.ctaText ||
+                  `Start Exam (${settings.questionCount} ${
+                    settings.questionType === 'all' ? '' : settings.questionType
+                  } ${
+                    settings.explanationFilter === 'all'
+                      ? ''
+                      : settings.explanationFilter === 'with-explanations'
+                      ? 'explained '
+                      : 'non-explained '
+                  }questions)`}
+              </SpinnerButton>
               <Button
                 variant="outline"
                 onClick={() => setShowConfiguration((current) => !current)}
@@ -605,10 +604,10 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                   <Button
                     type="button"
                     onClick={openMissedCountDialog}
-                    disabled={missedQuestionIds.length === 0 || starting}
+                    disabled={missedQuestionIds.length === 0 || startLoading !== null}
                     className="flex-1"
                   >
-                    {starting ? 'Loading questions…' : 'Review missed questions'}
+                    Review missed questions
                   </Button>
                   <Button
                     type="button"
@@ -1004,18 +1003,16 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                     {validationState.message}
                   </span>
                 )}
-                <Button
-                  onClick={handleStartTest}
-                  disabled={!isValidConfiguration || starting}
+                <SpinnerButton
+                  onClick={() => handleStartTest('summary')}
+                  disabled={!isValidConfiguration || startLoading !== null}
                   size="lg"
                   className="px-8"
+                  loading={startLoading === 'summary'}
+                  loadingText="Loading questions…"
                 >
-                  {starting
-                    ? 'Loading questions…'
-                    : isValidConfiguration
-                      ? 'Start with these settings'
-                      : 'Check configuration'}
-                </Button>
+                  {isValidConfiguration ? 'Start with these settings' : 'Check configuration'}
+                </SpinnerButton>
               </div>
             </section>
           </div>
@@ -1057,13 +1054,15 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
             <Button variant="outline" type="button" onClick={() => setMissedDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
+            <SpinnerButton
               type="button"
               onClick={() => startMissedQuestions(parsedMissedCount)}
-              disabled={starting || !isMissedCountValid}
+              disabled={startLoading !== null || !isMissedCountValid}
+              loading={startLoading === 'missed-dialog'}
+              loadingText="Loading…"
             >
-              {starting ? 'Loading…' : 'Start'}
-            </Button>
+              Start
+            </SpinnerButton>
           </UIDialogFooter>
         </DialogContent>
       </Dialog>

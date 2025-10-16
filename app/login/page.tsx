@@ -3,7 +3,8 @@
 import { Suspense, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button';
+import SpinnerButton from '@/components/ui/SpinnerButton';
 import { Card } from '@/components/ui/card';
 
 function LoginContent() {
@@ -99,13 +100,14 @@ function LoginContent() {
             </div>
           )}
 
-          <Button
+          <SpinnerButton
             type="submit"
             className="w-full"
-            disabled={isLoading}
+            loading={isLoading}
+            loadingText="Signing in..."
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </Button>
+            Sign In
+          </SpinnerButton>
         </form>
 
         <div className="mt-6 text-center">
