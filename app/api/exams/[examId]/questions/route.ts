@@ -4,7 +4,11 @@ import type { QuestionDocument } from '@/types/question';
 import type { WithId } from 'mongodb';
 import { fetchCompetenciesByExamId } from '@/lib/server/competencies';
 import type { ExplanationSource } from '@/types/explanation';
-import { ExplanationSourceZ } from '@/lib/validation';
+import { ExplanationSourceZ, ExternalQuestionZ } from '@/lib/validation';
+import { addExamQuestions } from '@/lib/server/questions';
+import { ExamNotFoundError } from '@/lib/server/exams';
+import { requireAdmin } from '@/lib/auth';
+import { ZodError } from 'zod';
 
 type RouteParams = { params: Promise<{ examId: string }> };
 
@@ -159,5 +163,60 @@ export async function GET(request: Request, context: RouteParams) {
   } catch (error) {
     console.error('Failed to fetch questions:', error);
     return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request, context: RouteParams) {
+  let examId = 'unknown';
+  try {
+    // Require admin authentication
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Forbidden' },
+        { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 403 }
+      );
+    }
+
+    const params = await context.params;
+    examId = params.examId;
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+    }
+
+    // Validate a single ExternalQuestion payload
+    const question = ExternalQuestionZ.parse(body);
+
+    const inserted = await addExamQuestions(examId, [question]);
+    const created = inserted[0];
+
+    return NextResponse.json(
+      {
+        examId,
+        questionId: created._id.toString(),
+        question: {
+          id: created._id.toString(),
+          ...question,
+        },
+      },
+      { status: 201, headers: { 'Cache-Control': 'no-store' } }
+    );
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid question payload', details: error.flatten() },
+        { status: 400 }
+      );
+    }
+    if (error instanceof ExamNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    console.error(`Failed to create question for exam ${examId}`, error);
+    return NextResponse.json({ error: 'Failed to create question' }, { status: 500 });
   }
 }

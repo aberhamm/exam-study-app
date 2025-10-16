@@ -182,9 +182,14 @@ export function QuestionsPageClient({ examId, examTitle, exams }: QuestionsPageC
         </div>
 
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-4">
-            All Questions - {examTitle}
-          </h1>
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <h1 className="text-3xl font-bold text-foreground">
+              All Questions - {examTitle}
+            </h1>
+            <Link href={`/admin/questions/${encodeURIComponent(examId)}/new`}>
+              <Button>Add Question</Button>
+            </Link>
+          </div>
 
           {/* Search Bar */}
           <div className="flex items-center gap-2">
