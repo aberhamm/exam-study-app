@@ -67,8 +67,10 @@ export async function DELETE(_request: Request, context: RouteParams) {
       updateOps,
       { returnDocument: 'after' }
     );
-
-    if (!result) {
+    // Support both driver shapes: document or { value }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updated = (result && (result as any).value !== undefined) ? (result as any).value : result;
+    if (!updated) {
       return NextResponse.json({ error: 'Question not found' }, { status: 404 });
     }
 

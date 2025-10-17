@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { generateQuestionExplanation } from '@/lib/server/explanation-generator';
+import { generateQuestionExplanation, generateQuestionExplanationWithDebug } from '@/lib/server/explanation-generator';
 import { getQuestionById } from '@/lib/server/questions';
 import { normalizeQuestions } from '@/lib/normalize';
 import { requireAdmin } from '@/lib/auth';
 import { acquireLlmSlot } from '@/lib/server/llm-guard';
+import type { ExplainResponse } from '@/types/api';
 
 type RouteParams = {
   params: Promise<{
@@ -53,8 +54,14 @@ export async function POST(request: Request, context: RouteParams) {
     // Normalize the question to the format expected by the explanation generator
     const [normalizedQuestion] = normalizeQuestions([questionDoc]);
 
+    // Determine if debug is requested
+    const url = new URL(request.url);
+    const debugQuery = url.searchParams.get('debug');
+    const debugHeader = request.headers.get('x-debug');
+    const debugEnabled = debugQuery === '1' || debugHeader === '1';
+
     // Generate the explanation
-    console.info(`[explain] Generating explanation for question ${questionId} in exam ${examId}, documentGroups=${documentGroups?.join(',') || 'all'}`);
+    console.info(`[explain] Generating explanation for question ${questionId} in exam ${examId}, documentGroups=${documentGroups?.join(',') || 'all'}, debug=${debugEnabled}`);
     console.info(`[explain] Question details:`, {
       id: normalizedQuestion.id,
       prompt: normalizedQuestion.prompt.substring(0, 100) + '...',
@@ -66,9 +73,13 @@ export async function POST(request: Request, context: RouteParams) {
     // Acquire per-admin LLM slot to control concurrency and rate.
     // Always release in finally to avoid slot leaks on errors/timeouts.
     const guard = acquireLlmSlot(adminUser!.id);
-    let result: { explanation: string; sources: Array<{ url?: string; title?: string; sourceFile: string; sectionPath?: string }> };
+    let result: { explanation: string; sources: Array<{ url?: string; title?: string; sourceFile: string; sectionPath?: string }>; debug?: ExplainResponse['debug'] };
     try {
-      result = await generateQuestionExplanation(normalizedQuestion, documentGroups, questionDoc.embedding);
+      if (debugEnabled) {
+        result = await generateQuestionExplanationWithDebug(normalizedQuestion, documentGroups, questionDoc.embedding);
+      } else {
+        result = await generateQuestionExplanation(normalizedQuestion, documentGroups, questionDoc.embedding);
+      }
     } finally {
       guard.release();
     }
@@ -100,12 +111,15 @@ export async function POST(request: Request, context: RouteParams) {
       }
     }
 
-    return NextResponse.json({
+    const payload: ExplainResponse = {
       success: true,
       explanation: result.explanation,
       sources: result.sources,
       savedAsDefault,
-    }, {
+      ...(debugEnabled ? { debug: result.debug } : {}),
+    };
+
+    return NextResponse.json(payload, {
       headers: { 'Cache-Control': 'no-store' }
     });
 

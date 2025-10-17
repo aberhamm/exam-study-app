@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useHeader } from '@/contexts/HeaderContext';
-import { DevNavigation } from '@/components/DevNavigation';
 
-export default function DocsPage() {
+export default function DeveloperDocsPage() {
   const { setConfig, resetConfig } = useHeader();
 
   useEffect(() => {
@@ -14,11 +14,11 @@ export default function DocsPage() {
       visible: true,
       variant: 'full',
       leftContent: (
-        <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-          Home
-        </Link>
+        <Breadcrumbs
+          items={[{ label: 'Home', href: '/' }, { label: 'Admin' }, { label: 'Developer Guides' }]}
+        />
       ),
-      rightContent: <DevNavigation currentPage="docs" />,
+      rightContent: null,
     });
     return () => resetConfig();
   }, [resetConfig, setConfig]);
@@ -27,12 +27,41 @@ export default function DocsPage() {
     <div className="space-y-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          Developer Documentation
+          Developer Guides
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
           Command-line scripts and workflows for managing the study application
         </p>
       </div>
+
+      {/* Document Embeddings (moved from Search page) */}
+      <Card className="p-6 space-y-4">
+        <h2 id="document-embeddings" className="text-2xl font-semibold">
+          Document Embeddings
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Tools for transforming markdown documentation into vector embeddings and managing the
+          associated vector index used by semantic search.
+        </p>
+        <div className="rounded-md border p-4 bg-muted/40 font-mono text-sm space-y-3">
+          <div>
+            <div className="font-semibold mb-1">Process markdown documentation</div>
+            <pre className="text-xs">cd data-pipelines &amp;&amp; pnpm markdown-to-embeddings</pre>
+          </div>
+          <div>
+            <div className="font-semibold mb-1">Create vector index</div>
+            <pre className="text-xs">
+              cd data-pipelines &amp;&amp; pnpm tsx scripts/create-embeddings-index.ts
+            </pre>
+          </div>
+          <div>
+            <div className="font-semibold mb-1">Test document search</div>
+            <pre className="text-xs">
+              cd data-pipelines &amp;&amp; pnpm tsx scripts/test-embeddings-search.ts --query &quot;your text&quot;
+            </pre>
+          </div>
+        </div>
+      </Card>
 
       {/* Question Embeddings */}
       <Card className="p-6 space-y-4">
@@ -148,12 +177,12 @@ export default function DocsPage() {
         <h2 className="text-2xl font-semibold">Related Tools</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link
-            href="/admin/search"
+            href="/admin/document-embeddings"
             className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
-            <h3 className="font-semibold mb-1">Semantic Search</h3>
+            <h3 className="font-semibold mb-1">Document Embeddings</h3>
             <p className="text-sm text-muted-foreground">
-              Test vector search functionality for questions
+              Explore semantic search across documents
             </p>
           </Link>
           <Link

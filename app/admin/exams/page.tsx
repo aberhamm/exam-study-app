@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Card } from '@/components/ui/card';
 // import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
 import type { ExamSummary } from '@/types/api';
 import type { ExamDetail } from '@/types/external-question';
-import { DevNavigation } from '@/components/DevNavigation';
 import SpinnerButton from '@/components/ui/SpinnerButton';
 
 export default function ExamsDevPage() {
@@ -36,11 +35,9 @@ export default function ExamsDevPage() {
       visible: true,
       variant: 'full',
       leftContent: (
-        <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-          Home
-        </Link>
+        <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Admin' }, { label: 'Exams' }]} />
       ),
-      rightContent: <DevNavigation currentPage="exams" />,
+      rightContent: null,
     });
     return () => resetConfig();
   }, [resetConfig, setConfig]);

@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { z } from 'zod';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useHeader } from '@/contexts/HeaderContext';
 import { ExternalQuestionsImportZ } from '@/lib/validation';
 import type { ExamSummary } from '@/types/api';
-import { DevNavigation } from '@/components/DevNavigation';
+import { useHeader } from '@/contexts/HeaderContext';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 const jsonBeautify = (value: unknown): string => {
   try {
@@ -64,15 +63,17 @@ export default function ImportQuestionsPage() {
       visible: true,
       variant: 'full',
       leftContent: (
-        <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-          Home
-        </Link>
+        <Breadcrumbs
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Admin', href: '/admin' },
+            { label: 'Import' },
+          ]}
+        />
       ),
-      rightContent: <DevNavigation currentPage="import" />,
+      rightContent: null,
     });
-    return () => {
-      resetConfig();
-    };
+    return () => resetConfig();
   }, [resetConfig, setConfig]);
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import type { Collection } from 'mongodb';
 import { getDb } from '@/lib/server/mongodb';
 import { envConfig, featureFlags } from '@/lib/env-config';
 import type { NormalizedQuestion } from '@/types/normalized';
+import type { ExplainDebugInfo } from '@/types/api';
 import type { EmbeddingChunkDocument } from '@/data-pipelines/src/shared/types/embedding';
 import crypto from 'crypto';
 
@@ -9,14 +10,19 @@ export type DocumentChunk = {
   text: string;
   url?: string;
   title?: string;
+  description?: string;
   sourceFile: string;
+  sourceBasename?: string;
   sectionPath?: string;
   nearestHeading?: string;
   score: number;
-  // Optional positional metadata for smarter reconstruction
+  // Optional positional/collection metadata
   chunkIndex?: number;
+  chunkTotal?: number;
   startIndex?: number;
   endIndex?: number;
+  groupId?: string;
+  tags?: string[];
 };
 
 export type ExplanationResult = {
@@ -28,6 +34,8 @@ export type ExplanationResult = {
     sectionPath?: string;
   }>;
 };
+
+export type ExplanationResultWithDebug = ExplanationResult & { debug: ExplainDebugInfo };
 
 // Circuit breaker state
 let vectorSearchFailures = 0;
@@ -216,6 +224,8 @@ async function searchDocumentChunks(
       description?: string;
       sourceFile?: string;
       sourceBasename?: string;
+      groupId?: string;
+      tags?: string[];
       sectionPath?: string;
       nearestHeading?: string;
       chunkIndex?: number;
@@ -234,6 +244,8 @@ async function searchDocumentChunks(
         description: 1,
         sourceFile: 1,
         sourceBasename: 1,
+        groupId: 1,
+        tags: 1,
         sectionPath: 1,
         nearestHeading: 1,
         chunkIndex: 1,
@@ -248,13 +260,18 @@ async function searchDocumentChunks(
       text: doc.text || '',
       url: doc.url,
       title: doc.title || doc.description,
+      description: doc.description,
       sourceFile: doc.sourceFile || doc.sourceBasename || 'unknown',
+      sourceBasename: doc.sourceBasename,
       sectionPath: doc.sectionPath,
       nearestHeading: doc.nearestHeading,
       score: scoreMap.get(String(doc._id)) || 0,
       chunkIndex: doc.chunkIndex,
+      chunkTotal: doc.chunkTotal,
       startIndex: doc.startIndex,
       endIndex: doc.endIndex,
+      groupId: doc.groupId,
+      tags: doc.tags,
     }));
 
     // Reset circuit breaker on success
@@ -285,6 +302,135 @@ async function searchDocumentChunks(
     }
 
     return [];
+  }
+}
+
+/**
+ * Debug-capable variant that collects timings and retrieval context.
+ */
+export async function generateQuestionExplanationWithDebug(
+  question: NormalizedQuestion,
+  documentGroups?: string[],
+  questionEmbedding?: number[]
+): Promise<ExplanationResultWithDebug> {
+  const t0 = Date.now();
+  const questionHash = hashText(question.id);
+
+  let embedQuestionMs: number | undefined;
+  let searchQuestionMs: number | undefined;
+  let embedAnswerMs: number | undefined;
+  let searchAnswerMs: number | undefined;
+  let mergeMs: number | undefined;
+  let llmMs: number | undefined;
+
+  try {
+    // Create or reuse question embedding
+    const t1 = Date.now();
+    let queryEmbedding: number[];
+    if (questionEmbedding && questionEmbedding.length > 0) {
+      queryEmbedding = questionEmbedding;
+    } else {
+      const questionText = `${question.prompt} ${question.choices.join(' ')}`;
+      queryEmbedding = await createEmbedding(questionText);
+    }
+    embedQuestionMs = Date.now() - t1;
+
+    // Search using question embedding
+    const t2 = Date.now();
+    const chunksPerSearch = Math.ceil(envConfig.pipeline.maxContextChunks * 1.5);
+    const questionChunks = await searchDocumentChunks(queryEmbedding, chunksPerSearch, documentGroups);
+    searchQuestionMs = Date.now() - t2;
+
+    // Build correct answer text and embed
+    const correctAnswerText = Array.isArray(question.answerIndex)
+      ? question.answerIndex
+          .map((idx) => question.choices[idx])
+          .filter(Boolean)
+          .join(' ')
+      : question.choices[question.answerIndex];
+    if (!correctAnswerText) {
+      throw new Error('Unable to extract correct answer text');
+    }
+
+    const t3 = Date.now();
+    const answerEmbedding = await createEmbedding(correctAnswerText);
+    embedAnswerMs = Date.now() - t3;
+
+    // Search using answer embedding
+    const t4 = Date.now();
+    const answerChunks = await searchDocumentChunks(answerEmbedding, chunksPerSearch, documentGroups);
+    searchAnswerMs = Date.now() - t4;
+
+    // Merge/sort chunks and rebuild
+    const t5 = Date.now();
+    const allChunks = [...questionChunks, ...answerChunks].sort((a, b) => b.score - a.score);
+    const processedChunks = rebuildDocumentsFromChunks(allChunks);
+    mergeMs = Date.now() - t5;
+
+    // LLM generation
+    const t6 = Date.now();
+    const explanation = await generateExplanationWithLLM(question, processedChunks);
+    llmMs = Date.now() - t6;
+
+    const sources = processedChunks.map((chunk) => ({
+      url: chunk.url,
+      title: chunk.title,
+      sourceFile: chunk.sourceFile,
+      sectionPath: chunk.sectionPath,
+    }));
+
+    const debug: ExplainDebugInfo = {
+      questionEmbeddingDim: queryEmbedding?.length,
+      answerEmbeddingDim: answerEmbedding?.length,
+      documentGroups,
+      chunkCounts: {
+        question: questionChunks.length,
+        answer: answerChunks.length,
+        merged: allChunks.length,
+        processed: processedChunks.length,
+      },
+      timings: {
+        embedQuestionMs,
+        searchQuestionMs,
+        embedAnswerMs,
+        searchAnswerMs,
+        mergeMs,
+        llmMs,
+        totalMs: Date.now() - t0,
+      },
+      chunks: processedChunks.map((c) => ({
+        title: c.title,
+        description: c.description,
+        sourceFile: c.sourceFile,
+        sourceBasename: c.sourceBasename,
+        url: c.url,
+        sectionPath: c.sectionPath,
+        score: c.score,
+        groupId: c.groupId,
+        tags: c.tags,
+        chunkIndex: c.chunkIndex,
+        chunkTotal: c.chunkTotal,
+        preview: typeof c.text === 'string' ? (c.text.length > 600 ? c.text.slice(0, 600) + '…' : c.text) : undefined,
+        heading: c.nearestHeading,
+      })),
+    };
+
+    if (featureFlags.debugRetrieval) {
+      console.info(
+        `[generateQuestionExplanationWithDebug] ${questionHash} timings(ms):`,
+        debug.timings
+      );
+    }
+
+    return { explanation, sources, debug };
+  } catch (error) {
+    console.error(
+      `[generateQuestionExplanationWithDebug] Failed for question ${questionHash}:`,
+      error instanceof Error ? error.message : 'Unknown error'
+    );
+    throw new Error(
+      `Failed to generate explanation: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 

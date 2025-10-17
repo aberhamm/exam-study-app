@@ -65,11 +65,11 @@ describe('QuizHeader', () => {
     expect(mockOnQuit).toHaveBeenCalledTimes(1)
   })
 
-  it('has proper mobile-only visibility for header actions', () => {
+  it('renders header actions across breakpoints', () => {
     render(<QuizHeader {...defaultProps} />)
 
     const quitButton = screen.getByRole('button', { name: /quit and go home/i })
-    const mobileHeaderContainer = quitButton.closest('div')?.parentElement
-    expect(mobileHeaderContainer).toHaveClass('md:hidden')
+    const actionsContainer = quitButton.closest('div')?.parentElement
+    expect(actionsContainer).not.toHaveClass('md:hidden')
   })
 })

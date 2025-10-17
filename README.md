@@ -127,6 +127,17 @@ MONGODB_QUESTION_EMBEDDINGS_COLLECTION=question_embeddings
 # For AI question generation (optional)
 OPENROUTER_API_KEY=your-openrouter-key
 OPENROUTER_MODEL=google/gemini-2.0-flash-exp:free
+
+# App URL (optional; used as Referer for LLM calls)
+# SITE_URL=http://localhost:3000
+
+# Developer debugging toggles (optional)
+# DEBUG_RETRIEVAL=1              # server-side retrieval logging (vector search, timings)
+# NEXT_PUBLIC_DEBUG_RETRIEVAL=1  # client Debug HUD for admins (quiz explain)
+
+# Vector Search names (optional overrides for tooling/scripts)
+# MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX=question_embeddings_vector_index
+# MONGODB_DOCUMENT_EMBEDDINGS_VECTOR_INDEX=embedding_vector
 ```
 
 When running against MongoDB Atlas, supply the SRV connection string (e.g. `mongodb+srv://user:pass@cluster.mongodb.net`) and ensure your IP is allow-listed.
@@ -198,6 +209,15 @@ curl -X POST "http://localhost:3000/api/exams/sitecore-xmc/search" \
   -H "Content-Type: application/json" \
   -d '{ "query": "experience edge publishing" , "topK": 5 }'
 ```
+
+### Retrieval Debugging (developers)
+
+- Server verbose logs: set `DEBUG_RETRIEVAL=1` before `pnpm dev` to log retrieval/embedding steps and timing.
+- Client debug HUD (admin only): set `NEXT_PUBLIC_DEBUG_RETRIEVAL=1` or add `?debug=1` to enable a small “Retrieval Debug” panel in the quiz after generating an explanation.
+  - The Explain API also returns a `debug` block when `x-debug: 1` header or `?debug=1` is present.
+- LLM slot status: `/api/llm/status` returns `{ used, limit, windowMs, windowCount, remainingRequests }` for the current admin; a small badge appears in the quiz header.
+
+Tip: If your provider requires a referer, set `SITE_URL` to your app’s public URL.
 
 Requirements:
 

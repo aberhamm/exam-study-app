@@ -10,7 +10,7 @@ import {
   saveTestSettings
 } from "@/lib/test-settings";
 import { shuffleArray } from "@/lib/question-utils";
-import { loadExamState, isExamStateValid, saveExamState, createExamState, type ExamState } from "@/lib/exam-state";
+import { loadExamState, isExamStateValid, saveExamState, createExamState, clearExamState, type ExamState } from "@/lib/exam-state";
 import type { NormalizedQuestion, ExamMetadata } from "@/types/normalized";
 import type { ExamStatsResponse } from "@/types/api";
 
@@ -107,7 +107,8 @@ export default function HomeClient({ examMetadata, stats }: Props) {
       // Persist chosen settings so the exam page can pick them up immediately
       saveTestSettings(settings);
     }
-    // Clear any existing exam state for a fresh start
+    // Clear any existing exam state for a fresh start to ensure new settings apply
+    try { clearExamState(); } catch {}
     setResumeExamState(null);
 
     // If starting a targeted session (e.g., missed questions), pre-seed local state

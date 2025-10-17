@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,8 @@ import {
   recordQuestionResult,
 } from '@/lib/question-metrics';
 import { toast } from 'sonner';
+import DebugHUD from '@/components/dev/DebugHUD';
+import type { ExplainDebugInfo, ExplainResponse } from '@/types/api';
 
 type QuizState = {
   currentQuestionIndex: number;
@@ -79,6 +82,8 @@ export function QuizApp({
   >(null);
   const [isSavingExplanation, setIsSavingExplanation] = useState(false);
   const [isDeletingExplanation, setIsDeletingExplanation] = useState(false);
+  const [aiExplanationDebug, setAiExplanationDebug] = useState<ExplainDebugInfo | null>(null);
+  const [debugHudOpen, setDebugHudOpen] = useState(false);
 
   // Flag question state
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
@@ -105,6 +110,11 @@ export function QuizApp({
   // Session for role gating (only admins can trigger LLM usage)
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
+  const searchParams = useSearchParams();
+  const debugQuery = searchParams?.get('debug');
+  const envDebug = (process.env.NEXT_PUBLIC_DEBUG_RETRIEVAL || '').toString().toLowerCase();
+  const envDebugOn = envDebug === '1' || envDebug === 'true' || envDebug === 'yes' || envDebug === 'on';
+  const debugEnabled = isAdmin && (debugQuery === '1' || envDebugOn);
 
   const evaluateAnswer = useCallback(
     (question: NormalizedQuestion, selected: number | number[] | null): 'correct' | 'incorrect' | 'unanswered' => {
@@ -168,57 +178,14 @@ export function QuizApp({
     }
   }, [quizState, questions, testSettings, examId, examTitle]);
 
-  // Configure header based on quiz state
+  // Configure global header to be minimal (no navigation)
   useEffect(() => {
     if (quizState.showResult) {
-      // Results page - simple header
-      setConfig({
-        variant: 'short',
-        title: examTitle,
-        leftContent: null,
-        rightContent: null,
-        visible: true,
-      });
+      setConfig({ variant: 'short', title: examTitle, leftContent: null, rightContent: null, visible: true });
     } else if (!questions || questions.length === 0) {
-      // No questions - simple header
-      setConfig({
-        variant: 'short',
-        title: examTitle,
-        leftContent: null,
-        rightContent: null,
-        visible: true,
-      });
+      setConfig({ variant: 'short', title: examTitle, leftContent: null, rightContent: null, visible: true });
     } else {
-      // Main quiz - compact header with a single quit button
-      setConfig({
-        variant: 'short',
-        title: examTitle,
-        leftContent: (
-          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="bg-muted px-2 py-1 rounded">
-              {testSettings.questionType === 'all'
-                ? 'All Types'
-                : testSettings.questionType === 'single'
-                ? 'Single Select'
-                : 'Multiple Select'}
-            </span>
-            <span>•</span>
-            <span>{testSettings.questionCount} questions</span>
-          </div>
-        ),
-        rightContent: (
-          <div className="hidden md:flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowQuitDialog(true)}
-            >
-              Quit and go Home
-            </Button>
-          </div>
-        ),
-        visible: true,
-      });
+      setConfig({ variant: 'short', title: examTitle, leftContent: null, rightContent: null, visible: true });
     }
   }, [quizState.showResult, questions, testSettings, onBackToSettings, setConfig, examTitle]);
 
@@ -431,8 +398,11 @@ export function QuizApp({
     setIsGeneratingExplanation(true);
 
     try {
-      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}/explain`, {
+      const headers: Record<string, string> = {};
+      if (debugEnabled) headers['x-debug'] = '1';
+      const response = await fetch(`/api/exams/${examId}/questions/${currentQuestion.id}/explain${debugEnabled ? '?debug=1' : ''}`, {
         method: 'POST',
+        headers,
       });
 
       if (!response.ok) {
@@ -440,7 +410,7 @@ export function QuizApp({
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to generate explanation`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as ExplainResponse;
 
       // If auto-saved (no existing explanation), update questions state
       if (data.savedAsDefault) {
@@ -461,11 +431,19 @@ export function QuizApp({
         );
         setAiExplanation(null); // Clear AI explanation since it's now the default
         setAiExplanationSources(null);
+        setAiExplanationDebug(null);
         toast.success('Explanation generated and saved!');
       } else {
         // Has existing explanation, show in AI section for user to decide
         setAiExplanation(data.explanation);
         setAiExplanationSources((data.sources as typeof aiExplanationSources) || []);
+        if (debugEnabled && data.debug) {
+          setAiExplanationDebug(data.debug);
+          // Do not auto-open; show button instead
+          setDebugHudOpen(false);
+        } else {
+          setAiExplanationDebug(null);
+        }
         toast.success('Explanation generated! Click "Replace Default" to save.');
       }
 
@@ -476,7 +454,7 @@ export function QuizApp({
     } finally {
       setIsGeneratingExplanation(false);
     }
-  }, [currentQuestion, examId]);
+  }, [currentQuestion, examId, debugEnabled]);
 
   const saveExplanation = useCallback(async () => {
     if (!currentQuestion || !examId || !aiExplanation) return;
@@ -506,21 +484,16 @@ export function QuizApp({
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to save explanation`);
       }
 
+      // Parse updated question in case server reconciled a stale/legacy id
+      const json = await response.json();
+      const [normalized] = normalizeQuestions([json]);
+
       // Remove from deleted list since user manually saved a new explanation
       deletedExplanationsRef.current.delete(currentQuestion.id);
 
-      // Update the current question with the explanation, AI flag, and sources
+      // Replace current question (handle possible id change from server)
       setQuestions((prev) =>
-        prev.map((q) =>
-          q.id === currentQuestion.id
-            ? {
-                ...q,
-                explanation: aiExplanation,
-                explanationGeneratedByAI: true,
-                explanationSources: aiExplanationSources || [],
-              }
-            : q
-        )
+        prev.map((q) => (q.id === currentQuestion.id || q.id === normalized.id ? normalized : q))
       );
 
       // Clear AI explanation state since it's now the default
@@ -531,7 +504,11 @@ export function QuizApp({
 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save explanation';
-      toast.error(message);
+      if (typeof message === 'string' && message.toLowerCase().includes('question not found')) {
+        toast.error('Question not found. Your session may be out of sync. Try refreshing or restarting the exam.');
+      } else {
+        toast.error(message);
+      }
       console.error('Failed to save explanation:', error);
     } finally {
       setIsSavingExplanation(false);
@@ -678,13 +655,13 @@ export function QuizApp({
       const [normalized] = normalizeQuestions([json]);
 
       setQuestions((prev) =>
-        prev.map((question) => (question.id === normalized.id ? normalized : question))
+        prev.map((question) => (question.id === normalized.id || question.id === updatedQuestion.id ? normalized : question))
       );
 
       setQuizState((prev) => ({
         ...prev,
         incorrectAnswers: prev.incorrectAnswers.map((entry) =>
-          entry.question.id === normalized.id
+          entry.question.id === normalized.id || entry.question.id === updatedQuestion.id
             ? { ...entry, question: normalized }
             : entry
         ),
@@ -732,13 +709,13 @@ export function QuizApp({
       const [normalized] = normalizeQuestions([json]);
 
       setQuestions((prev) =>
-        prev.map((question) => (question.id === normalized.id ? normalized : question))
+        prev.map((question) => (question.id === normalized.id || question.id === updatedQuestion.id ? normalized : question))
       );
 
       setQuizState((prev) => ({
         ...prev,
         incorrectAnswers: prev.incorrectAnswers.map((entry) =>
-          entry.question.id === normalized.id
+          entry.question.id === normalized.id || entry.question.id === updatedQuestion.id
             ? { ...entry, question: normalized }
             : entry
         ),
@@ -786,13 +763,13 @@ export function QuizApp({
       const [normalized] = normalizeQuestions([json]);
 
       setQuestions((prev) =>
-        prev.map((question) => (question.id === normalized.id ? normalized : question))
+        prev.map((question) => (question.id === normalized.id || question.id === updatedQuestion.id ? normalized : question))
       );
 
       setQuizState((prev) => ({
         ...prev,
         incorrectAnswers: prev.incorrectAnswers.map((entry) =>
-          entry.question.id === normalized.id
+          entry.question.id === normalized.id || entry.question.id === updatedQuestion.id
             ? { ...entry, question: normalized }
             : entry
         ),
@@ -1071,6 +1048,29 @@ export function QuizApp({
           questionId={currentQuestion.id}
           onReverted={handleReverted}
         />
+      )}
+
+      {/* Retrieval Debug HUD trigger */}
+      {debugEnabled && aiExplanationDebug && (
+        <>
+          {!debugHudOpen && (
+            <button
+              type="button"
+              aria-label="Open retrieval debug"
+              onClick={() => setDebugHudOpen(true)}
+              className="fixed bottom-4 right-4 z-40 rounded-full border bg-background shadow px-3 py-2 text-xs"
+            >
+              Retrieval Debug
+            </button>
+          )}
+          <DebugHUD
+            visible={debugHudOpen}
+            onClose={() => setDebugHudOpen(false)}
+            context="explain"
+            debug={aiExplanationDebug}
+            raw={aiExplanationDebug}
+          />
+        </>
       )}
     </div>
   );

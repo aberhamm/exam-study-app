@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SetHeaderBreadcrumbs } from '@/components/SetHeaderBreadcrumbs';
 
 import { QuestionForm } from '@/components/questions/QuestionForm';
 
@@ -28,6 +29,15 @@ export default async function NewQuestionPage({ params }: PageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <SetHeaderBreadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Admin', href: '/admin' },
+          { label: 'Questions', href: '/admin/questions' },
+          { label: exam?.examTitle || examId, href: `/admin/questions/${encodeURIComponent(examId)}` },
+          { label: 'New' },
+        ]}
+      />
       <div className="mb-6 flex items-center justify-between">
         <Link
           href={`/admin/questions/${encodeURIComponent(examId)}`}
@@ -48,4 +58,3 @@ export default async function NewQuestionPage({ params }: PageProps) {
     </div>
   );
 }
-

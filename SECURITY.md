@@ -22,6 +22,7 @@ All admin API routes now have explicit `requireAdmin()` checks, providing an add
 The following API routes now enforce admin authentication at the handler level:
 
 #### Questions Management
+
 - `POST /api/exams/:examId/questions/import` - Import questions
 - `POST /api/exams/:examId/questions/process` - Process questions (embeddings, competencies)
 - `PATCH /api/exams/:examId/questions/:questionId` - Update question
@@ -32,6 +33,7 @@ The following API routes now enforce admin authentication at the handler level:
 - `DELETE /api/exams/:examId/questions/:questionId/competencies` - Remove competencies
 
 #### Deduplication
+
 - `GET /api/exams/:examId/dedupe/flags` - List pair ignore flags
 - `POST /api/exams/:examId/dedupe/flags` - Upsert pair ignore flags
 - `GET /api/exams/:examId/dedupe/clusters/:clusterId` - Get cluster
@@ -39,6 +41,7 @@ The following API routes now enforce admin authentication at the handler level:
 - `DELETE /api/exams/:examId/dedupe/clusters/:clusterId` - Delete cluster
 
 #### Competencies
+
 - `POST /api/exams/:examId/competencies` - Create competency
 - `PUT /api/exams/:examId/competencies/:competencyId` - Update competency
 - `DELETE /api/exams/:examId/competencies/:competencyId` - Delete competency
@@ -78,6 +81,7 @@ Admin pages now perform server-side authentication checks before rendering, prev
 Two server component layouts enforce authentication:
 
 #### Admin Layout (`/app/admin/layout.tsx`)
+
 Protects all routes under `/admin/*`:
 
 ```typescript
@@ -93,6 +97,7 @@ export default async function AdminLayout({ children }: Props) {
 ```
 
 #### Import Layout (`/app/import/layout.tsx`)
+
 Protects the `/import` route:
 
 ```typescript
@@ -110,13 +115,13 @@ export default async function ImportLayout({ children }: Props) {
 ### Protected Pages
 
 - `/admin` - Admin dashboard
-- `/admin/search` - Semantic search
+- `/admin/document-embeddings` - Document Embeddings
 - `/admin/exams` - Exam management
 - `/admin/questions/:examId` - Question management
 - `/admin/competencies` - Competency management
 - `/admin/dedupe` - Deduplication tools
 - `/admin/document-embeddings` - Document embeddings
-- `/admin/docs` - Documentation
+- `/admin/developer-docs` - Developer guides
 - `/import` - Question import
 
 ---
@@ -231,21 +236,25 @@ The current implementation uses in-memory storage. For production with multiple 
 ### Current Implementation
 
 ✅ **Multi-Layer Defense**
+
 - Middleware protection
 - Server-side page checks
 - API handler validation
 
 ✅ **Secure Session Management**
+
 - JWT-based sessions
 - HTTP-only cookies
 - Automatic expiration
 
 ✅ **Brute-Force Protection**
+
 - Username-based rate limiting
 - Progressive lockout
 - Admin override capability
 
 ✅ **Password Security**
+
 - bcrypt hashing (10 rounds)
 - Secure credential storage
 - No plaintext passwords
@@ -255,19 +264,23 @@ The current implementation uses in-memory storage. For production with multiple 
 For enhanced security, consider:
 
 1. **Two-Factor Authentication (2FA)**
+
    - TOTP or SMS verification
    - Backup recovery codes
 
 2. **IP-Based Rate Limiting**
+
    - Track attempts by IP address
    - Geolocation blocking
 
 3. **Audit Logging**
+
    - Log all admin actions
    - Failed login attempt tracking
    - Security event monitoring
 
 4. **Session Management**
+
    - Force logout on password change
    - Device/session management UI
    - Suspicious activity detection
@@ -284,6 +297,7 @@ For enhanced security, consider:
 ### Manual Testing
 
 1. **Session Timeout**:
+
    ```bash
    # Login as admin
    # Wait 8+ hours
@@ -292,6 +306,7 @@ For enhanced security, consider:
    ```
 
 2. **Rate Limiting**:
+
    ```bash
    # Attempt 6 failed logins
    # Should be locked out for 30 minutes
@@ -299,6 +314,7 @@ For enhanced security, consider:
    ```
 
 3. **API Protection**:
+
    ```bash
    # Without auth:
    curl http://localhost:3000/api/exams/test/questions/import \
@@ -321,14 +337,17 @@ For enhanced security, consider:
 ### Regular Tasks
 
 1. **Monitor Rate Limit Stats**
+
    - Check for excessive lockouts
    - Identify attack patterns
 
 2. **Review Session Configuration**
+
    - Adjust timeout based on usage
    - Balance security vs. convenience
 
 3. **Update Dependencies**
+
    - Keep NextAuth.js current
    - Monitor security advisories
 
@@ -348,6 +367,4 @@ For security questions or issues:
 
 ---
 
-**Last Updated**: 2025-10-11
-**Security Level**: Enhanced
-**Compliance**: Ready for production deployment
+**Last Updated**: 2025-10-11 **Security Level**: Enhanced **Compliance**: Ready for production deployment

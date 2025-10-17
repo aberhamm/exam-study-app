@@ -21,6 +21,10 @@ type QuestionListProps = {
   pagination?: PaginationData | null;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  // Admin actions
+  onEdit?: (q: QuestionWithId) => void;
+  onDelete?: (id: string) => void;
+  processingById?: Record<string, { embedding?: { status: 'idle' | 'pending' | 'success' | 'error'; progress: number }; competency?: { status: 'idle' | 'pending' | 'success' | 'error'; progress: number } }>;
 };
 
 export function QuestionList({
@@ -31,7 +35,10 @@ export function QuestionList({
   examId,
   pagination = null,
   currentPage = 1,
-  onPageChange
+  onPageChange,
+  onEdit,
+  onDelete,
+  processingById
 }: QuestionListProps) {
 
   if (questions.length === 0) {
@@ -110,14 +117,16 @@ export function QuestionList({
     <div className="space-y-6">
       {/* Questions list */}
       <div className="space-y-4">
-        {questions.map((question, index) => (
+        {questions.map((question) => (
           <QuestionListItem
             key={question.id}
             question={question}
-            index={showIndex ? startIndex + index : undefined}
             showIndex={showIndex}
             showCompetencies={showCompetencies}
             examId={examId}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            processing={processingById?.[question.id]}
           />
         ))}
       </div>

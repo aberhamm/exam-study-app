@@ -29,8 +29,8 @@ export default function ExamSkeleton({ examTitle }: Props) {
         </div>
       )}
 
-      {/* Mobile Header Actions */}
-      <div className="md:hidden flex justify-between items-center text-sm">
+      {/* Header Actions (all breakpoints) */}
+      <div className="flex justify-between items-center text-sm">
         <div className="flex items-center gap-2">
           <div className="h-6 w-20 rounded bg-muted animate-pulse" />
           <span className="text-muted-foreground">•</span>
@@ -74,4 +74,3 @@ export default function ExamSkeleton({ examTitle }: Props) {
     </div>
   );
 }
-

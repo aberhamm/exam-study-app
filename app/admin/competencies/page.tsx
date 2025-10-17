@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import type { ExamSummary } from '@/types/api';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { useCompetencies } from '@/app/hooks/useCompetencies';
 import { ExamSelector } from '@/components/competencies/ExamSelector';
 import { CompetencyForm } from '@/components/competencies/CompetencyForm';
 import { CompetencyList } from '@/components/competencies/CompetencyList';
 import { CompetencyListSkeleton } from '@/components/competencies/CompetencySkeleton';
-import { DevNavigation } from '@/components/DevNavigation';
 import SpinnerButton from '@/components/ui/SpinnerButton';
 import { useHeader } from '@/contexts/HeaderContext';
 
@@ -34,11 +33,11 @@ export default function CompetenciesPage() {
       visible: true,
       variant: 'full',
       leftContent: (
-        <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-          Home
-        </Link>
+        <Breadcrumbs
+          items={[{ label: 'Home', href: '/' }, { label: 'Admin' }, { label: 'Competencies' }]}
+        />
       ),
-      rightContent: <DevNavigation currentPage="competencies" />,
+      rightContent: null,
     });
     return () => resetConfig();
   }, [resetConfig, setConfig]);

@@ -1,5 +1,7 @@
 import { QuestionsPageClient } from '@/components/questions/QuestionsPageClient';
+import { SetHeaderBreadcrumbs } from '@/components/SetHeaderBreadcrumbs';
 import { notFound } from 'next/navigation';
+import { fetchExamById, listExamSummaries } from '@/lib/server/exams';
 
 type PageProps = {
   params: Promise<{ examId: string }>;
@@ -18,37 +20,22 @@ type ExamData = {
 
 async function getExamDetails(examId: string): Promise<ExamData | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/exams/${examId}`, {
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    return await response.json();
+    const exam = await fetchExamById(examId);
+    if (!exam) return null;
+    return { examId, examTitle: exam.examTitle || examId };
   } catch (error) {
-    console.error('Failed to fetch exam details:', error);
+    console.error('Failed to load exam details:', error);
     return null;
   }
 }
 
 async function getAllExams(): Promise<ExamSummary[]> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/exams`, {
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      return [];
-    }
-
-    const data = await response.json();
-    return data.exams || [];
+    const exams = await listExamSummaries();
+    // Normalize shape for client props (questionCount omitted for speed; client shows title + id)
+    return exams.map((e) => ({ examId: e.examId, examTitle: e.examTitle, questionCount: 0 }));
   } catch (error) {
-    console.error('Failed to fetch exams:', error);
+    console.error('Failed to load exams:', error);
     return [];
   }
 }
@@ -67,10 +54,16 @@ export default async function AllQuestionsPage({ params }: PageProps) {
   }
 
   return (
-    <QuestionsPageClient
-      examId={examId}
-      examTitle={examData.examTitle}
-      exams={allExams}
-    />
+    <>
+      <SetHeaderBreadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Admin', href: '/admin' },
+          { label: 'Questions', href: '/admin/questions' },
+          { label: examData.examTitle },
+        ]}
+      />
+      <QuestionsPageClient examId={examId} examTitle={examData.examTitle} exams={allExams} />
+    </>
   );
 }

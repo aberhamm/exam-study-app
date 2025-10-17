@@ -7,6 +7,7 @@ import type { QuestionDocument } from '@/types/question';
 import type { CompetencyDocument } from '@/types/competency';
 import { QuestionList } from '@/components/questions/QuestionList';
 import { QuestionListSkeleton } from '@/components/questions/QuestionListSkeleton';
+import { SetHeaderBreadcrumbs } from '@/components/SetHeaderBreadcrumbs';
 
 type PageProps = {
   params: Promise<{ examId: string; competencyId: string }>;
@@ -75,6 +76,14 @@ export default function CompetencyQuestionsPage({ params }: PageProps) {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <SetHeaderBreadcrumbs
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Admin', href: '/admin' },
+            { label: 'Competencies', href: '/admin/competencies' },
+            { label: 'Questions' },
+          ]}
+        />
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Link
@@ -107,6 +116,15 @@ export default function CompetencyQuestionsPage({ params }: PageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <SetHeaderBreadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Admin', href: '/admin' },
+          { label: 'Competencies', href: '/admin/competencies' },
+          { label: competency?.title || 'Competency' },
+          { label: 'Questions' },
+        ]}
+      />
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Link

@@ -9,6 +9,10 @@ import SpinnerButton from '@/components/ui/SpinnerButton';
 import type { QuestionDocument } from '@/types/question';
 import { QuestionList } from '@/components/questions/QuestionList';
 import { QuestionListSkeleton } from '@/components/questions/QuestionListSkeleton';
+import { QuestionEditorDialog } from '@/components/QuestionEditorDialog';
+import { normalizeQuestions, denormalizeQuestion } from '@/lib/normalize';
+import type { NormalizedQuestion } from '@/types/normalized';
+import type { ExternalQuestion } from '@/types/external-question';
 
 type ExamSummary = {
   examId: string;
@@ -49,6 +53,12 @@ export function QuestionsPageClient({ examId, examTitle, exams }: QuestionsPageC
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<NormalizedQuestion | null>(null);
+  const [saving, setSaving] = useState(false);
+  // Processing state per question
+  const [processingById, setProcessingById] = useState<Record<string, { embedding?: { status: 'idle' | 'pending' | 'success' | 'error'; progress: number }; competency?: { status: 'idle' | 'pending' | 'success' | 'error'; progress: number } }>>({});
 
   const fetchQuestions = useCallback(async (page: number, flaggedOnly: boolean) => {
     setQuestionsLoading(true);
@@ -75,6 +85,130 @@ export function QuestionsPageClient({ examId, examTitle, exams }: QuestionsPageC
       setQuestionsLoading(false);
     }
   }, [examId]);
+
+  const openEditor = useCallback((q: QuestionDocument & { id: string }) => {
+    // Convert QuestionDocument into ExternalQuestion-like then normalize
+    const external: ExternalQuestion & { id: string } = {
+      id: q.id,
+      question: q.question,
+      options: q.options,
+      answer: q.answer,
+      question_type: q.question_type || 'single',
+      explanation: q.explanation,
+      explanationGeneratedByAI: q.explanationGeneratedByAI,
+      explanationSources: q.explanationSources,
+      study: q.study,
+      competencyIds: q.competencyIds,
+      competencies: q.competencies,
+      flaggedForReview: q.flaggedForReview,
+      flaggedReason: q.flaggedReason,
+      flaggedAt: q.flaggedAt,
+      flaggedBy: q.flaggedBy,
+    };
+    const [norm] = normalizeQuestions([external]);
+    setEditing(norm);
+    setEditOpen(true);
+  }, []);
+
+  const saveEdit = useCallback(async (updated: NormalizedQuestion) => {
+    setSaving(true);
+    try {
+      const payload = denormalizeQuestion(updated);
+      const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/questions/${encodeURIComponent(payload.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        const json = await resp.json().catch(() => ({}));
+        throw new Error(typeof json?.error === 'string' ? json.error : `Update failed (${resp.status})`);
+      }
+      // Refresh list (simplest + consistent)
+      await fetchQuestions(currentPage, showFlaggedOnly);
+      setEditOpen(false);
+      setEditing(null);
+    } finally {
+      setSaving(false);
+    }
+  }, [examId, fetchQuestions, currentPage, showFlaggedOnly]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm('Delete this question? This cannot be undone.')) return;
+    try {
+      const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/questions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!resp.ok) {
+        const json = await resp.json().catch(() => ({}));
+        throw new Error(typeof json?.error === 'string' ? json.error : `Delete failed (${resp.status})`);
+      }
+      await fetchQuestions(currentPage, showFlaggedOnly);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Delete failed');
+    }
+  }, [examId, fetchQuestions, currentPage, showFlaggedOnly]);
+
+  // Helpers to animate progress bars for up to ~3 seconds
+  const animateProgress = (id: string, key: 'embedding' | 'competency', done: boolean, error?: boolean) => {
+    setProcessingById((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [key]: {
+          status: error ? 'error' : done ? 'success' : 'pending',
+          progress: done || error ? 100 : (prev[id]?.[key]?.progress ?? 5),
+        },
+      },
+    }));
+  };
+
+  const runProcess = useCallback(async (id: string, opts: { embed?: boolean; assign?: boolean }) => {
+    if (!opts.embed && !opts.assign) return;
+    // Initialize
+    const start = Date.now();
+    if (opts.embed) animateProgress(id, 'embedding', false);
+    if (opts.assign) animateProgress(id, 'competency', false);
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.min(90, Math.round((elapsed / 2500) * 90));
+      setProcessingById((prev) => {
+        const current: { embedding?: { status: 'idle' | 'pending' | 'success' | 'error'; progress: number }; competency?: { status: 'idle' | 'pending' | 'success' | 'error'; progress: number } } = prev[id] ?? {};
+        return {
+          ...prev,
+          [id]: {
+            embedding: opts.embed ? { status: 'pending', progress: Math.max(current.embedding?.progress ?? 5, pct) } : current.embedding,
+            competency: opts.assign ? { status: 'pending', progress: Math.max(current.competency?.progress ?? 5, pct) } : current.competency,
+          },
+        };
+      });
+    }, 120);
+
+    try {
+      const resp = await fetch(`/api/exams/${encodeURIComponent(examId)}/questions/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionIds: [id],
+          generateEmbeddings: !!opts.embed,
+          assignCompetencies: !!opts.assign,
+          competencyOptions: { topN: 1, threshold: 0.5, overwrite: false },
+        }),
+      });
+      if (!resp.ok) throw new Error('Processing failed');
+      // Complete progress
+      if (opts.embed) animateProgress(id, 'embedding', true);
+      if (opts.assign) animateProgress(id, 'competency', true);
+      // Refresh the page data to reflect any competency updates
+      await fetchQuestions(currentPage, showFlaggedOnly);
+    } catch {
+      if (opts.embed) animateProgress(id, 'embedding', false, true);
+      if (opts.assign) animateProgress(id, 'competency', false, true);
+    } finally {
+      clearInterval(timer);
+      // Auto-clear bars after a short delay
+      setTimeout(() => {
+        setProcessingById((prev) => ({ ...prev, [id]: { embedding: { status: 'idle', progress: 0 }, competency: { status: 'idle', progress: 0 } } }));
+      }, 1500);
+    }
+  }, [examId, fetchQuestions, currentPage, showFlaggedOnly]);
 
   const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -173,7 +307,7 @@ export function QuestionsPageClient({ examId, examTitle, exams }: QuestionsPageC
               >
                 {exams.map((exam) => (
                   <option key={exam.examId} value={exam.examId}>
-                    {exam.examTitle} ({exam.questionCount} questions)
+                    {exam.examTitle}{exam.questionCount && exam.questionCount > 0 ? ` (${exam.questionCount} questions)` : ''}
                   </option>
                 ))}
               </select>
@@ -279,8 +413,26 @@ export function QuestionsPageClient({ examId, examTitle, exams }: QuestionsPageC
           pagination={searchMode ? null : pagination}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
+          onEdit={(q) => openEditor(q)}
+          onDelete={handleDelete}
+          processingById={processingById}
         />
       )}
+
+      {/* Edit Dialog */}
+      <QuestionEditorDialog
+        open={editOpen}
+        question={editing}
+        onOpenChange={setEditOpen}
+        onSave={saveEdit}
+        saving={saving}
+        showPostOptions
+        onPostProcess={async (q, opts) => {
+          const id = q.id;
+          await runProcess(id, { embed: !!opts.embed, assign: !!opts.assign });
+        }}
+        processing={editing ? processingById[editing.id] : undefined}
+      />
     </div>
   );
 }

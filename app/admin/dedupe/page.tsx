@@ -1,18 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import SpinnerButton from '@/components/ui/SpinnerButton';
 import { useHeader } from '@/contexts/HeaderContext';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import type { ExamSummary } from '@/types/api';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { ExternalQuestion } from '@/types/external-question';
 import { normalizeQuestions } from '@/lib/normalize';
 import { QuestionEditorDialog } from '@/components/QuestionEditorDialog';
 import type { QuestionCluster } from '@/types/clusters';
-import { DevNavigation } from '@/components/DevNavigation';
 import { toast } from 'sonner';
 
 // Pair scan removed; clusters are the primary workflow
@@ -31,7 +30,7 @@ export default function DedupeDevPage() {
   // Pair list and flags removed
   const [view] = useState<'all' | 'review' | 'clusters'>('clusters');
   const [clusters, setClusters] = useState<QuestionCluster[]>([]);
-  const [clustersLoading, setClustersLoading] = useState(false); // retained for potential global disabled states
+  const [, setClustersLoading] = useState(false); // retained for potential global disabled states
   const [loadingAction, setLoadingAction] = useState<'load' | 'regenerate' | null>(null);
   const [clusterThreshold, setClusterThreshold] = useState(0.9);
   const [reviewOnly, setReviewOnly] = useState(false);
@@ -45,11 +44,9 @@ export default function DedupeDevPage() {
       visible: true,
       variant: 'full',
       leftContent: (
-        <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-          Home
-        </Link>
+        <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Admin' }, { label: 'Deduplicate' }]} />
       ),
-      rightContent: <DevNavigation currentPage="dedupe" />,
+      rightContent: null,
     });
     return () => {
       resetConfig();

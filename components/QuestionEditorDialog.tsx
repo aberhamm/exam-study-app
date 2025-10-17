@@ -20,6 +20,10 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   onSave: (question: NormalizedQuestion) => Promise<void> | void;
   saving?: boolean;
+  // Optional post-save processing controls (admin use)
+  showPostOptions?: boolean;
+  onPostProcess?: (question: NormalizedQuestion, options: { embed?: boolean; assign?: boolean }) => Promise<void> | void;
+  processing?: { embedding?: { status: 'idle' | 'pending' | 'success' | 'error'; progress: number }; competency?: { status: 'idle' | 'pending' | 'success' | 'error'; progress: number } };
 };
 
 type FormState = {
@@ -39,6 +43,9 @@ export function QuestionEditorDialog({
   onOpenChange,
   onSave,
   saving = false,
+  showPostOptions = false,
+  onPostProcess,
+  processing,
 }: Props) {
   const [formState, setFormState] = useState<FormState>(() => ({
     prompt: '',
@@ -49,6 +56,8 @@ export function QuestionEditorDialog({
     explanation: '',
   }));
   const [error, setError] = useState<string | null>(null);
+  const [postEmbed, setPostEmbed] = useState(false);
+  const [postAssign, setPostAssign] = useState(false);
 
   useEffect(() => {
     if (!question) {
@@ -175,6 +184,9 @@ export function QuestionEditorDialog({
     setError(null);
     try {
       await onSave(updatedQuestion);
+      if (showPostOptions && (postEmbed || postAssign) && onPostProcess) {
+        await onPostProcess(updatedQuestion, { embed: postEmbed, assign: postAssign });
+      }
     } catch (saveError) {
       const message = saveError instanceof Error ? saveError.message : 'Failed to save question.';
       setError(message);
@@ -344,6 +356,57 @@ export function QuestionEditorDialog({
               {error && (
                 <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
+                </div>
+              )}
+
+              {showPostOptions && (
+                <div className="space-y-2 border-t pt-4">
+                  <span className="text-sm font-medium">Post-save processing (optional)</span>
+                  <div className="flex items-start gap-2">
+                    <input
+                      id="post-embed"
+                      type="checkbox"
+                      className="h-4 w-4 mt-0.5"
+                      checked={postEmbed}
+                      onChange={(e) => setPostEmbed(e.target.checked)}
+                      disabled={saving}
+                    />
+                    <label htmlFor="post-embed" className="text-sm">
+                      <div className="font-medium">Generate embeddings</div>
+                      <div className="text-xs text-muted-foreground">Create or refresh the question&rsquo;s vector embedding</div>
+                    </label>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <input
+                      id="post-assign"
+                      type="checkbox"
+                      className="h-4 w-4 mt-0.5"
+                      checked={postAssign}
+                      onChange={(e) => setPostAssign(e.target.checked)}
+                      disabled={saving}
+                    />
+                    <label htmlFor="post-assign" className="text-sm">
+                      <div className="font-medium">Auto-assign competencies</div>
+                      <div className="text-xs text-muted-foreground">Use vector similarity to assign related competencies</div>
+                    </label>
+                  </div>
+
+                  {(processing?.embedding && processing.embedding.status !== 'idle') && (
+                    <div className="mt-2">
+                      <div className="text-xs text-muted-foreground mb-1">Embedding</div>
+                      <div className="h-1.5 rounded bg-muted overflow-hidden">
+                        <div className={`h-full ${processing.embedding.status === 'error' ? 'bg-red-500' : processing.embedding.status === 'success' ? 'bg-emerald-500' : 'bg-primary'} transition-all`} style={{ width: `${Math.max(5, Math.min(100, Math.round(processing.embedding.progress)))}%` }} />
+                      </div>
+                    </div>
+                  )}
+                  {(processing?.competency && processing.competency.status !== 'idle') && (
+                    <div className="mt-2">
+                      <div className="text-xs text-muted-foreground mb-1">Competency Assignment</div>
+                      <div className="h-1.5 rounded bg-muted overflow-hidden">
+                        <div className={`h-full ${processing.competency.status === 'error' ? 'bg-red-500' : processing.competency.status === 'success' ? 'bg-emerald-500' : 'bg-blue-500'} transition-all`} style={{ width: `${Math.max(5, Math.min(100, Math.round(processing.competency.progress)))}%` }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

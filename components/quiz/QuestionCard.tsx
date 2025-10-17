@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import SpinnerButton from '@/components/ui/SpinnerButton';
 import { StudyPanel } from '@/components/StudyPanel';
 import { MarkdownContent } from '@/components/ui/markdown';
+import ExplanationSkeleton from '@/components/quiz/ExplanationSkeleton';
 import { ExplanationSources as ExplanationSourcesList } from '@/components/ExplanationSources';
 import type { NormalizedQuestion } from '@/types/normalized';
 import { useSession } from 'next-auth/react';
-import { Sparkles, Save, Loader2, Trash2, Flag, FlagOff } from 'lucide-react';
+import { Sparkles, Save, Trash2, Flag, FlagOff } from 'lucide-react';
 
 type Props = {
   question: NormalizedQuestion;
@@ -268,17 +269,9 @@ export function QuestionCard({
 
       {showFeedback && (
         <div className="mt-6 space-y-4">
-          {/* Auto-generating explanation loading state */}
+          {/* Auto-generating explanation loading state (progressive skeleton) */}
           {!question.explanation && isGeneratingExplanation && (
-            <div className="p-4 bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-lg">
-              <div className="flex items-center gap-2 text-purple-800 dark:text-purple-200">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="font-medium">Generating explanation...</span>
-              </div>
-              <p className="mt-2 text-sm text-purple-700 dark:text-purple-300">
-                Please wait while we create a detailed explanation for this question.
-              </p>
-            </div>
+            <ExplanationSkeleton withHeader className="rounded-lg" />
           )}
 
           {/* Current/Default Explanation */}
@@ -384,18 +377,22 @@ export function QuestionCard({
                     </div>
                   </>
                 ) : (
-                  /* Generate button when no AI explanation exists */
-                  <SpinnerButton
-                    onClick={onGenerateExplanation}
-                    disabled={isSavingExplanation}
-                    loading={isGeneratingExplanation}
-                    loadingText="Generating explanation..."
-                    variant="default"
-                    size="sm"
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate {question.explanation ? 'New' : ''} Explanation with AI
-                  </SpinnerButton>
+                  isGeneratingExplanation ? (
+                    <ExplanationSkeleton withHeader withSources />
+                  ) : (
+                    /* Generate button when no AI explanation exists */
+                    <SpinnerButton
+                      onClick={onGenerateExplanation}
+                      disabled={isSavingExplanation}
+                      loading={isGeneratingExplanation}
+                      loadingText="Generating explanation..."
+                      variant="default"
+                      size="sm"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate {question.explanation ? 'New' : ''} Explanation with AI
+                    </SpinnerButton>
+                  )
                 )}
               </div>
             </div>

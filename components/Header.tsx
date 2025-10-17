@@ -16,7 +16,7 @@ export function Header() {
 
   return (
     <div className="flex justify-between items-center">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap gap-y-1 min-w-0">
         <h1 className="text-xl font-semibold">{appName}</h1>
         {config.leftContent}
       </div>

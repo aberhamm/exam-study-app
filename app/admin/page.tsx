@@ -3,10 +3,9 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { SetHeaderBreadcrumbs } from '@/components/SetHeaderBreadcrumbs';
 import {
   FileText,
-  Database,
-  Search,
   GitMerge,
   BookOpen,
   HelpCircle,
@@ -46,22 +45,16 @@ const adminTools = [
     icon: GitMerge,
   },
   {
-    title: 'Search',
-    description: 'Semantic search across questions',
-    href: '/admin/search',
-    icon: Search,
-  },
-  {
     title: 'Document Embeddings',
-    description: 'Manage document embeddings',
+    description: 'Semantic search across documents',
     href: '/admin/document-embeddings',
     icon: FileStack,
   },
   {
-    title: 'Documentation',
-    description: 'Browse study documentation',
-    href: '/admin/docs',
-    icon: Database,
+    title: 'Developer Guides',
+    description: 'CLI tools and developer documentation',
+    href: '/admin/developer-docs',
+    icon: FileText,
   },
 ];
 
@@ -74,6 +67,7 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-8">
+      <SetHeaderBreadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Admin' }]} />
       <div>
         <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
         <p className="text-gray-600 dark:text-gray-400">

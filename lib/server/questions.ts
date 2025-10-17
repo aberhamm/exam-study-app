@@ -135,6 +135,7 @@ export async function updateQuestion(
   question: QuestionWithId,
 ): Promise<QuestionWithId | null> {
   const collection = await getQuestionsCollection();
+  console.info('[questions] updateQuestion', { examId, questionId });
 
   if (!MongoObjectId.isValid(questionId)) {
     return null;

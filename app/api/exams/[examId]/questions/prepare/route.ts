@@ -282,6 +282,18 @@ export async function POST(request: Request, context: RouteParams) {
       // If no competencies found, fall through to default behavior below
     }
 
+    // Apply random sampling/ordering to respect requested questionCount before expensive lookups
+    // Prefer $sample for efficiency; optionally support deterministic rand+sort when enabled
+    const useRandSort = String(process.env.USE_RAND_SORT_SAMPLING || '').toLowerCase();
+    if (useRandSort === '1' || useRandSort === 'true' || useRandSort === 'yes' || useRandSort === 'on') {
+      pipeline.push({ $addFields: { _rand: { $rand: {} } } } as object);
+      pipeline.push({ $sort: { _rand: 1 } } as object);
+      pipeline.push({ $limit: input.questionCount } as object);
+    } else {
+      // $sample returns up to the requested size; if fewer exist, it returns all
+      pipeline.push({ $sample: { size: input.questionCount } } as object);
+    }
+
     // Lookup competencies to embed minimal data in questions
     pipeline.push({
       $lookup: {

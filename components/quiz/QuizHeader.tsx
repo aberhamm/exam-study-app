@@ -19,8 +19,8 @@ export function QuizHeader({ examTitle, testSettings, onQuit }: Props) {
         </div>
       )}
 
-      {/* Mobile Header Actions */}
-      <div className="md:hidden flex justify-between items-center text-sm">
+      {/* Header Actions (all breakpoints) */}
+      <div className="flex justify-between items-center text-sm">
         <div className="flex items-center gap-2 text-muted-foreground">
           <span className="bg-muted px-2 py-1 rounded">
             {testSettings.questionType === 'all'
@@ -33,11 +33,7 @@ export function QuizHeader({ examTitle, testSettings, onQuit }: Props) {
           <span>{testSettings.questionCount} questions</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onQuit}
-          >
+          <Button variant="outline" size="sm" onClick={onQuit}>
             Quit and go Home
           </Button>
         </div>

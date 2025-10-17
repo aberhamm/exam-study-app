@@ -59,3 +59,12 @@ export function acquireLlmSlot(userId: string): { release: () => void } {
     },
   };
 }
+
+export function getAdminSlotStatus(userId: string): { used: number; limit: number; windowMs: number; windowCount: number; remainingRequests: number } {
+  const used = concurrentMap.get(userId) || 0;
+  const limit = MAX_CONCURRENT;
+  const rec = windowMap.get(userId);
+  const windowCount = rec?.count ?? 0;
+  const remainingRequests = Math.max(0, MAX_REQUESTS_PER_WINDOW - windowCount);
+  return { used, limit, windowMs: WINDOW_MS, windowCount, remainingRequests };
+}
