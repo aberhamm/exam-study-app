@@ -147,7 +147,10 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
   // Fetch competencies for this exam
   useEffect(() => {
-    if (!examMetadata?.examId) return;
+    if (!examMetadata?.examId) {
+      setCompetencies([]);
+      return;
+    }
 
     const fetchCompetencies = async () => {
       try {

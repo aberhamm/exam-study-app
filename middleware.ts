@@ -65,18 +65,36 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if route requires admin access
-  const isAdminRoute =
-    pathname.startsWith('/admin') ||
-    pathname === '/import' ||
-    pathname.startsWith('/api/exams/') && (
+  const isCompetencyCollectionAPI =
+    pathname.startsWith('/api/exams/') &&
+    pathname.includes('/competencies') &&
+    !pathname.includes('/competencies/');
+
+  const isCompetencyItemAPI =
+    pathname.startsWith('/api/exams/') &&
+    pathname.includes('/competencies/');
+
+  const isQuestionsPrepareAPI =
+    pathname.startsWith('/api/exams/') &&
+    pathname.includes('/questions/prepare');
+
+  const isAdminExamsAPI =
+    pathname.startsWith('/api/exams/') &&
+    (
+      (!isCompetencyCollectionAPI && isCompetencyItemAPI) ||
+      (!isQuestionsPrepareAPI && pathname.includes('/questions')) ||
       pathname.includes('/questions/import') ||
       pathname.includes('/questions/embed') ||
       pathname.includes('/questions/process') ||
-      pathname.includes('/explain') ||
-      pathname.includes('/explanation') ||
-      pathname.includes('/competencies') ||
+      pathname.includes('/questions/explain') ||
+      pathname.includes('/questions/explanation') ||
       pathname.includes('/dedupe')
     );
+
+  const isAdminRoute =
+    pathname.startsWith('/admin') ||
+    pathname === '/import' ||
+    isAdminExamsAPI;
 
   if (isAdminRoute) {
     // Require authentication
