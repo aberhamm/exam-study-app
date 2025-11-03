@@ -546,9 +546,11 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 <span className="rounded-full border border-border/60 bg-background/70 px-4 py-1 text-sm text-muted-foreground">
                   {seenQuestionIds.length.toLocaleString()} seen
                 </span>
-                <span className="rounded-full border border-border/60 bg-background/70 px-4 py-1 text-sm text-muted-foreground">
-                  {missedQuestionIds.length.toLocaleString()} flagged to review
-                </span>
+                {isAdmin && (
+                  <span className="rounded-full border border-border/60 bg-background/70 px-4 py-1 text-sm text-muted-foreground">
+                    {missedQuestionIds.length.toLocaleString()} flagged to review
+                  </span>
+                )}
               </div>
             </div>
           </div>

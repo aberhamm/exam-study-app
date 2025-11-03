@@ -3,7 +3,8 @@ import { fetchExamDetail, getExamCacheTag } from '@/lib/server/questions';
 import { ExamDetailZ, coerceExamDetail } from '@/lib/validation';
 import type { ExamDetailResponse } from '@/types/api';
 import type { WelcomeConfig } from '@/types/normalized';
-import { requireAdmin } from '@/lib/auth-supabase';
+import { getCurrentAppUser, requireAdmin } from '@/lib/auth-supabase';
+import type { ExamDetail } from '@/types/external-question';
 
 type RouteParams = {
   params: Promise<{
@@ -29,7 +30,11 @@ export async function GET(request: Request, context: RouteParams) {
       return new NextResponse(null, { status: 304, headers: { ETag: etag } });
     }
 
-    const examRaw = await fetchExamDetail(examId);
+    const [examRaw, appUser] = await Promise.all([
+      fetchExamDetail(examId),
+      getCurrentAppUser()
+    ]);
+
     if (!examRaw) {
       return NextResponse.json(
         { error: `Exam "${examId}" not found` },
@@ -37,7 +42,21 @@ export async function GET(request: Request, context: RouteParams) {
       );
     }
 
-    const coerced = coerceExamDetail(examRaw);
+    const sanitizedExam: ExamDetail = (() => {
+      const isAdmin = appUser?.isAdmin === true;
+      if (isAdmin) return examRaw;
+      const sanitizedQuestions = examRaw.questions.map((question) => {
+        const { flaggedForReview, flaggedReason, flaggedAt, flaggedBy, ...rest } = question;
+        void flaggedForReview;
+        void flaggedReason;
+        void flaggedAt;
+        void flaggedBy;
+        return rest;
+      });
+      return { ...examRaw, questions: sanitizedQuestions };
+    })();
+
+    const coerced = coerceExamDetail(sanitizedExam);
     const parsed = ExamDetailZ.parse(coerced) as ExamDetailResponse;
     const headers: Record<string, string> = { ETag: etag };
     if (process.env.NODE_ENV === 'development') {
