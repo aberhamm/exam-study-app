@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AuthButton } from "@/components/AuthButton";
 import { APP_CONFIG } from "@/lib/app-config";
@@ -17,7 +18,11 @@ export function Header() {
   return (
     <div className="flex justify-between items-center">
       <div className="flex items-center gap-4 flex-wrap gap-y-1 min-w-0">
-        <h1 className="text-xl font-semibold">{appName}</h1>
+        <h1 className="text-xl font-semibold">
+          <Link href="/" className="transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-md px-1">
+            {appName}
+          </Link>
+        </h1>
         {config.leftContent}
       </div>
       <div className="flex items-center gap-3">
