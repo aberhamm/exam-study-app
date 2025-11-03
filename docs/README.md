@@ -1,6 +1,6 @@
 # Documentation
 
-Welcome to the scxmcl-study-util documentation.
+Welcome to the study-util documentation.
 
 ## Quick Links
 

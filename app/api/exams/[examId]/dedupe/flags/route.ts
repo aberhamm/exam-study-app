@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb, getDedupePairsCollectionName } from '@/lib/server/mongodb';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 
 type RouteParams = {
   params: Promise<{ examId: string }>;
@@ -94,4 +94,3 @@ export async function POST(request: Request, context: RouteParams) {
     return NextResponse.json({ error: 'Failed to update flag' }, { status: 500 });
   }
 }
-

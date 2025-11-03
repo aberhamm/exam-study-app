@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateQuestionExplanation, generateQuestionExplanationWithDebug } from '@/lib/server/explanation-generator';
 import { getQuestionById } from '@/lib/server/questions';
 import { normalizeQuestions } from '@/lib/normalize';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import { acquireLlmSlot } from '@/lib/server/llm-guard';
 import type { ExplainResponse } from '@/types/api';
 
@@ -26,10 +26,10 @@ export async function POST(request: Request, context: RouteParams) {
 
     // Require admin for any explanation generation (LLM usage gated to admins).
     // Defense-in-depth: middleware protects this route as well.
-    let adminUser: { id: string; username: string } | null = null;
+    let adminUser: { id: string; email: string } | null = null;
     try {
       const user = await requireAdmin();
-      adminUser = { id: user.id, username: user.username };
+      adminUser = { id: user.id, email: user.email };
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Forbidden' },

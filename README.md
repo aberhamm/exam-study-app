@@ -70,7 +70,7 @@ For production environments, Docker deployment is recommended. See the complete 
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd scxmcl-study-util
+cd study-util
 
 # Install dependencies
 npm install
@@ -110,35 +110,66 @@ See detailed script docs and use cases in docs/scripts.md.
 
 ### Environment Variables
 
-Copy `.env.example` to `.env.local` (or update your preferred dotenv file) and set the MongoDB connection details used by the API routes and seeding scripts:
+Copy `.env.example` to `.env.local` and configure the required environment variables:
 
+#### Required Configuration
+
+**Supabase Authentication:**
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 ```
+
+Get these values from your [Supabase project dashboard](https://supabase.com/dashboard). See [SUPABASE_MIGRATION_COMPLETE.md](./SUPABASE_MIGRATION_COMPLETE.md) for detailed setup instructions.
+
+**MongoDB Database:**
+```bash
 MONGODB_URI=mongodb://localhost:27017
-MONGODB_DB=scxmcl-study-util
+MONGODB_DB=study-util
 MONGODB_EXAMS_COLLECTION=exams
 MONGODB_QUESTIONS_COLLECTION=questions
+MONGODB_QUESTION_EMBEDDINGS_COLLECTION=question_embeddings
+```
 
-# For embeddings (optional)
+#### Optional Configuration
+
+**AI Services (for question generation and embeddings):**
+```bash
+# OpenAI (for embeddings) - used when USE_PORTKEY is not enabled
 OPENAI_API_KEY=your-openai-key
 QUESTIONS_EMBEDDING_MODEL=text-embedding-3-small
-# QUESTIONS_EMBEDDING_DIMENSIONS=1536
-MONGODB_QUESTION_EMBEDDINGS_COLLECTION=question_embeddings
 
-# For AI question generation (optional)
+# OpenRouter (for chat completions) - used when USE_PORTKEY is not enabled
 OPENROUTER_API_KEY=your-openrouter-key
 OPENROUTER_MODEL=google/gemini-2.0-flash-exp:free
 
-# App URL (optional; used as Referer for LLM calls)
-# SITE_URL=http://localhost:3000
-
-# Developer debugging toggles (optional)
-# DEBUG_RETRIEVAL=1              # server-side retrieval logging (vector search, timings)
-# NEXT_PUBLIC_DEBUG_RETRIEVAL=1  # client Debug HUD for admins (quiz explain)
-
-# Vector Search names (optional overrides for tooling/scripts)
-# MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX=question_embeddings_vector_index
-# MONGODB_DOCUMENT_EMBEDDINGS_VECTOR_INDEX=embedding_vector
+# Portkey (routes all LLM calls through Portkey when enabled)
+USE_PORTKEY=true
+PORTKEY_API_KEY=pk_live_********************************
+PORTKEY_BASE_URL=https://api.portkey.ai/v1
+# Optional enterprise gateway provider header (sets x-portkey-provider)
+# Example: @aws-bedrock-use2
+PORTKEY_PROVIDER=
+# Additional custom headers (optional; API key header is generated automatically)
+# PORTKEY_CUSTOM_HEADERS=x-custom-header:value
+# Titan v2 embeddings return 1024 dimensions; re-embed content (or store alongside v1) before switching
+# PORTKEY_MODEL_EMBEDDINGS=amazon.titan-embed-text-v2:0
+# With Model Catalog, specify models via catalog slugs
+# Example: PORTKEY_MODEL=@my-azure-prod/gpt-4o
+PORTKEY_MODEL=@openai-prod/gpt-4o
 ```
+
+**Application Settings:**
+```bash
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+SITE_URL=http://localhost:3000
+NEXT_PUBLIC_DEBUG_RETRIEVAL=false
+USE_RAND_SORT_SAMPLING=false
+USE_PORTKEY=false  # Set to true to route all LLM calls through Portkey
+```
+
+See `.env.example` for the complete list of available configuration options.
 
 When running against MongoDB Atlas, supply the SRV connection string (e.g. `mongodb+srv://user:pass@cluster.mongodb.net`) and ensure your IP is allow-listed.
 
@@ -192,7 +223,8 @@ pnpm embed:questions --limit 100 --batch 32
 
 Environment:
 
-- `OPENAI_API_KEY` – API key for embeddings
+- `OPENAI_API_KEY` – API key for embeddings (used when `USE_PORTKEY` is not enabled)
+- `PORTKEY_API_KEY` – Portkey credential (used when `USE_PORTKEY=true`)
 - `QUESTIONS_EMBEDDING_MODEL` – defaults to `text-embedding-3-small`
 - `QUESTIONS_EMBEDDING_DIMENSIONS` – optional; set to model dims (e.g., 1536)
 
@@ -223,42 +255,36 @@ Requirements:
 
 - Populate `question_embeddings` (see Embeddings above)
 - Create a MongoDB Atlas Vector Search index on `question_embeddings.embedding`
-- Set `OPENAI_API_KEY` and (optionally) `QUESTIONS_EMBEDDING_DIMENSIONS`
+- Set `OPENAI_API_KEY` (or `PORTKEY_API_KEY` if `USE_PORTKEY=true`) and (optionally) `QUESTIONS_EMBEDDING_DIMENSIONS`
 - Set `MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX` to your index name if not using the default
 
 ### Authentication
 
-The application uses NextAuth.js (Auth.js v5) for authentication with role-based access control.
+The application uses Supabase Authentication with role-based access control and custom claims management.
 
 #### Setup
 
-1. **Generate AUTH_SECRET**:
+1. **Configure Supabase Project**:
+
+Set up your Supabase project and configure the required environment variables (see Environment Variables section above).
+
+2. **Run Database Schema**:
+
+Execute the SQL schema in your Supabase project:
 
 ```bash
-openssl rand -base64 32
+# Copy the contents of supabase-schema.sql and run it in your Supabase SQL Editor
 ```
 
-Add the generated secret to your `.env.local`:
+3. **Create Admin User**:
 
-```
-AUTH_SECRET=your-generated-secret-here
-```
+Use the Supabase dashboard to create your first user, then use the Claims Admin to grant admin access. End-users must already exist in Supabase; self-service registration and invites are disabled.
 
-2. **Create Admin User**:
+4. **Access Admin Features**:
 
-```bash
-# Using default credentials (username: admin, password: admin123)
-pnpm seed:admin
-
-# Or with custom credentials
-ADMIN_USERNAME=youradmin ADMIN_PASSWORD=yourpassword pnpm seed:admin
-```
-
-3. **Access Admin Features**:
-
-- Visit `/login` to sign in
+- Visit `/login` to request a magic-link sign-in email
 - Admin features are available at `/admin` and `/import`
-- Admin API endpoints require authentication
+- Admin API endpoints require authentication and admin role
 
 Admin-only LLM usage: Only admins can generate explanations or embeddings via server endpoints. The system enforces per-admin concurrency and a short rate window to control cost.
 
@@ -314,7 +340,7 @@ You can automatically generate exam questions from sections marked as "Important
 # 1. Extract important sections from markdown docs
 pnpm extract:important
 
-# 2. Generate questions using AI (OpenRouter)
+# 2. Generate questions using AI (Portkey or OpenRouter, depending on USE_PORTKEY setting)
 pnpm generate:important-questions
 
 # 3. Import via web UI at /import
@@ -384,7 +410,7 @@ Every time you run a quiz, the client records per-question metrics (seen, correc
 ## Project Structure
 
 ```
-scxmcl-study-util/
+study-util/
 ├── app/                    # Next.js App Router
 │   ├── layout.tsx         # Root layout with theme provider
 │   ├── page.tsx           # Main app with view state management

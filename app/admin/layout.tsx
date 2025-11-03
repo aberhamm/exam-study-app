@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import { redirect } from 'next/navigation';
 
 type Props = {
@@ -10,10 +10,15 @@ type Props = {
  * Provides defense-in-depth security for all /admin/* routes.
  */
 export default async function AdminLayout({ children }: Props) {
-  const session = await auth();
-
-  if (!session?.user) redirect('/login');
-  if (session.user.role !== 'admin') redirect('/forbidden');
+  try {
+    await requireAdmin();
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      redirect('/login');
+    } else {
+      redirect('/forbidden');
+    }
+  }
 
   return <>{children}</>;
 }

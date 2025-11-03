@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import {
   HelpCircle,
   FileStack,
   Upload,
+  Settings,
 } from 'lucide-react';
 
 const adminTools = [
@@ -56,13 +57,23 @@ const adminTools = [
     href: '/admin/developer-docs',
     icon: FileText,
   },
+  {
+    title: 'Portkey Test',
+    description: 'Test Portkey gateway configuration',
+    href: '/admin/portkey-test',
+    icon: Settings,
+  },
 ];
 
 export default async function AdminPage() {
-  const session = await auth();
-
-  if (!session?.user || session.user.role !== 'admin') {
-    redirect('/login');
+  try {
+    await requireAdmin();
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      redirect('/login');
+    } else {
+      redirect('/forbidden');
+    }
   }
 
   return (

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { envConfig } from '@/lib/env-config';
 import { searchSimilarDocuments } from '@/lib/server/documents-search';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
+import { createEmbedding as createEmbeddingLLM } from '@/lib/llm-client';
 
 type SearchBody = {
   query?: string;
@@ -11,26 +12,11 @@ type SearchBody = {
 };
 
 async function embedQuery(query: string): Promise<number[]> {
-  const apiKey = envConfig.openai.apiKey;
   const model = envConfig.openai.embeddingModel;
   const dimensions = envConfig.openai.embeddingDimensions;
 
-  const body: Record<string, unknown> = { model, input: query, dimensions };
-
-  const resp = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`OpenAI embeddings error ${resp.status}: ${text}`);
-  }
-  const json = (await resp.json()) as { data: Array<{ embedding: number[] }> };
-  return json.data[0]?.embedding ?? [];
+  // Use LLM client wrapper (routes to Portkey or OpenAI based on feature flag)
+  return createEmbeddingLLM(query, { model, dimensions });
 }
 
 export async function POST(request: Request) {

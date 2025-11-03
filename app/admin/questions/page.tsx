@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { SetHeaderBreadcrumbs } from '@/components/SetHeaderBreadcrumbs';
 import { listExamSummaries } from '@/lib/server/exams';
 
+export const dynamic = 'force-dynamic';
+
 export default async function QuestionsLandingPage() {
   const exams = await listExamSummaries();
   if (exams.length > 0) {

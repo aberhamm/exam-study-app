@@ -8,10 +8,9 @@ export type ExplanationSource = {
 export type ExplanationVersion = {
   id: string;
   savedAt: Date;
-  savedBy?: { id: string; username: string } | null;
+  savedBy?: { id: string; email: string } | null;
   aiGenerated?: boolean;
   reason?: 'edit' | 'delete' | 'revert' | 'import' | string;
   explanation: string;
   sources?: ExplanationSource[];
 };
-

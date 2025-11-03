@@ -1,133 +1,129 @@
 'use client';
 
-import { Suspense, useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-// import { Button } from '@/components/ui/button';
-import SpinnerButton from '@/components/ui/SpinnerButton';
-import { Card } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 
-function LoginContent() {
-  const router = useRouter();
+function sanitizeCallbackUrl(value: string | null): string {
+  if (!value) {
+    return '/dashboard';
+  }
+
+  if (!value.startsWith('/') || value.startsWith('//')) {
+    return '/dashboard';
+  }
+
+  return value;
+}
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
   const searchParams = useSearchParams();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Get the callback URL from query params, default to /admin
-  const callbackUrl = searchParams?.get('callbackUrl') || '/admin';
+  const callbackUrl = sanitizeCallbackUrl(searchParams.get('callbackUrl'));
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Check initial session state on mount
+  useEffect(() => {
+    async function checkInitialSession() {
+      await supabase.auth.getSession();
+    }
+    checkInitialSession();
+  }, [supabase]);
+
+  // Magic link authentication (default)
+  const handleMagicLinkLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
+
+    if (!email) {
+      toast.error('Please enter your email');
+      return;
+    }
 
     try {
-      const result = await signIn('credentials', {
-        username,
-        password,
-        redirect: false,
+      setLoading(true);
+
+      const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
+      redirectUrl.searchParams.set('next', callbackUrl);
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: redirectUrl.toString(),
+          shouldCreateUser: false,
+        },
       });
 
-      if (result?.error) {
-        setError('Invalid username or password');
-        setIsLoading(false);
-        return;
+      if (error) {
+        console.error('❌ Magic link error:', error);
+        throw error;
       }
 
-      // Redirect to callback URL on success (defaults to /admin)
-      router.push(callbackUrl);
-      router.refresh();
-    } catch {
-      setError('An error occurred. Please try again.');
-      setIsLoading(false);
+      toast.success('Check your email for the magic link!');
+    } catch (error) {
+      const err = error as { message?: string };
+      const errorMessage = err.message || '';
+
+      if (errorMessage.toLowerCase().includes('user not found')) {
+        console.error('❌ User not found:', email);
+        toast.error('This email is not registered. Contact an administrator.');
+      } else {
+        console.error('❌ Magic link error:', errorMessage);
+        toast.error(errorMessage);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <Card className="w-full max-w-md p-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold mb-2">Admin Login</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Sign in to access admin features
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div>
+          <h2 className="text-3xl font-bold">Admin Login</h2>
+          <p className="text-gray-600 mt-2">
+            Sign in to access the dashboard
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleMagicLinkLogin} className="space-y-4">
           <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium mb-2"
-            >
-              Username
+            <label htmlFor="email" className="block text-sm font-medium">
+              Email
             </label>
             <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@example.com"
+              disabled={loading}
               required
-              autoComplete="username"
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
-              disabled={isLoading}
+              autoComplete="email"
+              autoFocus
+              className="mt-1 block w-full rounded-md border px-3 py-2"
             />
           </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium mb-2"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
-              disabled={isLoading}
-            />
-          </div>
-
-          {error && (
-            <div className="text-red-600 dark:text-red-400 text-sm">
-              {error}
-            </div>
-          )}
-
-          <SpinnerButton
+          <button
             type="submit"
-            className="w-full"
-            loading={isLoading}
-            loadingText="Signing in..."
+            disabled={loading}
+            className="w-full bg-blue-600 text-white rounded-md py-2 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign In
-          </SpinnerButton>
+            {loading ? 'Sending magic link...' : 'Send magic link'}
+          </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => router.push('/')}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Back to Home
-          </button>
+        <div className="space-y-1 text-center">
+          <p className="text-sm text-gray-600">
+            Only existing users with admin access can sign in
+          </p>
+          <p className="text-xs text-gray-500">
+            New users must be created by an administrator
+          </p>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginContent />
-    </Suspense>
-  );
-}
-export const dynamic = 'force-dynamic';

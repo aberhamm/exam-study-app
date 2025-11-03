@@ -16,14 +16,19 @@ services:
       MONGODB_URI: ${MONGODB_URI}
       MONGODB_DB: ${MONGODB_DB:-study-util}
 
-      # OpenAI API (for embeddings)
+      # OpenAI API (for embeddings) - used when USE_PORTKEY is not enabled
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       QUESTIONS_EMBEDDING_MODEL: ${QUESTIONS_EMBEDDING_MODEL:-text-embedding-3-small}
       QUESTIONS_EMBEDDING_DIMENSIONS: ${QUESTIONS_EMBEDDING_DIMENSIONS:-}
 
-      # OpenRouter API (for AI features)
+      # OpenRouter API (for AI features) - used when USE_PORTKEY is not enabled
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
+
+      # Portkey (routes all LLM calls through Portkey when enabled)
+      USE_PORTKEY: ${USE_PORTKEY:-}
+      PORTKEY_API_KEY: ${PORTKEY_API_KEY:-}
+      PORTKEY_MODEL: ${PORTKEY_MODEL:-@openai-prod/gpt-4o}
 
       # Authentication (required for admin features)
       AUTH_SECRET: ${AUTH_SECRET}

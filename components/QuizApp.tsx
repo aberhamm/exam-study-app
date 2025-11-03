@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/app/hooks/useSession';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useHeader } from '@/contexts/HeaderContext';
@@ -109,7 +109,7 @@ export function QuizApp({
 
   // Session for role gating (only admins can trigger LLM usage)
   const { data: session } = useSession();
-  const isAdmin = session?.user?.role === 'admin';
+  const isAdmin = session?.user?.isAdmin;
   const searchParams = useSearchParams();
   const debugQuery = searchParams?.get('debug');
   const envDebug = (process.env.NEXT_PUBLIC_DEBUG_RETRIEVAL || '').toString().toLowerCase();

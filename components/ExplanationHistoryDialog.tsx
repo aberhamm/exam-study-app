@@ -101,7 +101,7 @@ export function ExplanationHistoryDialog({ open, onOpenChange, examId, questionI
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-sm text-muted-foreground">
                     <span className="font-medium">Saved:</span>{' '}
-                    {new Date(v.savedAt).toLocaleString()} • {v.savedBy?.username || 'system'} • {v.aiGenerated ? 'AI' : 'Manual'} • {v.reason || 'edit'}
+                    {new Date(v.savedAt).toLocaleString()} • {v.savedBy?.email || 'system'} • {v.aiGenerated ? 'AI' : 'Manual'} • {v.reason || 'edit'}
                   </div>
                   <Button size="sm" onClick={() => revertTo(v.id)} disabled={!!revertingId}>
                     {revertingId === v.id ? 'Reverting…' : 'Revert to this'}

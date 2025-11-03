@@ -18,9 +18,10 @@ loadEnvConfig(process.cwd());
 
 import path from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
-import OpenAI from 'openai';
 import type { ExternalQuestion } from '@/types/external-question';
 import { ExternalQuestionZ } from '@/lib/validation';
+import { envConfig } from '@/lib/env-config';
+import { getLLMClient } from '@/lib/llm-client';
 
 const INPUT_FILE = path.resolve(process.cwd(), 'data/important-sections.json');
 const OUTPUT_FILE = path.resolve(process.cwd(), 'data/generated-important-questions.json');
@@ -100,10 +101,10 @@ Generate between 1-3 questions depending on the complexity and importance of the
 }
 
 /**
- * Generate questions using OpenRouter
+ * Generate questions using Portkey or OpenRouter (based on feature flag)
  */
 async function generateQuestions(
-  openai: OpenAI,
+  client: ReturnType<typeof getLLMClient>,
   section: ImportantSection,
   dryRun: boolean,
   model: string
@@ -116,7 +117,7 @@ async function generateQuestions(
   const prompt = createQuestionPrompt(section);
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model,
       messages: [
         {
@@ -135,7 +136,7 @@ async function generateQuestions(
 
     const responseText = completion.choices[0]?.message?.content?.trim();
     if (!responseText) {
-      throw new Error('Empty response from OpenAI');
+      throw new Error('Empty response from LLM');
     }
 
     // Extract JSON from response (in case there's any surrounding text)
@@ -166,8 +167,21 @@ async function generateQuestions(
 }
 
 async function main() {
-  const apiKey = requireEnv('OPENROUTER_API_KEY');
-  const model = process.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free';
+  // Check if using Portkey or OpenRouter
+  const usePortkey = envConfig.features.usePortkey;
+  const model = usePortkey
+    ? (envConfig.portkey.modelGeneration || envConfig.portkey.model)
+    : process.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free';
+
+  // Ensure required API keys are available
+  if (usePortkey) {
+    if (!envConfig.portkey.apiKey) {
+      throw new Error('Portkey requires PORTKEY_API_KEY environment variable');
+    }
+  } else {
+    requireEnv('OPENROUTER_API_KEY');
+  }
+
   const args = process.argv.slice(2);
 
   let limit: number | null = null;
@@ -193,15 +207,13 @@ async function main() {
   }
 
   console.log(`Processing ${sections.length} important sections...`);
-  console.log(`Using model: ${model}`);
+  console.log(`Using ${usePortkey ? 'Portkey' : 'OpenRouter'} with model: ${model}`);
   if (dryRun) {
     console.log('[DRY RUN MODE - No API calls will be made]');
   }
 
-  const openai = new OpenAI({
-    apiKey,
-    baseURL: 'https://openrouter.ai/api/v1',
-  });
+  // Use LLM client wrapper (routes to Portkey or OpenRouter based on feature flag)
+  const client = getLLMClient();
   const results: GeneratedQuestionSet[] = [];
 
   let totalQuestions = 0;
@@ -213,7 +225,7 @@ async function main() {
       `\n[${processed}/${sections.length}] Processing: ${section.title} > ${section.context}`
     );
 
-    const questions = await generateQuestions(openai, section, dryRun, model);
+    const questions = await generateQuestions(client, section, dryRun, model);
 
     if (questions.length > 0) {
       results.push({

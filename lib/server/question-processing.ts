@@ -8,6 +8,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { envConfig } from '../env-config';
 import { searchSimilarCompetencies } from './competency-assignment';
+import { createEmbeddings as createEmbeddingsLLM } from '@/lib/llm-client';
 
 type QuestionDoc = {
   _id: ObjectId;
@@ -53,38 +54,15 @@ function buildTextForEmbedding(q: QuestionDoc): string {
 }
 
 /**
- * Call OpenAI embeddings API
+ * Call embeddings API (routes to Portkey or OpenAI based on feature flag)
  */
 async function createEmbeddings(
   inputs: string[],
   model: string,
   dimensions?: number
 ): Promise<number[][]> {
-  const apiKey = envConfig.openai.apiKey;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is required for embeddings');
-  }
-
-  const url = 'https://api.openai.com/v1/embeddings';
-  const body: Record<string, unknown> = { model, input: inputs };
-  if (dimensions) body.dimensions = dimensions;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenAI embeddings error ${res.status}: ${err}`);
-  }
-
-  const json = (await res.json()) as { data: Array<{ embedding: number[] }> };
-  return json.data.map((d) => d.embedding);
+  // Use LLM client wrapper (routes to Portkey or OpenAI based on feature flag)
+  return createEmbeddingsLLM(inputs, { model, dimensions });
 }
 
 /**

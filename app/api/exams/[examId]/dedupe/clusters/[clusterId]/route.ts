@@ -3,7 +3,7 @@ import { getDb, getQuestionClustersCollectionName, getQuestionsCollectionName, g
 import { computePairScoresFromEmbeddings, calculateClusterMetricsExtended, clusterQuestionsBySimilarity, splitClusterAuto } from '@/lib/server/clustering';
 import type { ClusterDocument, ClusterAction } from '@/types/clusters';
 import type { QuestionDocument } from '@/types/question';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import { randomUUID } from 'crypto';
 import type { Document, OptionalId, Filter } from 'mongodb';
 
@@ -79,9 +79,9 @@ export async function GET(_request: Request, context: RouteParams) {
       proposedQuestions = pq;
     }
 
-    const populatedCluster: ClusterDocument & { questions: QuestionDocument[]; proposedQuestions?: QuestionDocument[] } = {
+    const populatedCluster: ClusterDocument & { questions: (QuestionDocument & { id: string })[]; proposedQuestions?: QuestionDocument[] } = {
       ...cluster,
-      questions,
+      questions: questions as unknown as (QuestionDocument & { id: string })[],
       proposedQuestions,
     };
 
@@ -98,10 +98,10 @@ export async function POST(request: Request, context: RouteParams) {
   let clusterId = 'unknown';
   try {
     // Require admin authentication
-    let adminUser: { id: string; username: string } | null = null;
+    let adminUser: { id: string; email: string } | null = null;
     try {
       const u = await requireAdmin();
-      adminUser = { id: u.id, username: u.username };
+      adminUser = { id: u.id, email: u.email };
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Forbidden' },
@@ -172,7 +172,7 @@ export async function POST(request: Request, context: RouteParams) {
               flaggedForReview: true,
               flaggedReason: reason,
               flaggedAt: now,
-              flaggedBy: adminUser?.username,
+              flaggedBy: adminUser?.email,
               updatedAt: now,
             },
           }

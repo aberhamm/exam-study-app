@@ -5,7 +5,7 @@ import {
   getCompetencyAssignmentStats,
 } from '@/lib/server/competencies';
 import { CompetencyCreateZ } from '@/lib/validation';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 
 type RouteParams = { params: Promise<{ examId: string }> };
 

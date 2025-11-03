@@ -8,7 +8,7 @@ import { MarkdownContent } from '@/components/ui/markdown';
 import ExplanationSkeleton from '@/components/quiz/ExplanationSkeleton';
 import { ExplanationSources as ExplanationSourcesList } from '@/components/ExplanationSources';
 import type { NormalizedQuestion } from '@/types/normalized';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/app/hooks/useSession';
 import { Sparkles, Save, Trash2, Flag, FlagOff } from 'lucide-react';
 
 type Props = {
@@ -64,7 +64,7 @@ export function QuestionCard({
   // Get competencies directly from the question
   const competencies = question.competencies || [];
   const { data: session } = useSession();
-  const isAdmin = session?.user?.role === 'admin';
+  const isAdmin = session?.user?.isAdmin;
   return (
     <Card className="p-6">
       <div>

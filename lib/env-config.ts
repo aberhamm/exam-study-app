@@ -69,9 +69,11 @@ export const openaiConfig = {
   },
 
   get embeddingModel(): string {
-    return process.env.QUESTIONS_EMBEDDING_MODEL ||
-           process.env.OPENAI_EMBEDDING_MODEL ||
-           'text-embedding-3-small';
+    return (
+      process.env.QUESTIONS_EMBEDDING_MODEL ||
+      process.env.OPENAI_EMBEDDING_MODEL ||
+      'text-embedding-3-small'
+    );
   },
 
   get embeddingDimensions(): number {
@@ -130,11 +132,127 @@ export const pipelineConfig = {
 } as const;
 
 /**
+ * Portkey configuration
+ */
+export const portkeyConfig = {
+  get apiKey(): string | undefined {
+    return process.env.PORTKEY_API_KEY;
+  },
+
+  // Base URL for Portkey Gateway; defaults to public gateway
+  get baseUrl(): string {
+    return process.env.PORTKEY_BASE_URL || 'https://api.portkey.ai/v1';
+  },
+
+  get model(): string {
+    return process.env.PORTKEY_MODEL || '@openai/gpt-4o-mini';
+  },
+
+  // Optional task-specific model overrides (Model Catalog slugs recommended)
+  get modelChat(): string | undefined {
+    return process.env.PORTKEY_MODEL_CHAT;
+  },
+
+  get modelExplanation(): string | undefined {
+    return process.env.PORTKEY_MODEL_EXPLANATION;
+  },
+
+  get modelGeneration(): string | undefined {
+    return process.env.PORTKEY_MODEL_QUESTION_GENERATION;
+  },
+
+  get modelEmbeddings(): string | undefined {
+    return process.env.PORTKEY_MODEL_EMBEDDINGS;
+  },
+
+  // Optional provider slug/header value for enterprise gateways
+  get provider(): string | undefined {
+    return process.env.PORTKEY_PROVIDER;
+  },
+
+  // Custom headers for enterprise/custom Portkey gateways
+  // Format: "key1:value1\nkey2:value2" (e.g., "x-portkey-provider:@aws-bedrock-use2\nx-custom-header:value")
+  get customHeaders(): string | undefined {
+    return process.env.PORTKEY_CUSTOM_HEADERS;
+  },
+} as const;
+
+/**
+ * Parses newline-delimited header strings into an object map
+ */
+export function parseHeaderString(headers?: string): Record<string, string> {
+  if (!headers) {
+    return {};
+  }
+
+  return headers
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .reduce<Record<string, string>>((acc, line) => {
+      const [key, ...valueParts] = line.split(':');
+      if (!key || valueParts.length === 0) {
+        return acc;
+      }
+
+      const headerKey = key.trim();
+      acc[headerKey] = valueParts.join(':').trim();
+      return acc;
+    }, {});
+}
+
+/**
+ * Builds Portkey custom headers, ensuring provider header is present when supplied separately
+ */
+export function buildPortkeyCustomHeaders(options: {
+  headerString?: string;
+  provider?: string;
+  apiKey?: string;
+}): Record<string, string> {
+  const headers = parseHeaderString(options.headerString);
+
+  const ensureHeader = (name: string, value?: string) => {
+    if (!value) {
+      return;
+    }
+
+    const hasHeader = Object.keys(headers).some(key => key.toLowerCase() === name);
+    if (!hasHeader) {
+      headers[name] = value.trim();
+    }
+  };
+
+  ensureHeader('x-portkey-provider', options.provider);
+  ensureHeader('x-portkey-api-key', options.apiKey);
+
+  return headers;
+}
+
+/**
+ * Extracts a Portkey provider value from either a header string or object map
+ */
+export function extractPortkeyProvider(options: {
+  headerString?: string;
+  headers?: Record<string, string>;
+}): string | undefined {
+  const headerEntries = options.headers
+    ? Object.entries(options.headers)
+    : Object.entries(parseHeaderString(options.headerString));
+
+  const providerEntry = headerEntries.find(([key]) => key.toLowerCase() === 'x-portkey-provider');
+  return providerEntry ? providerEntry[1] : undefined;
+}
+
+/**
  * Feature flags configuration
  */
 export const featureFlags = {
   get debugRetrieval(): boolean {
     return isTruthyEnv(process.env.DEBUG_RETRIEVAL);
+  },
+
+  get usePortkey(): boolean {
+    return isTruthyEnv(process.env.USE_PORTKEY);
   },
 } as const;
 
@@ -193,6 +311,7 @@ export const envConfig = {
   mongo: mongoConfig,
   openai: openaiConfig,
   pipeline: pipelineConfig,
+  portkey: portkeyConfig,
   features: featureFlags,
   auth: authConfig,
   app: appConfig,
@@ -205,11 +324,7 @@ export const envConfig = {
 export function validateRequiredEnvVars(): void {
   try {
     // Test access to all required variables
-    const requiredVars = [
-      mongoConfig.uri,
-      mongoConfig.database,
-      openaiConfig.apiKey,
-    ];
+    const requiredVars = [mongoConfig.uri, mongoConfig.database, openaiConfig.apiKey];
     // If we get here, all required variables are accessible
     console.log(`Environment validation passed for ${requiredVars.length} required variables`);
   } catch (error) {

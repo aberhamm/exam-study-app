@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDb, getQuestionsCollectionName } from '@/lib/server/mongodb';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import type { ExplanationVersion } from '@/types/explanation';
 
 type RouteParams = {
@@ -17,10 +17,10 @@ export async function DELETE(_request: Request, context: RouteParams) {
 
   try {
     // Require admin authentication
-    let adminUser: { id: string; username: string } | null = null;
+    let adminUser: { id: string; email: string } | null = null;
     try {
       const user = await requireAdmin();
-      adminUser = { id: user.id, username: user.username };
+      adminUser = { id: user.id, email: user.email };
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Forbidden' },

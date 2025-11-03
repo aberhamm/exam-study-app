@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import { redirect } from 'next/navigation';
 
 type Props = {
@@ -10,10 +10,14 @@ type Props = {
  * Provides defense-in-depth security for the /import route.
  */
 export default async function ImportLayout({ children }: Props) {
-  const session = await auth();
-
-  if (!session?.user || session.user.role !== 'admin') {
-    redirect('/login');
+  try {
+    await requireAdmin();
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      redirect('/login');
+    } else {
+      redirect('/forbidden');
+    }
   }
 
   return <>{children}</>;

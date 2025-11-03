@@ -3,7 +3,7 @@ import { fetchExamDetail, getExamCacheTag } from '@/lib/server/questions';
 import { ExamDetailZ, coerceExamDetail } from '@/lib/validation';
 import type { ExamDetailResponse } from '@/types/api';
 import type { WelcomeConfig } from '@/types/normalized';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 
 type RouteParams = {
   params: Promise<{

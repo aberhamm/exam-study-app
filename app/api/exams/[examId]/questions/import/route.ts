@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import { ExternalQuestionsImportZ } from '@/lib/validation';
 import { addExamQuestions } from '@/lib/server/questions';
 import { DuplicateQuestionIdsError, ExamNotFoundError } from '@/lib/server/exams';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 
 interface RouteContext {
   params: Promise<{

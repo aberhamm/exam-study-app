@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDb, getQuestionsCollectionName } from '@/lib/server/mongodb';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import type { ExplanationVersion } from '@/types/explanation';
 
 type RouteParams = {
@@ -48,4 +48,3 @@ export async function GET(_request: Request, context: RouteParams) {
     return NextResponse.json({ error: 'Failed to fetch history' }, { status: 500 });
   }
 }
-

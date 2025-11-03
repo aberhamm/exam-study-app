@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDb, getQuestionsCollectionName } from '@/lib/server/mongodb';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import type { ExplanationVersion } from '@/types/explanation';
 import type { ExternalQuestion } from '@/types/external-question';
 import { getQuestionById } from '@/lib/server/questions';
@@ -18,10 +18,10 @@ export async function POST(request: Request, context: RouteParams) {
   let questionId = 'unknown';
 
   try {
-    let adminUser: { id: string; username: string } | null = null;
+    let adminUser: { id: string; email: string } | null = null;
     try {
       const user = await requireAdmin();
-      adminUser = { id: user.id, username: user.username };
+      adminUser = { id: user.id, email: user.email };
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Forbidden' },
@@ -114,4 +114,3 @@ export async function POST(request: Request, context: RouteParams) {
     return NextResponse.json({ error: 'Failed to revert explanation' }, { status: 500 });
   }
 }
-

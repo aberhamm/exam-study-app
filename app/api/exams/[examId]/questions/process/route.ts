@@ -6,7 +6,7 @@ import {
   type EmbeddingResult,
   type CompetencyAssignmentResult,
 } from '@/lib/server/question-processing';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 
 interface RouteContext {
   params: Promise<{

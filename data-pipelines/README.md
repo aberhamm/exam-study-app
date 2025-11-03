@@ -13,9 +13,9 @@ pnpm install
 2. Set up environment variables:
 ```bash
 cp .env.example .env
-# Edit .env and add your OpenRouter API key
+# Edit .env and add your API keys and MongoDB connection details
 ```
-   The pipeline will automatically load variables from the `.env` file using dotenv.
+   The pipeline will automatically load variables from the `.env` file using dotenv. See `.env.example` for all available configuration options.
 
 ## Available Pipelines
 

@@ -6,7 +6,7 @@ import {
   CompetencyNotFoundError,
 } from '@/lib/server/competencies';
 import { CompetencyUpdateZ } from '@/lib/validation';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 
 type RouteParams = { params: Promise<{ examId: string; competencyId: string }> };
 

@@ -7,7 +7,7 @@ import type { ExplanationSource } from '@/types/explanation';
 import { ExplanationSourceZ, ExternalQuestionZ } from '@/lib/validation';
 import { addExamQuestions } from '@/lib/server/questions';
 import { ExamNotFoundError } from '@/lib/server/exams';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import { ZodError } from 'zod';
 
 type RouteParams = { params: Promise<{ examId: string }> };

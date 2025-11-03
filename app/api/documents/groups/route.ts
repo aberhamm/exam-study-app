@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAvailableDocumentGroups } from '@/lib/server/documents-search';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 
 export async function GET() {
   try {

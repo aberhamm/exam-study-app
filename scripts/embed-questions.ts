@@ -24,6 +24,7 @@ loadEnvConfig(process.cwd());
 
 import { MongoClient } from 'mongodb';
 import { envConfig } from '../lib/env-config.js';
+import { createEmbeddings as createEmbeddingsLLM } from '@/lib/llm-client';
 
 type QuestionDoc = {
   _id: import('mongodb').ObjectId;
@@ -63,25 +64,8 @@ function buildTextForEmbedding(q: QuestionDoc): string {
 }
 
 async function createEmbeddings(inputs: string[], model: string, dimensions?: number): Promise<number[][]> {
-  const apiKey = envConfig.openai.apiKey;
-  const url = 'https://api.openai.com/v1/embeddings';
-  const body: Record<string, unknown> = { model, input: inputs };
-  if (dimensions) body.dimensions = dimensions;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenAI embeddings error ${res.status}: ${err}`);
-  }
-  const json = await res.json() as { data: Array<{ embedding: number[] }> };
-  return json.data.map(d => d.embedding);
+  // Use LLM client wrapper (routes to Portkey or OpenAI based on feature flag)
+  return createEmbeddingsLLM(inputs, { model, dimensions });
 }
 
 async function main() {

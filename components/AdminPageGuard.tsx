@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import { redirect } from 'next/navigation';
 
 type Props = {
@@ -10,15 +10,18 @@ type Props = {
  * Provides defense-in-depth security for admin pages.
  */
 export async function AdminPageGuard({ children }: Props) {
-  const session = await auth();
-  if (!session?.user) {
-    redirect('/login');
+  try {
+    await requireAdmin();
+    return <>{children}</>;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : '';
+    if (errorMessage.includes('Unauthorized')) {
+      redirect('/login');
+    } else if (errorMessage.includes('Forbidden')) {
+      redirect('/access-denied');
+    } else {
+      redirect('/login');
+    }
     return null;
   }
-  if (session.user.role !== 'admin') {
-    // Send non-admins to login per test expectations
-    redirect('/login');
-    return null;
-  }
-  return <>{children}</>;
 }

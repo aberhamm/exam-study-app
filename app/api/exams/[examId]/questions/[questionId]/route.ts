@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDb, getQuestionsCollectionName, getQuestionEmbeddingsCollectionName } from '@/lib/server/mongodb';
 import type { ExternalQuestion } from '@/types/external-question';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import { buildQuestionTextForEmbedding, generateEmbedding } from '@/lib/server/embeddings';
 import type { ExplanationVersion, ExplanationSource } from '@/types/explanation';
 import { ExternalQuestionUpdateZ, ExplanationSourceZ } from '@/lib/validation';
@@ -65,10 +65,10 @@ export async function PATCH(request: Request, context: RouteParams) {
   let questionId = 'unknown';
   try {
     // Require admin authentication
-    let adminUser: { id: string; username: string } | null = null;
+    let adminUser: { id: string; email: string } | null = null;
     try {
       const user = await requireAdmin();
-      adminUser = { id: user.id, username: user.username };
+      adminUser = { id: user.id, email: user.email };
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : 'Forbidden' },

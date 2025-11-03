@@ -6,7 +6,7 @@ import type { Document } from 'mongodb';
 import type { QuestionDocument } from '@/types/question';
 import type { ClusterDocument, QuestionCluster } from '@/types/clusters';
 import type { OptionalId } from 'mongodb';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 /**
  * Clusters API (list/generate)
  *

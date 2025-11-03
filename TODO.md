@@ -14,6 +14,13 @@
 
 - Docs & Config
   - Quick pass on `.env` docs to confirm alignment with hardcoded collection names and new flags (e.g., `USE_RAND_SORT_SAMPLING`).
+  - Document dual-embedding rollout (Titan v1 vs v2) and keep `PORTKEY_*` guidance in sync.
+
+- Dual Embedding Rollout
+  - Stand up parallel storage/indexes for 1024-dim Titan v2 vectors (e.g., `*_EMBEDDINGS_COLLECTION_V2`).
+  - Extend embedding scripts to accept `--generation v2` (Portkey/Titan v2, 1024 dims) and dual-write when needed.
+  - Add feature flag + runtime fallback logic so APIs prefer v2 while falling back to existing 1536-dim vectors.
+  - Plan re-embed schedule & decommission steps once v2 adoption is complete.
 
 ## Mid-Term
 

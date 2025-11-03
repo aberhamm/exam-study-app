@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 import { getAdminSlotStatus } from '@/lib/server/llm-guard';
 
 export async function GET() {
@@ -14,4 +14,3 @@ export async function GET() {
     );
   }
 }
-

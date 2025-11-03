@@ -35,7 +35,7 @@ export async function listExamSummaries(): Promise<ExamSummary[]> {
   const cursor = collection.find({}, { projection: { examId: 1, examTitle: 1 } }).sort({ examId: 1 });
   const results: ExamSummary[] = [];
   for await (const doc of cursor) {
-    results.push({ examId: doc.examId, examTitle: doc.examTitle });
+    results.push({ examId: doc.examId, examTitle: doc.examTitle || doc.examId });
   }
   return results;
 }

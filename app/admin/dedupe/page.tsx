@@ -574,7 +574,7 @@ function ClusterCard({
                         const json = await resp.json();
                         if (!resp.ok) throw new Error(typeof json?.error === 'string' ? json.error : 'Failed to load proposals');
                         const pq = Array.isArray(json?.cluster?.proposedQuestions) ? json.cluster.proposedQuestions : [] as Array<ExternalQuestion & { _id?: { toString?: () => string } }>;
-                        const normalized = normalizeQuestions(pq.map((q) => ({ id: q.id || q._id?.toString?.() || '', question: q.question, options: q.options, answer: q.answer, question_type: q.question_type, explanation: q.explanation, study: q.study })));
+                        const normalized = normalizeQuestions(pq.map((q: ExternalQuestion & { _id?: { toString?: () => string } }) => ({ id: q.id || q._id?.toString?.() || '', question: q.question, options: q.options, answer: q.answer, question_type: q.question_type, explanation: q.explanation, study: q.study })));
                         setProposed(normalized);
                       } catch (e) {
                         toast.error(e instanceof Error ? e.message : 'Failed to load proposals');

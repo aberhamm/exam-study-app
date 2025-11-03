@@ -4,7 +4,7 @@ import {
   assignCompetenciesToQuestion,
   unassignCompetenciesFromQuestion,
 } from '@/lib/server/competency-assignment';
-import { requireAdmin } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-supabase';
 
 type RouteParams = { params: Promise<{ examId: string; questionId: string }> };
 

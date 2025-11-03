@@ -163,13 +163,18 @@ Edit `scripts/generate-questions-from-important.ts` to customize:
 - The AI prompt template
 - Number of questions per section (currently 1-3)
 - Question difficulty or style
-- OpenRouter model selection
+- LLM model selection (OpenRouter or Portkey)
+
+**Environment Variables:**
+- When `USE_PORTKEY=true`: Uses Portkey with `PORTKEY_API_KEY` (Model Catalog recommended)
+- When `USE_PORTKEY` is not set: Uses OpenRouter with `OPENROUTER_API_KEY` and `OPENROUTER_MODEL`
 
 ### Recommended Models
 
-- `google/gemini-2.0-flash-exp:free` - Fast, free, good quality
-- `anthropic/claude-3.5-sonnet` - Higher quality, costs per token
-- `meta-llama/llama-3.1-70b-instruct` - Good balance
+- `google/gemini-2.0-flash-exp:free` - Fast, free, good quality (OpenRouter)
+- `anthropic/claude-3.5-sonnet` - Higher quality, costs per token (OpenRouter)
+- `meta-llama/llama-3.1-70b-instruct` - Good balance (OpenRouter)
+- `gpt-4o-mini` - Good quality, cost-effective (Portkey/OpenAI)
 
 ## Tips
 

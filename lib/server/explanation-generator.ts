@@ -4,6 +4,7 @@ import { envConfig, featureFlags } from '@/lib/env-config';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { ExplainDebugInfo } from '@/types/api';
 import type { EmbeddingChunkDocument } from '@/data-pipelines/src/shared/types/embedding';
+import { createEmbedding as createEmbeddingLLM, createChatCompletion } from '@/lib/llm-client';
 import crypto from 'crypto';
 
 export type DocumentChunk = {
@@ -99,10 +100,10 @@ async function getEmbeddingsCollection(): Promise<Collection<EmbeddingChunkDocum
  * - Uses a simple in-process LRU cache keyed by (model, dimensions, hash(text))
  *   to avoid duplicate paid calls within the same server process.
  * - This cache is NOT shared across instances and resets on deploy.
+ * - Routes through Portkey if USE_PORTKEY feature flag is enabled.
  */
 async function createEmbedding(text: string): Promise<number[]> {
   return retryWithBackoff(async () => {
-    const apiKey = envConfig.openai.apiKey;
     const model = envConfig.openai.embeddingModel;
     const dimensions = envConfig.openai.embeddingDimensions;
 
@@ -116,28 +117,9 @@ async function createEmbedding(text: string): Promise<number[]> {
       return cached;
     }
 
-    const body = { model, input: text, dimensions };
+    // Use LLM client wrapper (routes to Portkey or OpenAI based on feature flag)
+    const embedding = await createEmbeddingLLM(text, { model, dimensions });
 
-    const resp = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!resp.ok) {
-      throw new Error(`OpenAI embeddings error ${resp.status}`);
-    }
-
-    const json = (await resp.json()) as { data?: Array<{ embedding?: number[] }> };
-
-    if (!json.data?.[0]?.embedding) {
-      throw new Error('Invalid embedding response');
-    }
-
-    const embedding = json.data[0].embedding;
     // Insert into LRU cache
     embeddingCacheSet(key, embedding);
     return embedding;
@@ -542,14 +524,15 @@ async function generateExplanationWithLLM(
   documentChunks: DocumentChunk[]
 ): Promise<string> {
   return retryWithBackoff(async () => {
-    const openrouterApiKey = envConfig.pipeline.openrouterApiKey;
-    const model = envConfig.pipeline.openrouterModel;
+    const model = envConfig.features.usePortkey
+      ? (envConfig.portkey.modelExplanation || envConfig.portkey.model)
+      : envConfig.pipeline.openrouterModel;
 
     if (featureFlags.debugRetrieval) {
       console.info(
         `[generateExplanationWithLLM] question=${hashText(question.prompt)}, chunks=${
           documentChunks.length
-        }, model=${model}`
+        }, model=${model}, usePortkey=${envConfig.features.usePortkey}`
       );
     }
 
@@ -635,15 +618,8 @@ Available citations (include as markdown links when relevant):
 ${availableCitations}
 `;
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${openrouterApiKey}`,
-        'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3000',
-        'X-Title': 'Study Utility - Question Explanation Generator',
-      },
-      body: JSON.stringify({
+    // Use LLM client wrapper (routes to Portkey or OpenRouter based on feature flag)
+    const explanation = await createChatCompletion({
         model,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -651,19 +627,7 @@ ${availableCitations}
         ],
         temperature: 0.1,
         max_tokens: 1000,
-      }),
     });
-
-    if (!response.ok) {
-      throw new Error(`OpenRouter API error ${response.status}`);
-    }
-
-    const json = await response.json();
-    const explanation = json.choices?.[0]?.message?.content;
-
-    if (!explanation || typeof explanation !== 'string') {
-      throw new Error('Invalid explanation response');
-    }
 
     return explanation;
   });

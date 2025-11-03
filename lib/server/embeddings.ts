@@ -2,12 +2,14 @@
  * Shared Embedding Service
  *
  * Provides reusable functions for generating vector embeddings for questions and competencies.
+ * Routes through Portkey if USE_PORTKEY feature flag is enabled.
  */
 
 import { envConfig } from '@/lib/env-config';
+import { createEmbeddings as createEmbeddingsLLM } from '@/lib/llm-client';
 
 /**
- * Create embeddings using OpenAI API
+ * Create embeddings using Portkey or OpenAI API
  */
 export async function createEmbeddings(
   inputs: string[],
@@ -16,33 +18,9 @@ export async function createEmbeddings(
 ): Promise<number[][]> {
   const embeddingModel = model || envConfig.openai.embeddingModel;
   const embeddingDimensions = dimensions || envConfig.openai.embeddingDimensions;
-  const apiKey = envConfig.openai.apiKey;
 
-  const body: Record<string, unknown> = {
-    model: embeddingModel,
-    input: inputs,
-  };
-
-  if (embeddingDimensions) {
-    body.dimensions = embeddingDimensions;
-  }
-
-  const res = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OpenAI embeddings error ${res.status}: ${text}`);
-  }
-
-  const json = (await res.json()) as { data: Array<{ embedding: number[] }> };
-  return json.data.map((d) => d.embedding);
+  // Use LLM client wrapper (routes to Portkey or OpenAI based on feature flag)
+  return createEmbeddingsLLM(inputs, { model: embeddingModel, dimensions: embeddingDimensions });
 }
 
 /**
@@ -85,6 +63,7 @@ export async function generateEmbedding(
   embeddingUpdatedAt: Date;
 }> {
   const embeddingModel = model || envConfig.openai.embeddingModel;
+  // Use LLM client wrapper (routes to Portkey or OpenAI based on feature flag)
   const [embedding] = await createEmbeddings([text], embeddingModel, dimensions);
 
   return {

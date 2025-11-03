@@ -5,7 +5,8 @@ This project includes a set of typed Node scripts for seeding data, migrating le
 Environment prerequisites
 
 - Required: `MONGODB_URI`, `MONGODB_DB`, `MONGODB_EXAMS_COLLECTION`, `MONGODB_QUESTIONS_COLLECTION`
-- Embeddings: `OPENAI_API_KEY`, `MONGODB_QUESTION_EMBEDDINGS_COLLECTION`, optional `MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX`, `QUESTIONS_EMBEDDING_MODEL`, `QUESTIONS_EMBEDDING_DIMENSIONS`
+- Embeddings: `OPENAI_API_KEY` (used when `USE_PORTKEY` is not enabled), `MONGODB_QUESTION_EMBEDDINGS_COLLECTION`, optional `MONGODB_QUESTION_EMBEDDINGS_VECTOR_INDEX`, `QUESTIONS_EMBEDDING_MODEL`, `QUESTIONS_EMBEDDING_DIMENSIONS`
+- Portkey: `USE_PORTKEY=true`, `PORTKEY_API_KEY`, `PORTKEY_MODEL` (e.g., `@openai-prod/gpt-4o`) - routes all LLM calls through Portkey
 
 Run scripts with `pnpm` commands provided in `package.json`.
 
@@ -65,7 +66,7 @@ Generate Question Embeddings
 - Command: `pnpm embed:questions [--exam <examId>] [--limit <n>] [--batch <n>] [--recompute]`
 - Purpose: Create vector embeddings for questions to support semantic search.
 - Requirements:
-  - `OPENAI_API_KEY` set, and embeddings collection configured via `MONGODB_QUESTION_EMBEDDINGS_COLLECTION`
+  - `OPENAI_API_KEY` (or `PORTKEY_API_KEY` if `USE_PORTKEY=true`), and embeddings collection configured via `MONGODB_QUESTION_EMBEDDINGS_COLLECTION`
   - Optional: `QUESTIONS_EMBEDDING_MODEL` (default `text-embedding-3-small`), `QUESTIONS_EMBEDDING_DIMENSIONS`
 - Flags:
   - `--exam <id>`: Limit to an exam
@@ -110,4 +111,3 @@ Recommended workflows
 3) Updating questions text/options
 - Update source JSON; run `pnpm seed:exams` (explanations preserved)
 - Re-embed with `pnpm embed:questions --exam <id> --recompute` if needed
-
