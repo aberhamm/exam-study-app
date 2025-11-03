@@ -99,14 +99,14 @@ function AuthButtonInner() {
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
+    <button
+      type="button"
       onClick={handleLoginClick}
+      className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
-      <LogIn className="h-4 w-4 mr-2" />
-      Sign In
-    </Button>
+      <LogIn className="h-3 w-3" />
+      Sign in
+    </button>
   );
 }
 

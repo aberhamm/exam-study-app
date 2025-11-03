@@ -505,36 +505,58 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* Welcome Section */}
-        <section className="space-y-6">
-          <div className="space-y-4 text-center lg:text-left">
-            <div className="mx-auto w-full lg:mx-0 lg:max-w-3xl">
-              {(examMetadata?.welcomeConfig?.showDefaultSubtitle ?? true) && (
-                <h2 className="text-2xl font-semibold mb-2">
-                  {examMetadata?.welcomeConfig?.title || 'Welcome to Your Study Session'}
+        <section className="space-y-8">
+          <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-70 bg-[radial-gradient(circle_at_top,theme(colors.primary/20),transparent_55%)]"
+              aria-hidden="true"
+            />
+            <div className="relative space-y-6 px-6 py-8 sm:px-8 md:px-10 text-center lg:text-left">
+              <div className="space-y-3">
+                {(examMetadata?.welcomeConfig?.showDefaultSubtitle ?? true) && (
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary/70">
+                    {examMetadata?.welcomeConfig?.title || 'Welcome to Your Study Session'}
+                  </p>
+                )}
+                <h2 className="text-3xl font-bold leading-snug text-foreground sm:text-4xl">
+                  {examMetadata?.examTitle || 'Build mastery with a tailored study plan'}
                 </h2>
-              )}
-              {examMetadata?.welcomeConfig?.description ? (
-                <div className="text-lg text-muted-foreground space-y-4 text-left">
-                  <MarkdownContent variant="welcome">
-                    {examMetadata.welcomeConfig.description}
-                  </MarkdownContent>
-                </div>
-              ) : (
-                <p className="text-lg text-muted-foreground">
-                  Get ready to test your knowledge and improve your understanding. Configure your
-                  exam settings below and start when you&apos;re ready.
-                </p>
-              )}
+                {examMetadata?.welcomeConfig?.description ? (
+                  <div className="text-base sm:text-lg text-muted-foreground space-y-4 text-left lg:text-justify">
+                    <MarkdownContent variant="welcome">
+                      {examMetadata.welcomeConfig.description}
+                    </MarkdownContent>
+                  </div>
+                ) : (
+                  <p className="text-base sm:text-lg text-muted-foreground">
+                    Get ready to test your knowledge and sharpen your instincts. Review the quick
+                    metrics below, fine-tune your settings, and jump into your next session feeling
+                    confident.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-sm font-medium text-primary">
+                  {questionCounts.all.toLocaleString()} total questions
+                </span>
+                <span className="rounded-full border border-border/60 bg-background/70 px-4 py-1 text-sm text-muted-foreground">
+                  {seenQuestionIds.length.toLocaleString()} seen
+                </span>
+                <span className="rounded-full border border-border/60 bg-background/70 px-4 py-1 text-sm text-muted-foreground">
+                  {missedQuestionIds.length.toLocaleString()} flagged to review
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Quick Start Button or Configuration Toggle */}
-          <div className="space-y-2" aria-live="polite">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
+          <div className="space-y-3" aria-live="polite">
+            <div className="grid gap-3 sm:grid-cols-2 sm:items-center">
               <SpinnerButton
                 onClick={() => handleStartTest('welcome')}
                 size="lg"
-                className="px-8 py-3 text-lg"
+                className="px-8 py-3 text-lg shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:shadow-primary/20"
                 disabled={!isValidConfiguration || startLoading !== null}
                 loading={startLoading === 'welcome'}
                 loadingText="Loading questions…"
@@ -554,7 +576,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 variant="outline"
                 onClick={() => setShowConfiguration((current) => !current)}
                 size="lg"
-                className="px-8 py-3 text-lg"
+                className="px-8 py-3 text-lg border-border/70 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-primary/10"
               >
                 {showConfiguration ? 'Hide settings' : 'Adjust settings'}
               </Button>
@@ -665,80 +687,84 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
           </div>
 
           <div className="space-y-10">
-            {/* Question Type Selection */}
-            <section className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold">Question Type</h3>
-                <p className="text-sm text-muted-foreground">
-                  Choose whether to see every question or focus on a specific format.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                {TEST_SETTINGS.QUESTION_TYPE_OPTIONS.map((option) => {
-                  const isActive = settings.questionType === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() => handleQuestionTypeChange(option.value as QuestionTypeFilter)}
-                      className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-                        isActive
-                          ? 'border-primary bg-primary/5 dark:bg-primary/10'
-                          : 'border-border hover:border-muted-foreground/40'
-                      }`}
-                    >
-                      <div className="font-medium">{option.label}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {
-                          filteredQuestionCounts[
-                            option.value as keyof typeof filteredQuestionCounts
-                          ]
-                        }{' '}
-                        questions available
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+            {isAdmin && (
+              <>
+                {/* Question Type Selection */}
+                <section className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Question Type</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Choose whether to see every question or focus on a specific format.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {TEST_SETTINGS.QUESTION_TYPE_OPTIONS.map((option) => {
+                      const isActive = settings.questionType === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          aria-pressed={isActive}
+                          onClick={() => handleQuestionTypeChange(option.value as QuestionTypeFilter)}
+                          className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                            isActive
+                              ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                              : 'border-border hover:border-muted-foreground/40'
+                          }`}
+                        >
+                          <div className="font-medium">{option.label}</div>
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            {
+                              filteredQuestionCounts[
+                                option.value as keyof typeof filteredQuestionCounts
+                              ]
+                            }{' '}
+                            questions available
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
 
-            {/* Explanation Filter Selection */}
-            <section className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold">Explanation Filter</h3>
-                <p className="text-sm text-muted-foreground">
-                  Control whether you want to study questions with explanations, without them, or
-                  both.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                {TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.map((option) => {
-                  const isActive = settings.explanationFilter === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() =>
-                        handleExplanationFilterChange(option.value as ExplanationFilter)
-                      }
-                      className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-                        isActive
-                          ? 'border-primary bg-primary/5 dark:bg-primary/10'
-                          : 'border-border hover:border-muted-foreground/40'
-                      }`}
-                    >
-                      <div className="font-medium">{option.label}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {questionCounts[option.value as keyof typeof questionCounts]} questions
-                        available
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+                {/* Explanation Filter Selection */}
+                <section className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Explanation Filter</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Control whether you want to study questions with explanations, without them, or
+                      both.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.map((option) => {
+                      const isActive = settings.explanationFilter === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          aria-pressed={isActive}
+                          onClick={() =>
+                            handleExplanationFilterChange(option.value as ExplanationFilter)
+                          }
+                          className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                            isActive
+                              ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                              : 'border-border hover:border-muted-foreground/40'
+                          }`}
+                        >
+                          <div className="font-medium">{option.label}</div>
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            {questionCounts[option.value as keyof typeof questionCounts]} questions
+                            available
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              </>
+            )}
 
             {/* Competency Filter Selection */}
             {competencies.length > 0 && (
@@ -968,26 +994,30 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               <div className="rounded-lg bg-muted p-4">
                 <h4 className="font-medium">Current summary</h4>
                 <div className="mt-2 space-y-1 text-sm">
-                  <div>
-                    Question type:{' '}
-                    <span className="font-medium">
-                      {
-                        TEST_SETTINGS.QUESTION_TYPE_OPTIONS.find(
-                          (opt) => opt.value === settings.questionType
-                        )?.label
-                      }
-                    </span>
-                  </div>
-                  <div>
-                    Explanation filter:{' '}
-                    <span className="font-medium">
-                      {
-                        TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.find(
-                          (opt) => opt.value === settings.explanationFilter
-                        )?.label
-                      }
-                    </span>
-                  </div>
+                  {isAdmin && (
+                    <>
+                      <div>
+                        Question type:{' '}
+                        <span className="font-medium">
+                          {
+                            TEST_SETTINGS.QUESTION_TYPE_OPTIONS.find(
+                              (opt) => opt.value === settings.questionType
+                            )?.label
+                          }
+                        </span>
+                      </div>
+                      <div>
+                        Explanation filter:{' '}
+                        <span className="font-medium">
+                          {
+                            TEST_SETTINGS.EXPLANATION_FILTER_OPTIONS.find(
+                              (opt) => opt.value === settings.explanationFilter
+                            )?.label
+                          }
+                        </span>
+                      </div>
+                    </>
+                  )}
                   <div>
                     Question count: <span className="font-medium">{settings.questionCount}</span>
                   </div>
