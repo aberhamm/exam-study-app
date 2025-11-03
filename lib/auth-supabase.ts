@@ -1,20 +1,10 @@
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
-import { APP_ID, ACCESS_TIERS, USER_ROLES } from '@/lib/constants';
+import { ACCESS_TIERS } from '@/lib/constants';
 import type { User } from '@supabase/supabase-js';
-
-/**
- * Extended user type with app-specific claims
- */
-export interface AppUser {
-  id: string;
-  email: string;
-  role: string;
-  tier: string;
-  hasAccess: boolean;
-  isAdmin: boolean;
-  permissions: string[];
-}
+import { toAppUser, isSupabaseUserAdmin, isAppUserAdmin } from '@/lib/auth/appUser';
+import type { AppUser } from '@/types/auth';
+export type { AppUser } from '@/types/auth';
 
 /**
  * Get the current authenticated user (server-side)
@@ -45,33 +35,7 @@ export async function getCurrentUserClient(): Promise<User | null> {
  * - apps[APP_ID].role === 'admin' (app-specific admin)
  */
 export function isUserAdmin(user: User | null): boolean {
-  if (!user) return false;
-  return (
-    user.app_metadata?.claims_admin === true ||
-    user.app_metadata?.apps?.[APP_ID]?.role === USER_ROLES.ADMIN
-  );
-}
-
-/**
- * Helper function to transform user to AppUser
- */
-function transformUserToAppUser(user: User): AppUser {
-  const appData = user.app_metadata?.apps?.[APP_ID];
-  const hasAccess = appData?.enabled === true;
-  const role = appData?.role || USER_ROLES.USER;
-  const tier = appData?.tier || ACCESS_TIERS.FREE;
-  const permissions = appData?.permissions || [];
-  const isAdmin = isUserAdmin(user);
-
-  return {
-    id: user.id,
-    email: user.email || '',
-    role,
-    tier,
-    hasAccess,
-    isAdmin,
-    permissions,
-  };
+  return isSupabaseUserAdmin(user);
 }
 
 /**
@@ -80,7 +44,7 @@ function transformUserToAppUser(user: User): AppUser {
 export async function getCurrentAppUser(): Promise<AppUser | null> {
   const user = await getCurrentUser();
   if (!user) return null;
-  return transformUserToAppUser(user);
+  return toAppUser(user);
 }
 
 /**
@@ -89,7 +53,7 @@ export async function getCurrentAppUser(): Promise<AppUser | null> {
 export async function getCurrentAppUserClient(): Promise<AppUser | null> {
   const user = await getCurrentUserClient();
   if (!user) return null;
-  return transformUserToAppUser(user);
+  return toAppUser(user);
 }
 
 /**
@@ -97,7 +61,7 @@ export async function getCurrentAppUserClient(): Promise<AppUser | null> {
  */
 export async function isCurrentUserAdmin(): Promise<boolean> {
   const appUser = await getCurrentAppUser();
-  return appUser?.isAdmin || false;
+  return isAppUserAdmin(appUser);
 }
 
 /**

@@ -1,47 +1,18 @@
 'use client';
 
-import { Suspense, useMemo } from 'react';
+import { Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useSession } from '@/lib/session-utils';
+import { useAdminAccess } from '@/app/hooks/useAdminAccess';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut, Shield } from 'lucide-react';
-import { APP_ID, ACCESS_TIERS, USER_ROLES } from '@/lib/constants';
-import type { User } from '@supabase/supabase-js';
-
-// Helper to transform User to AppUser with app-specific claims
-function transformToAppUser(user: User | null) {
-  if (!user) return null;
-
-  const appData = user.app_metadata?.apps?.[APP_ID];
-  const hasAccess = appData?.enabled === true;
-  const role = appData?.role || USER_ROLES.USER;
-  const tier = appData?.tier || ACCESS_TIERS.FREE;
-  const permissions = appData?.permissions || [];
-  const isAdmin = role === USER_ROLES.ADMIN || user.app_metadata?.claims_admin === true;
-
-  return {
-    id: user.id,
-    email: user.email || '',
-    role,
-    tier,
-    hasAccess,
-    isAdmin,
-    permissions,
-  };
-}
 
 function AuthButtonInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user, loading } = useSession();
+  const { user, appUser, isAdmin, loading } = useAdminAccess();
   const supabase = createClient();
-
-  // Transform user to AppUser with app-specific claims
-  const appUser = useMemo(() => {
-    return transformToAppUser(user);
-  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -70,7 +41,7 @@ function AuthButtonInner() {
           <div className="flex items-center gap-2 text-sm">
             <Shield className="h-4 w-4" />
             <span className="font-medium">{appUser.email}</span>
-            {appUser.isAdmin && (
+            {isAdmin && (
               <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
                 Admin
               </span>
@@ -81,7 +52,7 @@ function AuthButtonInner() {
               </span>
             )}
           </div>
-          {appUser.isAdmin && (
+          {isAdmin && (
             <Button
               variant="outline"
               size="sm"

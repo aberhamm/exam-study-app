@@ -30,6 +30,7 @@ import type { NormalizedQuestion, ExamMetadata } from '@/types/normalized';
 import { getMissedQuestionIds, getAllQuestionMetrics, clearIncorrect } from '@/lib/question-metrics';
 import type { ExamStatsResponse } from '@/types/api';
 import { shuffleArray } from '@/lib/question-utils';
+import { useAdminAccess } from '@/app/hooks/useAdminAccess';
 
 type StartTestOptions = {
   overrideQuestions?: NormalizedQuestion[];
@@ -47,6 +48,7 @@ type Props = {
 export function TestConfigPage({ questions, examMetadata, onStartTest, loading, error, stats }: Props) {
   const [settings, setSettings] = useState<TestSettings>(DEFAULT_TEST_SETTINGS);
   const { setConfig } = useHeader();
+  const { isAdmin } = useAdminAccess();
   const [customQuestionCount, setCustomQuestionCount] = useState<string>('');
   const [useCustomCount, setUseCustomCount] = useState(false);
   const [customTimerDuration, setCustomTimerDuration] = useState<string>('');
@@ -628,25 +630,27 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
             </CardFooter>
           </Card>
 
-          <Card className="border-dashed bg-muted/30">
-            <CardHeader className="pt-4 sm:pt-5 pb-2 sm:pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="size-4 text-muted-foreground" />
-                <span>View all questions</span>
-              </CardTitle>
-              <CardDescription>
-                Browse and review all {questionCounts.all} questions in the exam bank.
-              </CardDescription>
-            </CardHeader>
-            <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
-              <Link
-                href={`/admin/questions/${examMetadata?.examId || 'sitecore-xmc'}`}
-                className="w-full inline-flex items-center justify-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              >
-                View all questions
-              </Link>
-            </CardFooter>
-          </Card>
+          {isAdmin && (
+            <Card className="border-dashed bg-muted/30">
+              <CardHeader className="pt-4 sm:pt-5 pb-2 sm:pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="size-4 text-muted-foreground" />
+                  <span>View all questions</span>
+                </CardTitle>
+                <CardDescription>
+                  Browse and review all {questionCounts.all} questions in the exam bank.
+                </CardDescription>
+              </CardHeader>
+              <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
+                <Link
+                  href={`/admin/questions/${examMetadata?.examId || 'sitecore-xmc'}`}
+                  className="w-full inline-flex items-center justify-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  View all questions
+                </Link>
+              </CardFooter>
+            </Card>
+          )}
         </aside>
       </div>
 

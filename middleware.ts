@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { APP_ID, USER_ROLES } from '@/lib/constants';
+import { toAppUser } from '@/lib/auth/appUser';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -42,17 +42,16 @@ export async function middleware(request: NextRequest) {
   // Get user session
   const { data: { user } } = await supabase.auth.getUser();
 
+  const appUser = toAppUser(user);
+  const hasAccess = appUser?.hasAccess === true;
+  const isAdmin = appUser?.isAdmin === true;
+
   // Redirect to home if already authenticated AND has access, trying to access login
   if (user && pathname.startsWith('/login')) {
-    // Check if user has access to this app
-    const appData = user.app_metadata?.apps?.[APP_ID];
-    const hasAccess = appData?.enabled === true;
-    const isAdmin = user.app_metadata?.claims_admin === true;
-
     console.log('🚦 Middleware: User on /login');
     console.log('User Email:', user.email);
     console.log('Has Access:', hasAccess);
-    console.log('Global Admin:', isAdmin);
+    console.log('Admin Access:', isAdmin);
 
     // Only redirect away from login if user has valid access
     // Otherwise, let them stay on login to try again or see an error
@@ -93,16 +92,9 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user has access to this app
-    const appData = user.app_metadata?.apps?.[APP_ID];
-    const hasAccess = appData?.enabled === true;
-    const role = appData?.role || USER_ROLES.USER;
-
     // ✅ AUTHORIZATION: Admin access requires EITHER:
     // 1. claims_admin: true (global admin), OR
     // 2. apps[APP_ID].role === 'admin' (app-specific admin)
-    const isAdmin = role === USER_ROLES.ADMIN || user.app_metadata?.claims_admin === true;
-
     // For admin routes, check for admin access OR app access
     // This allows both global admins (claims_admin) and app-specific admins
     if (!hasAccess && !isAdmin) {
@@ -129,11 +121,6 @@ export async function middleware(request: NextRequest) {
 
   // ✅ AUTHORIZATION: Check if authenticated user has permission on protected routes
   if (user && !isPublicRoute && !isAdminRoute) {
-    // Check if user has access to this app
-    const appData = user.app_metadata?.apps?.[APP_ID];
-    const hasAccess = appData?.enabled === true;
-    const isAdmin = user.app_metadata?.claims_admin === true;
-
     // Allow access if user has app access OR is global admin
     if (!hasAccess && !isAdmin) {
       return NextResponse.redirect(new URL('/access-denied', request.url));

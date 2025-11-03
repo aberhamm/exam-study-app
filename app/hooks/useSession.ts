@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { getCurrentAppUser, type AppUser } from '@/lib/auth-client';
+import { getCurrentAppUser } from '@/lib/auth-client';
+import type { AppUser } from '@/types/auth';
 
 export interface SessionData {
   user: AppUser | null;
