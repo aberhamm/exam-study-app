@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function CheckEmailPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -31,12 +33,12 @@ export default function CheckEmailPage() {
         </div>
 
         <div className="text-center">
-          <a
+          <Link
             href="/login"
             className="font-medium text-indigo-600 hover:text-indigo-500"
           >
             Back to Sign In
-          </a>
+          </Link>
         </div>
 
         <div className="text-center">

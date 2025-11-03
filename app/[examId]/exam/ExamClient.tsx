@@ -94,7 +94,8 @@ export default function ExamClient({ examId, examTitle }: Props) {
   const handleBackToSettings = () => {
     try {
       clearExamState();
-      router.push('/');
+      const targetExamId = initialExamState?.examId || examId;
+      router.push(`/${encodeURIComponent(targetExamId)}`);
     } catch {}
   };
 

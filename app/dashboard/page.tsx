@@ -59,7 +59,7 @@ export default async function DashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Link
-                href="/exam"
+                href="/sitecore-xmc"
                 className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all"
               >
                 <h3 className="font-medium text-gray-900">Take Exams</h3>

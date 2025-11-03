@@ -97,7 +97,7 @@ export default function HomeClient({ examMetadata, stats }: Props) {
 
     const targetExamId = resumeExamState.examId || (examMetadata?.examId ?? 'sitecore-xmc');
     try {
-      router.push(`/exam/${encodeURIComponent(targetExamId)}`);
+      router.push(`/${encodeURIComponent(targetExamId)}/exam`);
     } catch {}
   }, [resumeExamState, currentView, router, examMetadata]);
 
@@ -128,7 +128,7 @@ export default function HomeClient({ examMetadata, stats }: Props) {
     setRedirectingToExam(true);
     try {
       const targetExamId = examMetadata?.examId ?? 'sitecore-xmc';
-      router.push(`/exam/${encodeURIComponent(targetExamId)}`);
+      router.push(`/${encodeURIComponent(targetExamId)}/exam`);
     } catch {}
   };
 
@@ -137,7 +137,8 @@ export default function HomeClient({ examMetadata, stats }: Props) {
     setCurrentView('config');
     // Return URL to the home state
     try {
-      router.push('/');
+      const targetExamId = examMetadata?.examId ?? 'sitecore-xmc';
+      router.push(`/${encodeURIComponent(targetExamId)}`);
     } catch {}
   };
 
@@ -159,7 +160,7 @@ export default function HomeClient({ examMetadata, stats }: Props) {
     ? overrideQuestions
     : [];
 
-  // Avoid rendering the heavy QuizApp on the home route when redirecting to /exam to prevent flashes.
+  // Avoid rendering the heavy QuizApp on the home route when redirecting to /{examId}/exam to prevent flashes.
   if (currentView === 'quiz' && redirectingToExam) {
     return null;
   }

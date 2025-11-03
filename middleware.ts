@@ -32,12 +32,36 @@ export async function middleware(request: NextRequest) {
   );
 
   // Public routes that don't require authentication or app access
+  const segments = pathname.split('/').filter(Boolean);
+  const [firstSegment, secondSegment] = segments;
+  const reservedFirstSegments = new Set([
+    'login',
+    'auth',
+    'access-denied',
+    'check-email',
+    'admin',
+    'api',
+    'invite',
+    'signup',
+    'reset-password',
+    'dashboard',
+    'import',
+    'forbidden',
+    'hooks',
+    'actions',
+  ]);
+  const isExamSlugRoute =
+    !!firstSegment &&
+    !reservedFirstSegments.has(firstSegment) &&
+    (secondSegment === undefined || secondSegment === 'exam') &&
+    segments.length <= 2;
+
   const isPublicRoute =
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth/callback') ||
     pathname.startsWith('/access-denied') ||
     pathname.startsWith('/check-email') ||
-    pathname.startsWith('/exam');
+    isExamSlugRoute;
 
   // Get user session
   const { data: { user } } = await supabase.auth.getUser();
