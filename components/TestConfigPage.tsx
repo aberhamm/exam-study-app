@@ -540,18 +540,18 @@ export function TestConfigPage({
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 lg:space-y-8">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* Welcome Section */}
-        <section className="space-y-8">
+        <section className="space-y-6 lg:space-y-7">
           <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/5 via-background to-background shadow-sm">
             <div
               className="pointer-events-none absolute inset-0 opacity-70 bg-[radial-gradient(circle_at_top,theme(colors.primary/20),transparent_55%)]"
               aria-hidden="true"
             />
-            <div className="relative space-y-6 px-6 py-8 sm:px-8 md:px-10 text-center lg:text-left">
+            <div className="relative space-y-4 px-6 py-6 sm:px-6 md:px-8 lg:py-7 text-center lg:text-left">
               <div className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-2 lg:space-y-1">
                   {(examMetadata?.welcomeConfig?.showDefaultSubtitle ?? true) && (
                     <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/70">
                       {examMetadata?.welcomeConfig?.title || 'Welcome to Your Study Session'}
@@ -581,7 +581,7 @@ export function TestConfigPage({
                 )}
               </div>
 
-              <div className="space-y-4 text-base sm:text-lg text-muted-foreground text-left lg:text-justify">
+              <div className="space-y-4 text-base sm:text-lg lg:text-base text-muted-foreground text-left lg:max-w-2xl">
                 {examMetadata?.welcomeConfig?.description ? (
                   <MarkdownContent variant="welcome">
                     {examMetadata.welcomeConfig.description}
@@ -598,13 +598,13 @@ export function TestConfigPage({
           </div>
 
           {/* Quick Start Button or Configuration Toggle */}
-          <div className="space-y-3" aria-live="polite">
-            <div className={`grid gap-3 ${actionGridCols} sm:items-center`}>
+          <div className="space-y-2" aria-live="polite">
+            <div className={`grid gap-3 ${actionGridCols} sm:items-center lg:items-start`}>
               {hasPausedExam && onResumeExam && (
                 <Button
                   onClick={onResumeExam}
                   size="lg"
-                  className="px-8 py-3 text-lg shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:shadow-primary/20"
+                  className="px-8 py-3 text-lg lg:py-2.5 shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:shadow-primary/20"
                 >
                   Resume paused exam
                 </Button>
@@ -612,7 +612,7 @@ export function TestConfigPage({
               <SpinnerButton
                 onClick={() => handleStartTest('welcome')}
                 size="lg"
-                className="px-8 py-3 text-lg shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:shadow-primary/20"
+                className="px-8 py-3 text-lg lg:py-2.5 shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:shadow-primary/20"
                 disabled={!isValidConfiguration || startLoading !== null}
                 loading={startLoading === 'welcome'}
                 loadingText="Loading questions…"
@@ -623,7 +623,7 @@ export function TestConfigPage({
                 variant="outline"
                 onClick={() => setShowConfiguration((current) => !current)}
                 size="lg"
-                className="px-8 py-3 text-lg border-border/70 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-primary/10"
+                className="px-8 py-3 text-lg lg:py-2.5 border-border/70 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-primary/10"
               >
                 {showConfiguration ? 'Hide settings' : 'Adjust settings'}
               </Button>
@@ -637,9 +637,9 @@ export function TestConfigPage({
         </section>
 
         {/* Quick Actions */}
-        <aside className="space-y-4 lg:pl-8">
+        <aside className="space-y-3 lg:space-y-4 lg:pl-7">
           <Card className="border-dashed bg-muted/30">
-            <CardHeader className="pt-4 sm:pt-5 pb-2 sm:pb-3">
+            <CardHeader className="pt-3.5 sm:pt-4 pb-2 sm:pb-2.5">
               <CardTitle className="flex items-center gap-2">
                 <History className="size-4 text-muted-foreground" />
                 <span>Practice missed questions</span>
@@ -652,7 +652,7 @@ export function TestConfigPage({
                   : "No missed questions yet. We'll track any incorrect answers for review."}
               </CardDescription>
             </CardHeader>
-            <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
+            <CardFooter className="pt-1.5 sm:pt-2.5 pb-3.5 sm:pb-4">
               <div className="w-full space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <label htmlFor="missed-threshold" className="text-sm text-muted-foreground">
@@ -705,7 +705,7 @@ export function TestConfigPage({
 
           {isAdmin && (
             <Card className="border-dashed bg-muted/30">
-              <CardHeader className="pt-4 sm:pt-5 pb-2 sm:pb-3">
+              <CardHeader className="pt-3.5 sm:pt-4 pb-2 sm:pb-2.5">
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="size-4 text-muted-foreground" />
                   <span>View all questions</span>
@@ -714,7 +714,7 @@ export function TestConfigPage({
                   Browse and review all {questionCounts.all} questions in the exam bank.
                 </CardDescription>
               </CardHeader>
-              <CardFooter className="pt-2 sm:pt-3 pb-4 sm:pb-5">
+              <CardFooter className="pt-1.5 sm:pt-2.5 pb-3.5 sm:pb-4">
                 <Link
                   href={`/admin/questions/${examMetadata?.examId || 'sitecore-xmc'}`}
                   className="w-full inline-flex items-center justify-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
