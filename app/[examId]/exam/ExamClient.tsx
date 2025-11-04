@@ -78,22 +78,11 @@ export default function ExamClient({ examId, examTitle }: Props) {
     return preparedData ?? [];
   }, [initialExamState, preparedData]);
 
-  // Clear exam session when user navigates back/forward from the exam route
-  useEffect(() => {
-    const handlePopState = () => {
-      try {
-        clearExamState();
-      } catch {}
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
-
-  const handleBackToSettings = () => {
+  const handleBackToSettings = ({ clearState }: { clearState: boolean } = { clearState: true }) => {
     try {
-      clearExamState();
+      if (clearState) {
+        clearExamState();
+      }
       const targetExamId = initialExamState?.examId || examId;
       router.push(`/${encodeURIComponent(targetExamId)}`);
     } catch {}

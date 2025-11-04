@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import ExamSkeleton from "@/components/ExamSkeleton";
 import { fetchExamById } from "@/lib/server/exams";
 import type { Metadata } from 'next';
+import { buildExamAppTitle } from "@/lib/app-config";
 
 // Force dynamic rendering to avoid build-time database access
 export const dynamic = 'force-dynamic';
@@ -16,12 +17,12 @@ export default async function ExamPage({ params }: PageProps) {
   const { examId: rawExamId } = await params;
   const examId = typeof rawExamId === 'string' ? rawExamId : 'sitecore-xmc';
   const exam = await fetchExamById(examId);
-  const examTitle = exam?.examTitle;
+  const examTitle = buildExamAppTitle(exam?.examTitle);
   // Use Suspense with a skeleton so the server and client share
   // the same initial UI while data and client-only effects resolve.
   return (
-    <Suspense fallback={<ExamSkeleton examTitle={examTitle ?? undefined} />}>
-      <ExamClient examId={examId} examTitle={examTitle ?? undefined} />
+    <Suspense fallback={<ExamSkeleton examTitle={examTitle} />}>
+      <ExamClient examId={examId} examTitle={examTitle} />
     </Suspense>
   );
 }
@@ -30,6 +31,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { examId: rawExamId } = await params;
   const examId = typeof rawExamId === 'string' ? rawExamId : 'sitecore-xmc';
   const exam = await fetchExamById(examId);
-  const title = exam?.examTitle ? `${exam.examTitle}` : 'Study Exam';
+  const title = buildExamAppTitle(exam?.examTitle);
   return { title };
 }

@@ -26,6 +26,15 @@ jest.mock('sonner', () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }))
 
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+  }),
+  useSearchParams: () => ({
+    get: () => null,
+  }),
+}))
+
 describe('QuizApp', () => {
   beforeEach(() => {
     // Avoid errors when result page triggers scroll

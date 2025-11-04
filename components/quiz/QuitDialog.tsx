@@ -10,35 +10,56 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 
+type ExitIntent = 'navigate' | 'manual';
+
 type Props = {
   open: boolean;
+  intent: ExitIntent;
   onOpenChange: (open: boolean) => void;
-  onConfirmQuit: () => void;
+  onConfirm: (action: 'pause' | 'quit') => void;
 };
 
-export function QuitDialog({ open, onOpenChange, onConfirmQuit }: Props) {
+const COPY: Record<ExitIntent, { title: string; description: string; quitLabel: string }> = {
+  navigate: {
+    title: 'Leave the exam?',
+    description:
+      'You have an active exam in progress. Pause to resume later with your progress saved, or quit to discard your current attempt.',
+    quitLabel: 'Quit and leave',
+  },
+  manual: {
+    title: 'Quit this exam?',
+    description:
+      'You can pause to keep your progress and resume later, or quit to abandon this attempt entirely.',
+    quitLabel: 'Quit exam',
+  },
+};
+
+export function QuitDialog({ open, onOpenChange, onConfirm, intent }: Props) {
+  const copy = COPY[intent];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Quit Exam</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to quit and go home? This will lose your current progress.
-          </DialogDescription>
+          <DialogTitle>{copy.title}</DialogTitle>
+          <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
+            variant="secondary"
+            onClick={() => onConfirm('pause')}
+          >
+            Pause and leave
+          </Button>
+          <Button
             variant="destructive"
-            onClick={() => {
-              onOpenChange(false);
-              onConfirmQuit();
-            }}
+            onClick={() => onConfirm('quit')}
             className="bg-red-600 hover:bg-red-700"
           >
-            Quit and go Home
+            {copy.quitLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

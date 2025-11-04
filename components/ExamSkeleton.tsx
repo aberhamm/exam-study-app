@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useHeader } from '@/contexts/HeaderContext';
+import { buildExamAppTitle } from '@/lib/app-config';
 
 type Props = {
   examTitle?: string;
@@ -9,26 +10,20 @@ type Props = {
 
 export default function ExamSkeleton({ examTitle }: Props) {
   const { setConfig } = useHeader();
+  const displayTitle = examTitle ? buildExamAppTitle(examTitle) : null;
 
   useEffect(() => {
     setConfig({
       variant: 'short',
-      title: examTitle,
       leftContent: null,
       rightContent: null,
       visible: true,
+      ...(displayTitle ? { title: displayTitle } : {}),
     });
-  }, [setConfig, examTitle]);
+  }, [setConfig, displayTitle]);
 
   return (
     <div className="space-y-6" aria-busy="true" aria-live="polite">
-      {/* Exam Title Header */}
-      {examTitle && (
-        <div className="text-center lg:text-left">
-          <h1 className="text-2xl font-bold">{examTitle}</h1>
-        </div>
-      )}
-
       {/* Header Actions (all breakpoints) */}
       <div className="flex justify-between items-center text-sm">
         <div className="flex items-center gap-2">

@@ -35,6 +35,11 @@ export default function HomeClient({ examMetadata, stats }: Props) {
     setTestSettings(savedSettings);
 
     const existingExamState = loadExamState();
+    const hasActiveExam =
+      existingExamState &&
+      isExamStateValid(existingExamState) &&
+      !existingExamState.showResult;
+    const isPaused = !!existingExamState?.paused;
 
     // Detect back/forward navigation to avoid auto-resume when the user intends to go Home
     const navEntries = (typeof performance !== 'undefined'
@@ -43,21 +48,20 @@ export default function HomeClient({ examMetadata, stats }: Props) {
     const navType = navEntries[0]?.type;
     const isBackForward = navType === 'back_forward';
 
-    if (
-      existingExamState &&
-      isExamStateValid(existingExamState) &&
-      !existingExamState.showResult &&
-      !isBackForward
-    ) {
+    if (hasActiveExam && !isPaused && !isBackForward) {
       setRedirectingToExam(true);
       setResumeExamState(existingExamState);
       setTestSettings(existingExamState.testSettings);
       setCurrentView('quiz');
     } else {
-      // Ensure we land on the home config when no active exam exists
       setRedirectingToExam(false);
-      setResumeExamState(null);
       setCurrentView('config');
+      if (hasActiveExam) {
+        setResumeExamState(existingExamState);
+        setTestSettings(existingExamState.testSettings);
+      } else {
+        setResumeExamState(null);
+      }
     }
   }, [router]);
 
@@ -69,6 +73,13 @@ export default function HomeClient({ examMetadata, stats }: Props) {
       if (!active || !isExamStateValid(active) || active.showResult) {
         setRedirectingToExam(false);
         setResumeExamState(null);
+        setCurrentView('config');
+        return;
+      }
+      if (active.paused) {
+        setRedirectingToExam(false);
+        setResumeExamState(active);
+        setTestSettings(active.testSettings);
         setCurrentView('config');
       }
     };
@@ -132,15 +143,50 @@ export default function HomeClient({ examMetadata, stats }: Props) {
     } catch {}
   };
 
-  const handleBackToSettings = () => {
-    setOverrideQuestions(null);
+  const handleBackToSettings = ({ clearState }: { clearState: boolean } = { clearState: true }) => {
+    if (clearState) {
+      setOverrideQuestions(null);
+      setResumeExamState(null);
+    } else {
+      const latest = loadExamState();
+      if (latest && isExamStateValid(latest) && !latest.showResult) {
+        setResumeExamState(latest);
+      } else {
+        setResumeExamState(null);
+      }
+    }
     setCurrentView('config');
+    setRedirectingToExam(false);
     // Return URL to the home state
     try {
       const targetExamId = examMetadata?.examId ?? 'sitecore-xmc';
       router.push(`/${encodeURIComponent(targetExamId)}`);
     } catch {}
   };
+
+  const handleResumeExam = () => {
+    const active = loadExamState();
+    const candidate =
+      active && isExamStateValid(active) && !active.showResult ? active : resumeExamState;
+    if (!candidate) {
+      setResumeExamState(null);
+      return;
+    }
+    setResumeExamState(candidate);
+    setTestSettings(candidate.testSettings);
+    setCurrentView('quiz');
+    setRedirectingToExam(true);
+    const targetExamId = candidate.examId || (examMetadata?.examId ?? 'sitecore-xmc');
+    try {
+      router.push(`/${encodeURIComponent(targetExamId)}/exam`);
+    } catch {}
+  };
+
+  const hasPausedExam =
+    !!(resumeExamState &&
+      resumeExamState.paused &&
+      isExamStateValid(resumeExamState) &&
+      !resumeExamState.showResult);
 
   if (currentView === 'config') {
     return (
@@ -151,6 +197,8 @@ export default function HomeClient({ examMetadata, stats }: Props) {
         loading={false}
         error={null}
         stats={stats || undefined}
+        hasPausedExam={hasPausedExam}
+        onResumeExam={hasPausedExam ? handleResumeExam : undefined}
       />
     );
   }

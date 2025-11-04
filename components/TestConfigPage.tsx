@@ -27,10 +27,15 @@ import {
   saveTestSettings,
 } from '@/lib/test-settings';
 import type { NormalizedQuestion, ExamMetadata } from '@/types/normalized';
-import { getMissedQuestionIds, getAllQuestionMetrics, clearIncorrect } from '@/lib/question-metrics';
+import {
+  getMissedQuestionIds,
+  getAllQuestionMetrics,
+  clearIncorrect,
+} from '@/lib/question-metrics';
 import type { ExamStatsResponse } from '@/types/api';
 import { shuffleArray } from '@/lib/question-utils';
 import { useAdminAccess } from '@/app/hooks/useAdminAccess';
+import { buildExamAppTitle, stripExamTitleSuffix } from '@/lib/app-config';
 
 type StartTestOptions = {
   overrideQuestions?: NormalizedQuestion[];
@@ -43,9 +48,20 @@ type Props = {
   loading: boolean;
   error: string | null;
   stats?: ExamStatsResponse['stats'];
+  hasPausedExam?: boolean;
+  onResumeExam?: () => void;
 };
 
-export function TestConfigPage({ questions, examMetadata, onStartTest, loading, error, stats }: Props) {
+export function TestConfigPage({
+  questions,
+  examMetadata,
+  onStartTest,
+  loading,
+  error,
+  stats,
+  hasPausedExam = false,
+  onResumeExam,
+}: Props) {
   const [settings, setSettings] = useState<TestSettings>(DEFAULT_TEST_SETTINGS);
   const { setConfig } = useHeader();
   const { isAdmin } = useAdminAccess();
@@ -57,21 +73,43 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
   const [missedQuestionIds, setMissedQuestionIds] = useState<string[]>([]);
   const [missedThreshold, setMissedThreshold] = useState<number>(1);
   const [seenQuestionIds, setSeenQuestionIds] = useState<string[]>([]);
-  const [startLoading, setStartLoading] = useState<'welcome' | 'summary' | 'missed-dialog' | null>(null);
-  const [competencies, setCompetencies] = useState<Array<{ id: string; title: string; questionCount?: number }>>([]);
+  const [startLoading, setStartLoading] = useState<'welcome' | 'summary' | 'missed-dialog' | null>(
+    null
+  );
+  const [competencies, setCompetencies] = useState<
+    Array<{ id: string; title: string; questionCount?: number }>
+  >([]);
   const [missedDialogOpen, setMissedDialogOpen] = useState(false);
   const [missedCountInput, setMissedCountInput] = useState<string>('');
+
+  const displayExamTitle = buildExamAppTitle(examMetadata?.examTitle);
+  const baseExamTitle = stripExamTitleSuffix(examMetadata?.examTitle) || stripExamTitleSuffix(displayExamTitle) || displayExamTitle;
+  const heroTagline = `Tailored practice for ${baseExamTitle}`;
+  const questionTypeLabel =
+    settings.questionType === 'all' ? '' : `${settings.questionType} `;
+  const explanationLabel =
+    settings.explanationFilter === 'all'
+      ? ''
+      : settings.explanationFilter === 'with-explanations'
+        ? 'explained '
+        : 'non-explained ';
+  const defaultStartLabel = `Start Exam (${settings.questionCount} ${questionTypeLabel}${explanationLabel}questions)`
+    .replace(/\s+/g, ' ');
+  const startButtonLabel = hasPausedExam
+    ? 'Start a new exam'
+    : examMetadata?.welcomeConfig?.ctaText || defaultStartLabel;
+  const actionGridCols = hasPausedExam ? 'sm:grid-cols-3' : 'sm:grid-cols-2';
 
   // Configure header on mount and when exam title loads
   useEffect(() => {
     setConfig({
       variant: 'full',
-      title: examMetadata?.examTitle || 'Study Utility',
+      title: displayExamTitle,
       leftContent: null,
       rightContent: null,
       visible: true,
     });
-  }, [setConfig, examMetadata]);
+  }, [setConfig, displayExamTitle]);
 
   // Load saved settings on mount
   useEffect(() => {
@@ -154,7 +192,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
     const fetchCompetencies = async () => {
       try {
-        const response = await fetch(`/api/exams/${examMetadata.examId}/competencies?includeStats=true`);
+        const response = await fetch(
+          `/api/exams/${examMetadata.examId}/competencies?includeStats=true`
+        );
         if (response.ok) {
           const data = await response.json();
           setCompetencies(data.competencies || []);
@@ -207,8 +247,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
         all: questions.length,
         single: questions.filter((q) => q.questionType === 'single').length,
         multiple: questions.filter((q) => q.questionType === 'multiple').length,
-        'with-explanations': questions.filter((q) => q.explanation && q.explanation.trim().length > 0)
-          .length,
+        'with-explanations': questions.filter(
+          (q) => q.explanation && q.explanation.trim().length > 0
+        ).length,
         'without-explanations': questions.filter(
           (q) => !q.explanation || q.explanation.trim().length === 0
         ).length,
@@ -250,7 +291,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
     const q = questions || [];
     const filtered = (() => {
       if (settings.explanationFilter === 'all') return q;
-      if (settings.explanationFilter === 'with-explanations') return q.filter((x) => x.explanation && x.explanation.trim().length > 0);
+      if (settings.explanationFilter === 'with-explanations')
+        return q.filter((x) => x.explanation && x.explanation.trim().length > 0);
       return q.filter((x) => !x.explanation || x.explanation.trim().length === 0);
     })();
     return {
@@ -499,13 +541,6 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
   return (
     <div className="space-y-10">
-      {/* Page Header - Exam Title */}
-      {examMetadata?.examTitle && (
-        <div className="text-center lg:text-left">
-          <h1 className="text-4xl font-bold text-primary">{examMetadata.examTitle}</h1>
-        </div>
-      )}
-
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* Welcome Section */}
         <section className="space-y-8">
@@ -515,41 +550,48 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
               aria-hidden="true"
             />
             <div className="relative space-y-6 px-6 py-8 sm:px-8 md:px-10 text-center lg:text-left">
-              <div className="space-y-3">
-                {(examMetadata?.welcomeConfig?.showDefaultSubtitle ?? true) && (
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary/70">
-                    {examMetadata?.welcomeConfig?.title || 'Welcome to Your Study Session'}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  {(examMetadata?.welcomeConfig?.showDefaultSubtitle ?? true) && (
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/70">
+                      {examMetadata?.welcomeConfig?.title || 'Welcome to Your Study Session'}
+                    </p>
+                  )}
+                  <p className="text-lg font-medium text-primary/80 sm:text-xl">
+                    {heroTagline}
                   </p>
-                )}
-                <h2 className="text-3xl font-bold leading-snug text-foreground sm:text-4xl">
-                  {examMetadata?.examTitle || 'Build mastery with a tailored study plan'}
-                </h2>
-                {examMetadata?.welcomeConfig?.description ? (
-                  <div className="text-base sm:text-lg text-muted-foreground space-y-4 text-left lg:text-justify">
-                    <MarkdownContent variant="welcome">
-                      {examMetadata.welcomeConfig.description}
-                    </MarkdownContent>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-sm font-medium text-primary">
+                    {questionCounts.all.toLocaleString()} total questions
+                  </span>
+                  <span className="rounded-full border border-border/60 bg-background/70 px-4 py-1 text-sm text-muted-foreground">
+                    {seenQuestionIds.length.toLocaleString()} seen
+                  </span>
+                  {isAdmin && (
+                    <span className="rounded-full border border-border/60 bg-background/70 px-4 py-1 text-sm text-muted-foreground">
+                      {missedQuestionIds.length.toLocaleString()} flagged to review
+                    </span>
+                  )}
+                </div>
+                {hasPausedExam && (
+                  <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary/90 text-center lg:text-left">
+                    You have a paused session. Resume where you left off or start a new exam to begin fresh.
                   </div>
+                )}
+              </div>
+
+              <div className="space-y-4 text-base sm:text-lg text-muted-foreground text-left lg:text-justify">
+                {examMetadata?.welcomeConfig?.description ? (
+                  <MarkdownContent variant="welcome">
+                    {examMetadata.welcomeConfig.description}
+                  </MarkdownContent>
                 ) : (
-                  <p className="text-base sm:text-lg text-muted-foreground">
+                  <p className="text-center lg:text-left">
                     Get ready to test your knowledge and sharpen your instincts. Review the quick
                     metrics below, fine-tune your settings, and jump into your next session feeling
                     confident.
                   </p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-                <span className="rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-sm font-medium text-primary">
-                  {questionCounts.all.toLocaleString()} total questions
-                </span>
-                <span className="rounded-full border border-border/60 bg-background/70 px-4 py-1 text-sm text-muted-foreground">
-                  {seenQuestionIds.length.toLocaleString()} seen
-                </span>
-                {isAdmin && (
-                  <span className="rounded-full border border-border/60 bg-background/70 px-4 py-1 text-sm text-muted-foreground">
-                    {missedQuestionIds.length.toLocaleString()} flagged to review
-                  </span>
                 )}
               </div>
             </div>
@@ -557,7 +599,16 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
 
           {/* Quick Start Button or Configuration Toggle */}
           <div className="space-y-3" aria-live="polite">
-            <div className="grid gap-3 sm:grid-cols-2 sm:items-center">
+            <div className={`grid gap-3 ${actionGridCols} sm:items-center`}>
+              {hasPausedExam && onResumeExam && (
+                <Button
+                  onClick={onResumeExam}
+                  size="lg"
+                  className="px-8 py-3 text-lg shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:shadow-primary/20"
+                >
+                  Resume paused exam
+                </Button>
+              )}
               <SpinnerButton
                 onClick={() => handleStartTest('welcome')}
                 size="lg"
@@ -566,16 +617,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                 loading={startLoading === 'welcome'}
                 loadingText="Loading questions…"
               >
-                {examMetadata?.welcomeConfig?.ctaText ||
-                  `Start Exam (${settings.questionCount} ${
-                    settings.questionType === 'all' ? '' : settings.questionType
-                  } ${
-                    settings.explanationFilter === 'all'
-                      ? ''
-                      : settings.explanationFilter === 'with-explanations'
-                      ? 'explained '
-                      : 'non-explained '
-                  }questions)`}
+                {startButtonLabel}
               </SpinnerButton>
               <Button
                 variant="outline"
@@ -643,7 +685,11 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                     variant="outline"
                     className="flex-1"
                     onClick={() => {
-                      if (confirm('Reset missed counters? This will clear incorrect counts but keep seen/correct.')) {
+                      if (
+                        confirm(
+                          'Reset missed counters? This will clear incorrect counts but keep seen/correct.'
+                        )
+                      ) {
                         clearIncorrect();
                         const refreshed = getMissedQuestionIds(missedThreshold);
                         setMissedQuestionIds(refreshed);
@@ -710,7 +756,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                           key={option.value}
                           type="button"
                           aria-pressed={isActive}
-                          onClick={() => handleQuestionTypeChange(option.value as QuestionTypeFilter)}
+                          onClick={() =>
+                            handleQuestionTypeChange(option.value as QuestionTypeFilter)
+                          }
                           className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                             isActive
                               ? 'border-primary bg-primary/5 dark:bg-primary/10'
@@ -737,8 +785,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                   <div>
                     <h3 className="text-lg font-semibold">Explanation Filter</h3>
                     <p className="text-sm text-muted-foreground">
-                      Control whether you want to study questions with explanations, without them, or
-                      both.
+                      Control whether you want to study questions with explanations, without them,
+                      or both.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -784,7 +832,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <button
                       type="button"
-                      aria-pressed={!settings.competencyFilter || settings.competencyFilter === 'all'}
+                      aria-pressed={
+                        !settings.competencyFilter || settings.competencyFilter === 'all'
+                      }
                       onClick={() => setSettings({ ...settings, competencyFilter: 'all' })}
                       className={`p-4 rounded-lg border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                         !settings.competencyFilter || settings.competencyFilter === 'all'
@@ -793,9 +843,7 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                       }`}
                     >
                       <div className="font-medium">All Competencies</div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        No filtering
-                      </div>
+                      <div className="mt-1 text-sm text-muted-foreground">No filtering</div>
                     </button>
                   </div>
                   <div className="max-h-64 overflow-y-auto space-y-2 border border-border rounded-lg p-3">
@@ -806,7 +854,9 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                           key={competency.id}
                           type="button"
                           aria-pressed={isActive}
-                          onClick={() => setSettings({ ...settings, competencyFilter: competency.id })}
+                          onClick={() =>
+                            setSettings({ ...settings, competencyFilter: competency.id })
+                          }
                           className={`w-full p-3 rounded-md border text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                             isActive
                               ? 'border-primary bg-primary/5 dark:bg-primary/10'
@@ -816,7 +866,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                           <div className="font-medium text-sm">{competency.title}</div>
                           {competency.questionCount !== undefined && (
                             <div className="mt-1 text-xs text-muted-foreground">
-                              {competency.questionCount} question{competency.questionCount !== 1 ? 's' : ''}
+                              {competency.questionCount} question
+                              {competency.questionCount !== 1 ? 's' : ''}
                             </div>
                           )}
                         </button>
@@ -861,7 +912,11 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
                   <p className="text-sm text-muted-foreground">
                     Only include questions you haven&apos;t seen before in this exam.
                     {seenQuestionIds.length > 0 && (
-                      <> You&apos;ve seen {seenQuestionIds.length} question{seenQuestionIds.length === 1 ? '' : 's'} so far.</>
+                      <>
+                        {' '}
+                        You&apos;ve seen {seenQuestionIds.length} question
+                        {seenQuestionIds.length === 1 ? '' : 's'} so far.
+                      </>
                     )}
                   </p>
                 </label>
@@ -1063,8 +1118,8 @@ export function TestConfigPage({ questions, examMetadata, onStartTest, loading, 
           <DialogHeader>
             <DialogTitle>Review Missed Questions</DialogTitle>
             <DialogDescription>
-              You have {missedQuestionIds.length} missed question{missedQuestionIds.length === 1 ? '' : 's'}. How
-              many do you want to practice now?
+              You have {missedQuestionIds.length} missed question
+              {missedQuestionIds.length === 1 ? '' : 's'}. How many do you want to practice now?
             </DialogDescription>
           </DialogHeader>
 

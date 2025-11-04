@@ -21,6 +21,7 @@ export type ExamState = {
   questions: NormalizedQuestion[];
   testSettings: TestSettings;
   lastUpdated: number;
+  paused: boolean;
 };
 
 const EXAM_STATE_KEY = 'scxmcl-exam-state';
@@ -48,6 +49,9 @@ export function loadExamState(): ExamState | null {
     if (!saved) return null;
 
     const state: ExamState = JSON.parse(saved);
+    if (typeof state.paused !== 'boolean') {
+      state.paused = false;
+    }
 
     // Check if exam has expired
     const now = Date.now();
@@ -103,7 +107,8 @@ export function createExamState(
     timeElapsed: 0,
     questions,
     testSettings,
-    lastUpdated: now
+    lastUpdated: now,
+    paused: false,
   };
 }
 

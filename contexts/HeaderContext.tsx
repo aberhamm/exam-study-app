@@ -1,12 +1,14 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useMemo, MouseEvent } from 'react';
 
 export type HeaderVariant = 'full' | 'short';
 
 export interface HeaderConfig {
   variant: HeaderVariant;
   title?: string;
+  titleHref?: string;
+  onTitleClick?: ((event: MouseEvent<HTMLAnchorElement>) => boolean | void) | null;
   leftContent?: ReactNode;
   rightContent?: ReactNode;
   visible: boolean;
@@ -21,6 +23,8 @@ interface HeaderContextType {
 const defaultConfig: HeaderConfig = {
   variant: 'full',
   title: undefined,
+  titleHref: '/',
+  onTitleClick: null,
   leftContent: null,
   rightContent: null,
   visible: true,

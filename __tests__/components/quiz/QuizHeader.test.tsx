@@ -14,17 +14,17 @@ describe('QuizHeader', () => {
     jest.clearAllMocks()
   })
 
-  it('renders exam title when provided', () => {
+  it('adds an accessible label when exam title is provided', () => {
     render(<QuizHeader {...defaultProps} examTitle="Sample Exam" />)
 
-    expect(screen.getByText('Sample Exam')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Sample Exam')
+    const controlGroup = screen.getByRole('group', { name: /exam controls for sample exam/i })
+    expect(controlGroup).toBeInTheDocument()
   })
 
-  it('does not render title section when examTitle is not provided', () => {
+  it('does not render an accessible label when exam title is missing', () => {
     render(<QuizHeader {...defaultProps} />)
 
-    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
+    expect(screen.queryByRole('group')).not.toBeInTheDocument()
   })
 
   it('displays test settings information correctly', () => {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAdminAccess } from '@/app/hooks/useAdminAccess';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ import {
 import { toast } from 'sonner';
 import DebugHUD from '@/components/dev/DebugHUD';
 import type { ExplainDebugInfo, ExplainResponse } from '@/types/api';
+import { buildExamAppTitle } from '@/lib/app-config';
 
 type QuizState = {
   currentQuestionIndex: number;
@@ -48,10 +49,24 @@ type QuizState = {
   timerRunning: boolean;
 };
 
+type ConfirmExitRequest = {
+  kind: 'confirm';
+  intent: 'navigate' | 'manual';
+  destination: string;
+};
+
+type ImmediateExitRequest = {
+  kind: 'immediate';
+  destination: string;
+  clearState: boolean;
+};
+
+type ExitRequest = ConfirmExitRequest | ImmediateExitRequest;
+
 type Props = {
   questions: NormalizedQuestion[];
   testSettings: TestSettings;
-  onBackToSettings: () => void;
+  onBackToSettings?: (options?: { clearState: boolean }) => void;
   initialExamState?: ExamState | null;
   examId: string;
   examTitle?: string;
@@ -65,11 +80,11 @@ export function QuizApp({
   examId,
   examTitle,
 }: Props) {
+  const router = useRouter();
   const [questions, setQuestions] = useState<NormalizedQuestion[]>(
     initialExamState?.questions || preparedQuestions
   );
   const { setConfig } = useHeader();
-  const [showQuitDialog, setShowQuitDialog] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<NormalizedQuestion | null>(null);
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
@@ -102,6 +117,13 @@ export function QuizApp({
     incorrectAnswers: initialExamState?.incorrectAnswers || [],
     timerRunning: initialExamState?.timerRunning ?? true,
   });
+  const examHomePath = useMemo(() => `/${encodeURIComponent(examId)}`, [examId]);
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
+  const [exitRequest, setExitRequest] = useState<ExitRequest | null>(null);
+  const pendingExitRef = useRef<ExitRequest | null>(null);
+  const allowNavigationRef = useRef(false);
+  const shouldGuardNavigation = !quizState.showResult;
+  const shouldGuardRef = useRef(shouldGuardNavigation);
   const seenQuestionsRef = useRef<Set<string>>(new Set());
   const scoredQuestionsRef = useRef<Set<string>>(new Set());
   const persistEnabledRef = useRef<boolean>(true);
@@ -114,6 +136,91 @@ export function QuizApp({
   const envDebug = (process.env.NEXT_PUBLIC_DEBUG_RETRIEVAL || '').toString().toLowerCase();
   const envDebugOn = envDebug === '1' || envDebug === 'true' || envDebug === 'yes' || envDebug === 'on';
   const debugEnabled = isAdmin && (debugQuery === '1' || envDebugOn);
+
+  const headerDisplayTitle = useMemo(() => buildExamAppTitle(examTitle), [examTitle]);
+
+  const openExitDialog = useCallback((intent: ConfirmExitRequest) => {
+    setExitRequest(intent);
+    pendingExitRef.current = intent;
+    setExitDialogOpen(true);
+  }, []);
+
+  const persistExamState = useCallback(
+    (overrides?: Partial<ExamState>) => {
+      if (!questions || questions.length === 0) return;
+      const baseState = createExamState(questions, testSettings, examId, examTitle);
+      const updatedState = updateExamState(baseState, {
+        currentQuestionIndex: quizState.currentQuestionIndex,
+        selectedAnswers: quizState.selectedAnswers,
+        showResult: quizState.showResult,
+        showFeedback: quizState.showFeedback,
+        score: quizState.score,
+        incorrectAnswers: quizState.incorrectAnswers,
+        timerRunning: quizState.timerRunning,
+        timeElapsed: timeElapsedRef.current,
+        paused: false,
+        ...overrides,
+      });
+      saveExamState(updatedState);
+    },
+    [questions, testSettings, examId, examTitle, quizState]
+  );
+
+  const handleHeaderTitleClick = useCallback(() => {
+    if (!shouldGuardNavigation) {
+      return false;
+    }
+    openExitDialog({ kind: 'confirm', intent: 'navigate', destination: examHomePath });
+    return true;
+  }, [shouldGuardNavigation, openExitDialog, examHomePath]);
+
+  const requestImmediateExit = useCallback((request: ImmediateExitRequest) => {
+    pendingExitRef.current = request;
+    setExitRequest(request);
+    if (request.clearState) {
+      persistEnabledRef.current = false;
+      clearExamState();
+    }
+    allowNavigationRef.current = true;
+    shouldGuardRef.current = false;
+    try {
+      router.push(request.destination);
+    } catch {}
+    onBackToSettings?.({ clearState: request.clearState });
+    setExitDialogOpen(false);
+    setExitRequest(null);
+    pendingExitRef.current = null;
+  }, [onBackToSettings, router]);
+
+  const handleExitDecision = useCallback((action: 'pause' | 'quit') => {
+    const intent = pendingExitRef.current;
+    if (!intent || intent.kind !== 'confirm') {
+      return;
+    }
+
+    persistEnabledRef.current = false;
+
+    if (action === 'quit') {
+      clearExamState();
+    } else {
+      persistExamState({ paused: true, timerRunning: false });
+    }
+
+    allowNavigationRef.current = true;
+    shouldGuardRef.current = false;
+    try {
+      router.push(intent.destination);
+    } catch {}
+    onBackToSettings?.({ clearState: action === 'quit' });
+
+    setExitDialogOpen(false);
+    setExitRequest(null);
+    pendingExitRef.current = null;
+  }, [onBackToSettings, router, persistExamState]);
+
+  useEffect(() => {
+    shouldGuardRef.current = shouldGuardNavigation;
+  }, [shouldGuardNavigation]);
 
   const evaluateAnswer = useCallback(
     (question: NormalizedQuestion, selected: number | number[] | null): 'correct' | 'incorrect' | 'unanswered' => {
@@ -162,31 +269,62 @@ export function QuizApp({
   useEffect(() => {
     if (!persistEnabledRef.current) return;
     if (!quizState.showResult && questions.length > 0) {
-      const examState = createExamState(questions, testSettings, examId, examTitle);
-      const updatedState = updateExamState(examState, {
-        currentQuestionIndex: quizState.currentQuestionIndex,
-        selectedAnswers: quizState.selectedAnswers,
-        showResult: quizState.showResult,
-        showFeedback: quizState.showFeedback,
-        score: quizState.score,
-        incorrectAnswers: quizState.incorrectAnswers,
-        timerRunning: quizState.timerRunning,
-        timeElapsed: timeElapsedRef.current, // Read from ref instead of state
-      });
-      saveExamState(updatedState);
+      persistExamState({ paused: false });
     }
-  }, [quizState, questions, testSettings, examId, examTitle]);
+  }, [quizState, questions, persistExamState]);
 
-  // Configure global header to be minimal (no navigation)
+  // Configure global header to be minimal (no navigation) and intercept title clicks
   useEffect(() => {
-    if (quizState.showResult) {
-      setConfig({ variant: 'short', title: examTitle, leftContent: null, rightContent: null, visible: true });
-    } else if (!questions || questions.length === 0) {
-      setConfig({ variant: 'short', title: examTitle, leftContent: null, rightContent: null, visible: true });
-    } else {
-      setConfig({ variant: 'short', title: examTitle, leftContent: null, rightContent: null, visible: true });
+    setConfig({
+      variant: 'short',
+      title: headerDisplayTitle,
+      titleHref: examHomePath,
+      onTitleClick: handleHeaderTitleClick,
+      leftContent: null,
+      rightContent: null,
+      visible: true,
+    });
+  }, [setConfig, headerDisplayTitle, examHomePath, handleHeaderTitleClick]);
+
+  useEffect(() => {
+    if (!shouldGuardNavigation) {
+      return;
     }
-  }, [quizState.showResult, questions, testSettings, onBackToSettings, setConfig, examTitle]);
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (allowNavigationRef.current || !shouldGuardRef.current) {
+        return;
+      }
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [shouldGuardNavigation]);
+
+  useEffect(() => {
+    if (!shouldGuardNavigation) {
+      return;
+    }
+
+    const handlePopState = () => {
+      if (allowNavigationRef.current || !shouldGuardRef.current) {
+        return;
+      }
+      window.history.pushState({ __examGuard: true }, '', window.location.href);
+      openExitDialog({ kind: 'confirm', intent: 'navigate', destination: examHomePath });
+    };
+
+    window.history.pushState({ __examGuard: true }, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [shouldGuardNavigation, examHomePath, openExitDialog]);
 
   const currentQuestion = questions?.[quizState.currentQuestionIndex];
   const totalQuestions = questions?.length || 0;
@@ -788,7 +926,7 @@ export function QuizApp({
     (e: KeyboardEvent) => {
       if (!currentQuestion || quizState.showResult) return;
       // Disable global shortcuts while any dialog is open
-      if (editDialogOpen || showQuitDialog) return;
+      if (editDialogOpen || exitDialogOpen) return;
 
       if (e.key >= '1' && e.key <= '5') {
         const answerIndex = parseInt(e.key) - 1;
@@ -819,7 +957,7 @@ export function QuizApp({
       quizState.showFeedback,
       quizState.showResult,
       editDialogOpen,
-      showQuitDialog,
+      exitDialogOpen,
       isFirstQuestion,
       selectAnswer,
       nextQuestion,
@@ -865,9 +1003,11 @@ export function QuizApp({
             <p>No questions found to display.</p>
             <Button
               onClick={() => {
-                persistEnabledRef.current = false;
-                clearExamState();
-                onBackToSettings();
+                requestImmediateExit({
+                  kind: 'immediate',
+                  destination: examHomePath,
+                  clearState: true,
+                });
               }}
               className="mt-4"
             >
@@ -921,9 +1061,11 @@ export function QuizApp({
           });
         }}
         onGoHome={() => {
-          persistEnabledRef.current = false;
-          clearExamState();
-          onBackToSettings();
+          requestImmediateExit({
+            kind: 'immediate',
+            destination: examHomePath,
+            clearState: true,
+          });
         }}
       />
     );
@@ -958,7 +1100,13 @@ export function QuizApp({
       <QuizHeader
         examTitle={examTitle}
         testSettings={testSettings}
-        onQuit={() => setShowQuitDialog(true)}
+        onQuit={() =>
+          openExitDialog({
+            kind: 'confirm',
+            intent: 'manual',
+            destination: examHomePath,
+          })
+        }
       />
 
       <QuizProgress
@@ -1009,13 +1157,16 @@ export function QuizApp({
       )}
 
       <QuitDialog
-        open={showQuitDialog}
-        onOpenChange={setShowQuitDialog}
-        onConfirmQuit={() => {
-          persistEnabledRef.current = false;
-          clearExamState();
-          onBackToSettings();
+        open={exitDialogOpen && exitRequest?.kind === 'confirm'}
+        intent={exitRequest?.kind === 'confirm' ? exitRequest.intent : 'navigate'}
+        onOpenChange={(open) => {
+          setExitDialogOpen(open);
+          if (!open) {
+            setExitRequest(null);
+            pendingExitRef.current = null;
+          }
         }}
+        onConfirm={handleExitDecision}
       />
 
       <QuestionEditorDialog

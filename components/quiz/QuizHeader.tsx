@@ -10,17 +10,16 @@ type Props = {
 };
 
 export function QuizHeader({ examTitle, testSettings, onQuit }: Props) {
+  const headerGroupLabel = examTitle ? `Exam controls for ${examTitle}` : undefined;
+
   return (
     <>
-      {/* Page Header - Exam Title */}
-      {examTitle && (
-        <div className="text-center lg:text-left">
-          <h1 className="text-2xl font-bold">{examTitle}</h1>
-        </div>
-      )}
-
       {/* Header Actions (all breakpoints) */}
-      <div className="flex justify-between items-center text-sm">
+      <div
+        className="flex justify-between items-center text-sm"
+        role={headerGroupLabel ? 'group' : undefined}
+        aria-label={headerGroupLabel}
+      >
         <div className="flex items-center gap-2 text-muted-foreground">
           <span className="bg-muted px-2 py-1 rounded">
             {testSettings.questionType === 'all'
