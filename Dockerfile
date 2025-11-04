@@ -65,9 +65,9 @@ EXPOSE 3000
 ENV HOSTNAME="0.0.0.0"
 ENV PORT=3000
 
-# Health check - checks both app health and database connectivity
+# Health check - checks app readiness endpoint
 HEALTHCHECK --interval=30s --timeout=15s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/db-status', (r) => {let d='';r.on('data',c=>d+=c);r.on('end',()=>{try{const j=JSON.parse(d);process.exit(j.connected?0:1)}catch(e){process.exit(1)}})})"
+  CMD node -e "require('http').get('http://127.0.0.1:3000/api/health', (r) => {let d='';r.on('data',c=>d+=c);r.on('end',()=>{try{const j=JSON.parse(d);process.exit(j.status==='ok'?0:1)}catch(e){process.exit(1)}})})"
 
 # Start the application
 CMD ["node", "server.js"]
