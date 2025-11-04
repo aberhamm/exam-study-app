@@ -4,6 +4,7 @@ export const APP_CONFIG = {
   APP_NAME: 'Study Utility',
   APP_NAME_SHORT: 'Study Utility',
   APP_NAME_SUFFIX: 'Study Utility',
+  CF_WEB_ANALYTICS_TOKEN: process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN || '',
 } as const;
 
 export type AppConfig = typeof APP_CONFIG;

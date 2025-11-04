@@ -27,6 +27,16 @@ export default function RootLayout({
         <Script id="theme-mode" strategy="beforeInteractive">
           {`(function(){try{var s=localStorage.getItem('theme');var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var c=document.documentElement.classList;c.toggle('dark', d);}catch(e){}})();`}
         </Script>
+        {APP_CONFIG.CF_WEB_ANALYTICS_TOKEN && (
+          <Script
+            id="cloudflare-web-analytics"
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            strategy="afterInteractive"
+            data-cf-beacon={JSON.stringify({
+              token: APP_CONFIG.CF_WEB_ANALYTICS_TOKEN,
+            })}
+          />
+        )}
       </head>
       <body className={`antialiased h-full`}>
         <SessionProvider>
