@@ -7,7 +7,7 @@ services:
     container_name: scxmcl-app
     restart: unless-stopped
     ports:
-      - '${APP_PORT:-3000}:3000'
+      - '127.0.0.1:${APP_PORT:-3000}:3000'
     environment:
       # Node environment
       NODE_ENV: production
