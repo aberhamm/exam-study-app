@@ -9,7 +9,8 @@
     "markdown-to-json": "tsx src/pipelines/markdown-to-json/index.ts",
     "markdown-to-embeddings": "tsx src/pipelines/markdown-to-embeddings/index.ts",
     "create-embeddings-index": "tsx scripts/create-embeddings-index.ts",
-    "test-embeddings-search": "tsx scripts/test-embeddings-search.ts"
+    "test-embeddings-search": "tsx scripts/test-embeddings-search.ts",
+    "enrich-questions": "tsx src/pipelines/enrich-questions/index.ts"
   },
   "dependencies": {
     "@langchain/openai": "^0.3.15",

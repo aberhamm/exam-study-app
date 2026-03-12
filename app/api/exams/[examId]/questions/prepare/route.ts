@@ -1,25 +1,24 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { ObjectId, type WithId } from 'mongodb';
-import { getDb, getQuestionsCollectionName, getQuestionClustersCollectionName } from '@/lib/server/mongodb';
-import type { QuestionDocument } from '@/types/question';
-import { normalizeQuestions } from '@/lib/normalize';
+import { getDb } from '@/lib/server/db';
 import type { ExternalQuestion } from '@/types/external-question';
-import { envConfig } from '@/lib/env-config';
+import { normalizeQuestions } from '@/lib/normalize';
 import { ExplanationSourceZ } from '@/lib/validation';
 import type { ExplanationSource } from '@/types/explanation';
-import type { ClusterDocument } from '@/types/clusters';
 
 // Contract for the prepare endpoint. See inline docs below for sampling behavior.
 /**
  * Prepare exam questions for a session.
  *
- * New options:
+ * Options:
  * - `avoidSimilar` (boolean): when true, filter sampled questions to avoid selecting
  *   multiple items that belong to the same cluster for the same exam attempt.
+ *   NOTE: cluster filtering is not yet migrated to Supabase; this flag is accepted
+ *   but has no effect — questions are returned without cluster deduplication and
+ *   excludedBySimilarity will always be 0.
  * - `similarityPolicy` (enum):
- *   - 'duplicates-only' (default): avoid clusters with status 'approved_duplicates' or 'pending'.
- *   - 'all-clustered': avoid any cluster membership except 'approved_variants'.
+ *   - 'duplicates-only' (default): (reserved for future cluster filtering)
+ *   - 'all-clustered': (reserved for future cluster filtering)
  */
 const StartRequestZ = z.object({
   questionType: z.enum(['all', 'single', 'multiple']).default('all'),
@@ -34,6 +33,82 @@ const StartRequestZ = z.object({
 
 type RouteParams = { params: Promise<{ examId: string }> };
 
+// Columns to select — intentionally excludes embedding vectors
+const QUESTION_SELECT =
+  'id, exam_id, question, options, answer, question_type, explanation, explanation_generated_by_ai, explanation_sources, study, competency_ids, flagged_for_review';
+
+type QuestionRow = {
+  id: string;
+  exam_id: string;
+  question: string;
+  options: ExternalQuestion['options'];
+  answer: ExternalQuestion['answer'];
+  question_type: string | null;
+  explanation: string | null;
+  explanation_generated_by_ai: boolean | null;
+  explanation_sources: unknown;
+  study: ExternalQuestion['study'] | null;
+  competency_ids: string[] | null;
+  flagged_for_review: boolean | null;
+};
+
+/** Fisher-Yates shuffle — returns a new array, does not mutate the original. */
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** Returns true when the row has a non-empty explanation string. */
+function hasExplanation(row: QuestionRow): boolean {
+  return typeof row.explanation === 'string' && row.explanation.trim().length > 0;
+}
+
+/** Parse explanation_sources from the DB, discarding entries that fail validation. */
+function parseExplanationSources(raw: unknown): ExplanationSource[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const parsed = raw
+    .map((s) => ExplanationSourceZ.safeParse(s))
+    .filter((r): r is { success: true; data: ExplanationSource } => r.success)
+    .map((r) => r.data);
+  return parsed.length > 0 ? parsed : undefined;
+}
+
+/** Map a DB row to the ExternalQuestion shape expected by the client. */
+function rowToExternal(
+  row: QuestionRow,
+  compMap: Map<string, { id: string; title: string }>,
+): ExternalQuestion & { id: string } {
+  return {
+    id: row.id,
+    question: row.question,
+    options: row.options,
+    answer: row.answer,
+    question_type: (row.question_type as 'single' | 'multiple' | undefined) ?? 'single',
+    explanation: row.explanation ?? undefined,
+    explanationGeneratedByAI: row.explanation_generated_by_ai ?? undefined,
+    explanationSources: parseExplanationSources(row.explanation_sources),
+    study: row.study ?? undefined,
+    competencyIds: row.competency_ids ?? undefined,
+    competencies: (row.competency_ids ?? [])
+      .map((cid) => compMap.get(cid))
+      .filter((c): c is { id: string; title: string } => !!c),
+  };
+}
+
+/** Apply the explanation filter to a pool of rows in JS. */
+function applyExplanationFilter(
+  pool: QuestionRow[],
+  filter: 'all' | 'with-explanations' | 'without-explanations',
+): QuestionRow[] {
+  if (filter === 'with-explanations') return pool.filter(hasExplanation);
+  if (filter === 'without-explanations') return pool.filter((r) => !hasExplanation(r));
+  return pool;
+}
+
 export async function POST(request: Request, context: RouteParams) {
   let examId = 'unknown';
   try {
@@ -43,334 +118,163 @@ export async function POST(request: Request, context: RouteParams) {
     const json = await request.json().catch(() => ({}));
     const input = StartRequestZ.parse(json);
 
-    const db = await getDb();
-    const col = db.collection<QuestionDocument>(getQuestionsCollectionName());
+    const db = getDb();
 
-    // Base match criteria applied to all sampling strategies
-    const match: Record<string, unknown> = { examId };
-    if (input.questionType === 'single') match.question_type = 'single';
-    if (input.questionType === 'multiple') match.question_type = 'multiple';
+    // Fetch competency metadata for the exam upfront — needed for both balanced
+    // sampling and for embedding competency titles in the response.
+    const { data: competencies } = await db
+      .from('competencies')
+      .select('id, title')
+      .eq('exam_id', examId);
+    const compMap = new Map(
+      (competencies ?? []).map((c) => [c.id, { id: c.id, title: c.title }]),
+    );
 
-    // Expression to test existence of a non-empty explanation string
-    const explanationExpr = (() => {
-      return {
-        $gt: [
-          {
-            $strLenCP: {
-              $trim: { input: { $ifNull: ['$explanation', ''] } },
-            },
-          },
-          0,
-        ],
-      } as const;
-    })();
+    // TODO: cluster filtering not yet migrated to Supabase.
+    // When avoidSimilar is true we accept the option but cannot filter by cluster
+    // membership. excludedBySimilarity is always 0 until clusters are migrated.
+    const excludedBySimilarity = 0;
 
-    const pipeline: object[] = [
-      { $match: match },
-    ];
+    // Whether to use balanced-by-competency sampling.
+    // Only meaningful when not already scoped to a single competency.
+    const useBalanced =
+      input.balancedByCompetency &&
+      (!input.competencyFilter || input.competencyFilter === 'all');
 
-    // Exclude specified question IDs (e.g., already seen questions)
-    if (input.excludeQuestionIds && input.excludeQuestionIds.length > 0) {
-      const excludeObjectIds = input.excludeQuestionIds
-        .filter(id => ObjectId.isValid(id))
-        .map(id => new ObjectId(id));
+    // -----------------------------------------------------------------
+    // Balanced-by-competency sampling
+    // -----------------------------------------------------------------
+    if (useBalanced && (competencies ?? []).length > 0) {
+      const comps = competencies!;
+      const k = comps.length;
+      const base = Math.floor(input.questionCount / k);
+      let remainder = input.questionCount - base * k;
 
-      if (excludeObjectIds.length > 0) {
-        pipeline.push({ $match: { _id: { $nin: excludeObjectIds } } });
+      const seen = new Set<string>();
+      const results: QuestionRow[] = [];
+
+      for (const comp of comps) {
+        const take = base + (remainder > 0 ? 1 : 0);
+        if (remainder > 0) remainder -= 1;
+        if (take <= 0) continue;
+
+        // Build per-competency query
+        let compQuery = db
+          .from('questions')
+          .select(QUESTION_SELECT)
+          .eq('exam_id', examId)
+          .contains('competency_ids', [comp.id]);
+
+        if (input.questionType === 'single') compQuery = compQuery.eq('question_type', 'single');
+        if (input.questionType === 'multiple') compQuery = compQuery.eq('question_type', 'multiple');
+
+        // Exclude globally excluded IDs and already-selected IDs
+        const allExclude = new Set<string>([
+          ...(input.excludeQuestionIds ?? []),
+          ...seen,
+        ]);
+        if (allExclude.size > 0) {
+          compQuery = compQuery.not('id', 'in', `(${Array.from(allExclude).join(',')})`);
+        }
+
+        const { data: compRows, error: compErr } = await compQuery;
+        if (compErr) {
+          console.error(`Failed to fetch questions for competency ${comp.id}`, compErr);
+          continue;
+        }
+
+        // Apply explanation filter in JS (text field)
+        const pool = applyExplanationFilter(compRows ?? [], input.explanationFilter);
+
+        // Shuffle and take at most 'take' questions from this competency slice
+        for (const row of shuffleArray(pool).slice(0, take)) {
+          if (!seen.has(row.id)) {
+            seen.add(row.id);
+            results.push(row);
+          }
+        }
       }
+
+      // Fill from the general pool if balanced sampling left us short
+      if (results.length < input.questionCount) {
+        const remaining = input.questionCount - results.length;
+
+        let fillQuery = db
+          .from('questions')
+          .select(QUESTION_SELECT)
+          .eq('exam_id', examId);
+
+        if (input.questionType === 'single') fillQuery = fillQuery.eq('question_type', 'single');
+        if (input.questionType === 'multiple') fillQuery = fillQuery.eq('question_type', 'multiple');
+
+        const allExclude = new Set<string>([
+          ...(input.excludeQuestionIds ?? []),
+          ...seen,
+        ]);
+        if (allExclude.size > 0) {
+          fillQuery = fillQuery.not('id', 'in', `(${Array.from(allExclude).join(',')})`);
+        }
+
+        const { data: fillRows, error: fillErr } = await fillQuery;
+        if (fillErr) {
+          console.error(`Failed to fetch fill questions for exam ${examId}`, fillErr);
+        } else {
+          const pool = applyExplanationFilter(fillRows ?? [], input.explanationFilter);
+          for (const row of shuffleArray(pool).slice(0, remaining)) {
+            if (!seen.has(row.id)) {
+              seen.add(row.id);
+              results.push(row);
+            }
+          }
+        }
+      }
+
+      const external: ExternalQuestion[] = results
+        .slice(0, input.questionCount)
+        .map((row) => rowToExternal(row, compMap));
+
+      const normalized = normalizeQuestions(external);
+      return NextResponse.json(
+        { examId, count: normalized.length, excludedBySimilarity, questions: normalized },
+        { headers: { 'Cache-Control': 'no-store' } },
+      );
     }
 
-    if (input.explanationFilter === 'with-explanations') {
-      pipeline.push({ $match: { $expr: explanationExpr } });
-    } else if (input.explanationFilter === 'without-explanations') {
-      pipeline.push({ $match: { $expr: { $not: explanationExpr } } });
-    }
+    // -----------------------------------------------------------------
+    // Default (non-balanced) sampling
+    // -----------------------------------------------------------------
+    let query = db.from('questions').select(QUESTION_SELECT).eq('exam_id', examId);
 
-    // Filter by competency if specified
+    if (input.questionType === 'single') query = query.eq('question_type', 'single');
+    if (input.questionType === 'multiple') query = query.eq('question_type', 'multiple');
+
     if (input.competencyFilter && input.competencyFilter !== 'all') {
-      pipeline.push({ $match: { competencyIds: input.competencyFilter } });
+      query = query.contains('competency_ids', [input.competencyFilter]);
     }
 
-    // Balanced-by-competency sampling (when requested and not filtering by a specific competency)
-    //
-    // Strategy:
-    // 1) Fetch competency list for the exam.
-    // 2) Evenly divide questionCount across competencies (distribute remainder).
-    // 3) For each competency, sample 'take' questions with other filters applied.
-    // 4) Track a 'seen' set and a global exclude set across rounds to prevent duplicates.
-    // 5) If still short, fill from the general pool to reach the requested total.
-    const useBalanced = input.balancedByCompetency && (!input.competencyFilter || input.competencyFilter === 'all');
-
-    // Preload cluster membership when needed; map questionId -> array of (clusterId, status)
-    let clusterLookup: Map<string, Array<{ id: string; status: ClusterDocument['status'] }>> | null = null;
-    if (input.avoidSimilar) {
-      const clusters = await db
-        .collection<ClusterDocument>(getQuestionClustersCollectionName())
-        .find({ examId })
-        .project({ _id: 0, id: 1, status: 1, questionIds: 1 })
-        .toArray();
-      clusterLookup = new Map();
-      for (const c of clusters) {
-        for (const qid of c.questionIds) {
-          const arr = clusterLookup.get(qid) || [];
-          arr.push({ id: c.id, status: c.status });
-          clusterLookup.set(qid, arr);
-        }
-      }
+    // Exclude already-seen question IDs (UUIDs — no ObjectId conversion needed)
+    if ((input.excludeQuestionIds ?? []).length > 0) {
+      query = query.not('id', 'in', `(${input.excludeQuestionIds!.join(',')})`);
     }
 
-    function filterBySimilarityPreservingOrder(idsInOrder: string[]): { selected: Set<string>; excludedCount: number } {
-      if (!clusterLookup || !input.avoidSimilar) return { selected: new Set(idsInOrder), excludedCount: 0 };
-      const usedClusters = new Set<string>();
-      const selected = new Set<string>();
-      let excludedCount = 0;
-      for (const id of idsInOrder) {
-        const mem = clusterLookup.get(id) || [];
-        let conflict = false;
-        for (const m of mem) {
-          if (input.similarityPolicy === 'duplicates-only') {
-            if ((m.status === 'approved_duplicates' || m.status === 'pending') && usedClusters.has(m.id)) {
-              conflict = true; break;
-            }
-          } else {
-            if (m.status !== 'approved_variants' && usedClusters.has(m.id)) {
-              conflict = true; break;
-            }
-          }
-        }
-        if (conflict) { excludedCount += 1; continue; }
-        selected.add(id);
-        for (const m of mem) {
-          if (input.similarityPolicy === 'duplicates-only') {
-            if (m.status === 'approved_duplicates' || m.status === 'pending') usedClusters.add(m.id);
-          } else {
-            if (m.status !== 'approved_variants') usedClusters.add(m.id);
-          }
-        }
-        if (selected.size >= input.questionCount) break;
-      }
-      return { selected, excludedCount };
-    }
-    if (useBalanced) {
-      // Fetch competencies for this exam
-      const comps = await db
-        .collection(envConfig.mongo.examCompetenciesCollection)
-        .find({ examId })
-        .project({ _id: 0, id: 1, title: 1 })
-        .toArray();
-
-      if (comps.length > 0) {
-        // Equal distribution across competencies
-        const k = comps.length;
-        const base = Math.floor(input.questionCount / k);
-        let remainder = input.questionCount - base * k;
-
-        const excludeIds = new Set<string>((input.excludeQuestionIds || []).filter(ObjectId.isValid));
-        const useRandSort = String(process.env.USE_RAND_SORT_SAMPLING || '').toLowerCase();
-        const results: WithId<QuestionDocument>[] = [];
-        const seen = new Set<string>();
-
-        for (const comp of comps) {
-          const take = base + (remainder > 0 ? 1 : 0);
-          if (remainder > 0) remainder -= 1;
-          if (take <= 0) continue;
-
-          const compFilter: Record<string, unknown> = { ...match, competencyIds: comp.id };
-
-          const compPipeline: object[] = [{ $match: compFilter }];
-          // Exclusions
-          if (excludeIds.size > 0) {
-            const ids = Array.from(excludeIds).map((id) => new ObjectId(id));
-            compPipeline.push({ $match: { _id: { $nin: ids } } });
-          }
-          if (input.explanationFilter === 'with-explanations') {
-            compPipeline.push({ $match: { $expr: explanationExpr } });
-          } else if (input.explanationFilter === 'without-explanations') {
-            compPipeline.push({ $match: { $expr: { $not: explanationExpr } } });
-          }
-
-          if (useRandSort === '1' || useRandSort === 'true' || useRandSort === 'yes' || useRandSort === 'on') {
-            compPipeline.push({ $addFields: { _rand: { $rand: {} } } } as object);
-            compPipeline.push({ $sort: { _rand: 1 } } as object);
-            compPipeline.push({ $limit: take } as object);
-          } else {
-            compPipeline.push({ $sample: { size: take } } as object);
-          }
-
-          const compDocs = await col.aggregate<WithId<QuestionDocument>>(compPipeline).toArray();
-          for (const d of compDocs) {
-            const key = d._id.toString();
-            if (!seen.has(key)) {
-              seen.add(key);
-              results.push(d);
-              excludeIds.add(key);
-            }
-          }
-        }
-
-        // If we are short (e.g., thin competency buckets), fill from the general pool
-        if (results.length < input.questionCount) {
-          const remaining = input.questionCount - results.length;
-          const fillPipeline: object[] = [{ $match: match }];
-          if (excludeIds.size > 0) {
-            const ids = Array.from(excludeIds).map((id) => new ObjectId(id));
-            fillPipeline.push({ $match: { _id: { $nin: ids } } });
-          }
-          if (input.explanationFilter === 'with-explanations') {
-            fillPipeline.push({ $match: { $expr: explanationExpr } });
-          } else if (input.explanationFilter === 'without-explanations') {
-            fillPipeline.push({ $match: { $expr: { $not: explanationExpr } } });
-          }
-
-          if (useRandSort === '1' || useRandSort === 'true' || useRandSort === 'yes' || useRandSort === 'on') {
-            fillPipeline.push({ $addFields: { _rand: { $rand: {} } } } as object);
-            fillPipeline.push({ $sort: { _rand: 1 } } as object);
-            fillPipeline.push({ $limit: remaining } as object);
-          } else {
-            fillPipeline.push({ $sample: { size: remaining } } as object);
-          }
-          const fillDocs = await col.aggregate<WithId<QuestionDocument>>(fillPipeline).toArray();
-          for (const d of fillDocs) {
-            const key = d._id.toString();
-            if (!seen.has(key)) {
-              seen.add(key);
-              results.push(d);
-            }
-          }
-        }
-
-        // Now transform results into ExternalQuestion without $lookup (embed minimal competency data)
-        // Optionally enforce similarity constraint
-        let selectedIds: Set<string> | null = null;
-        let excludedBySimilarity = 0;
-        if (input.avoidSimilar) {
-          const idsOrdered = results.map((d) => d._id.toString());
-          const f = filterBySimilarityPreservingOrder(idsOrdered);
-          selectedIds = f.selected;
-          excludedBySimilarity = f.excludedCount;
-        }
-
-        const external: ExternalQuestion[] = results
-          .filter((d) => !selectedIds || selectedIds.has(d._id.toString()))
-          .map((d) => ({
-          id: d._id.toString(),
-          question: d.question,
-          options: d.options,
-          answer: d.answer,
-          question_type: (d.question_type as 'single' | 'multiple' | undefined) ?? 'single',
-          explanation: d.explanation,
-          explanationGeneratedByAI: d.explanationGeneratedByAI,
-          explanationSources: (Array.isArray((d as unknown as { explanationSources?: unknown }).explanationSources)
-            ? ((d as unknown as { explanationSources?: unknown[] }).explanationSources as unknown[])
-                .map((s) => ExplanationSourceZ.safeParse(s))
-                .filter((r): r is { success: true; data: ExplanationSource } => r.success)
-                .map((r) => r.data)
-            : undefined) as ExternalQuestion['explanationSources'],
-          study: d.study,
-          competencyIds: d.competencyIds,
-          competencies: (Array.isArray(d.competencyIds)
-            ? d.competencyIds
-                .map((cid: string) => comps.find((c) => c.id === cid))
-                .filter((c): c is { id: string; title: string } => !!c)
-                .map((c) => ({ id: c.id, title: c.title }))
-            : undefined) as ExternalQuestion['competencies'],
-        }));
-        // Normalize to the client-friendly question shape
-        const normalized = normalizeQuestions(external);
-        return NextResponse.json({ examId, count: normalized.length, excludedBySimilarity, questions: normalized }, { headers: { 'Cache-Control': 'no-store' } });
-      }
-      // If no competencies found, fall through to default behavior below
+    const { data: rows, error } = await query;
+    if (error) {
+      console.error(`Failed to fetch questions for exam ${examId}`, error);
+      return NextResponse.json({ error: 'Failed to prepare questions' }, { status: 500 });
     }
 
-    // Apply random sampling/ordering to respect requested questionCount before expensive lookups
-    // Prefer $sample for efficiency; optionally support deterministic rand+sort when enabled
-    const useRandSort = String(process.env.USE_RAND_SORT_SAMPLING || '').toLowerCase();
-    if (useRandSort === '1' || useRandSort === 'true' || useRandSort === 'yes' || useRandSort === 'on') {
-      pipeline.push({ $addFields: { _rand: { $rand: {} } } } as object);
-      pipeline.push({ $sort: { _rand: 1 } } as object);
-      pipeline.push({ $limit: input.questionCount } as object);
-    } else {
-      // $sample returns up to the requested size; if fewer exist, it returns all
-      pipeline.push({ $sample: { size: input.questionCount } } as object);
-    }
+    // Apply explanation filter in JS, then shuffle and take the requested count.
+    // With 652 total rows this is perfectly efficient.
+    const pool = applyExplanationFilter(rows ?? [], input.explanationFilter);
+    const sampled = shuffleArray(pool).slice(0, input.questionCount);
 
-    // Lookup competencies to embed minimal data in questions
-    pipeline.push({
-      $lookup: {
-        from: envConfig.mongo.examCompetenciesCollection,
-        let: { questionCompetencyIds: '$competencyIds' },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $in: ['$id', { $ifNull: ['$$questionCompetencyIds', []] }],
-              },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              id: 1,
-              title: 1,
-            },
-          },
-        ],
-        as: 'competencies',
-      },
-    });
-
-    pipeline.push({
-      $project: {
-        _id: 1,
-        examId: 1,
-        question: 1,
-        options: 1,
-        answer: 1,
-        question_type: 1,
-        explanation: 1,
-        explanationGeneratedByAI: 1,
-        explanationSources: 1,
-        study: 1,
-        competencyIds: 1,
-        competencies: 1,
-      },
-    });
-
-    const docs = await col.aggregate(pipeline).toArray();
-
-    // Optionally enforce similarity constraint
-    let selectedIds: Set<string> | null = null;
-    let excludedBySimilarity = 0;
-    if (input.avoidSimilar) {
-      const idsOrdered = docs.map((d) => d._id.toString());
-      const f = filterBySimilarityPreservingOrder(idsOrdered);
-      selectedIds = f.selected;
-      excludedBySimilarity = f.excludedCount;
-    }
-
-    const external: ExternalQuestion[] = docs
-      .filter((d) => !selectedIds || selectedIds.has(d._id.toString()))
-      .map((d) => ({
-      id: d._id.toString(),
-      question: d.question,
-      options: d.options,
-      answer: d.answer,
-      question_type: (d.question_type as 'single' | 'multiple' | undefined) ?? 'single',
-      explanation: d.explanation,
-      explanationGeneratedByAI: d.explanationGeneratedByAI,
-      explanationSources: (Array.isArray((d as unknown as { explanationSources?: unknown }).explanationSources)
-        ? ((d as unknown as { explanationSources?: unknown[] }).explanationSources as unknown[])
-            .map((s) => ExplanationSourceZ.safeParse(s))
-            .filter((r): r is { success: true; data: ExplanationSource } => r.success)
-            .map((r) => r.data)
-        : undefined) as ExternalQuestion['explanationSources'],
-      study: d.study,
-      competencyIds: d.competencyIds,
-      competencies: d.competencies,
-    }));
+    const external: ExternalQuestion[] = sampled.map((row) => rowToExternal(row, compMap));
     const normalized = normalizeQuestions(external);
 
-    return NextResponse.json({ examId, count: normalized.length, excludedBySimilarity, questions: normalized }, { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json(
+      { examId, count: normalized.length, excludedBySimilarity, questions: normalized },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (error) {
     console.error(`Failed to prepare questions for exam ${examId}`, error);
     return NextResponse.json({ error: 'Failed to prepare questions' }, { status: 500 });

@@ -198,9 +198,9 @@ export async function POST(request: Request, context: RouteParams) {
     return NextResponse.json(
       {
         examId,
-        questionId: created._id.toString(),
+        questionId: created.id,
         question: {
-          id: created._id.toString(),
+          id: created.id,
           ...question,
         },
       },

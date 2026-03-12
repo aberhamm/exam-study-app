@@ -59,13 +59,11 @@ export async function getEnvConfig() {
   };
 }
 
-export async function getMongoConfig() {
-  // Dynamic import to avoid import issues in this ESM module
-  const { envConfig } = await import('../../../../lib/env-config.js');
-
-  return {
-    uri: envConfig.mongo.uri,
-    database: envConfig.mongo.database,
-    collection: envConfig.pipeline.documentEmbeddingsCollection,
-  };
+export async function getSupabaseConfig() {
+  // Load from process.env directly (env loaded by dotenv at top of index.ts)
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
+  if (!serviceRoleKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
+  return { url, serviceRoleKey };
 }

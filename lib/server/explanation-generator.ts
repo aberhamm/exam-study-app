@@ -1,9 +1,7 @@
-import type { Collection } from 'mongodb';
-import { getDb } from '@/lib/server/mongodb';
 import { envConfig, featureFlags } from '@/lib/env-config';
+import { searchSimilarDocuments } from '@/lib/server/documents-search';
 import type { NormalizedQuestion } from '@/types/normalized';
 import type { ExplainDebugInfo } from '@/types/api';
-import type { EmbeddingChunkDocument } from '@/data-pipelines/src/shared/types/embedding';
 import { createEmbedding as createEmbeddingLLM, createChatCompletion } from '@/lib/llm-client';
 import crypto from 'crypto';
 
@@ -87,11 +85,6 @@ async function retryWithBackoff<T>(
   throw lastError || new Error('Max retries exceeded');
 }
 
-async function getEmbeddingsCollection(): Promise<Collection<EmbeddingChunkDocument>> {
-  const db = await getDb();
-  return db.collection<EmbeddingChunkDocument>(envConfig.pipeline.documentEmbeddingsCollection);
-}
-
 /**
  * Create an embedding for the provided text.
  *
@@ -139,142 +132,36 @@ async function searchDocumentChunks(
     return [];
   }
 
-  const embeddingsCol = await getEmbeddingsCollection();
-  const indexName = envConfig.pipeline.documentEmbeddingsVectorIndex;
-  const candidateMultiplier = envConfig.pipeline.candidateMultiplier;
-  const maxCandidates = envConfig.pipeline.maxCandidates;
-  const numCandidates = Math.min(topK * candidateMultiplier, maxCandidates);
-
-  if (featureFlags.debugRetrieval) {
-    console.info(
-      `[searchDocumentChunks] topK=${topK}, candidates=${numCandidates}, dimensions=${
-        queryEmbedding.length
-      }, groupIds=${groupIds?.join(',') || 'all'}`
-    );
-  }
-
   try {
-    // Build filter based on groupIds
-    let filter: Record<string, unknown> | undefined;
-    if (groupIds && groupIds.length > 0) {
-      filter = { groupId: { $in: groupIds } };
-    }
-
-    // Step 1: Vector search for IDs and scores only
-    const vectorPipeline = [
-      {
-        $vectorSearch: {
-          index: indexName,
-          queryVector: queryEmbedding,
-          path: 'embedding',
-          numCandidates,
-          limit: topK,
-          ...(filter ? { filter } : {}),
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          score: { $meta: 'vectorSearchScore' },
-        },
-      },
-    ];
-
-    const vectorResults: Array<{ _id: unknown; score: number }> = [];
-    const cursor = embeddingsCol.aggregate(vectorPipeline);
-
-    for await (const doc of cursor) {
-      vectorResults.push(doc as { _id: unknown; score: number });
-    }
-
-    if (vectorResults.length === 0) {
-      if (featureFlags.debugRetrieval) {
-        console.warn('[searchDocumentChunks] No results from vector search');
-      }
-      return [];
-    }
-
-    // Step 2: Targeted find for full documents
-    const ids = vectorResults.map((r) => r._id);
-    const scoreMap = new Map(vectorResults.map((r) => [String(r._id), r.score]));
-
-    type DocProjection = {
-      _id: unknown;
-      text?: string;
-      url?: string;
-      title?: string;
-      description?: string;
-      sourceFile?: string;
-      sourceBasename?: string;
-      groupId?: string;
-      tags?: string[];
-      sectionPath?: string;
-      nearestHeading?: string;
-      chunkIndex?: number;
-      chunkTotal?: number;
-      startIndex?: number;
-      endIndex?: number;
-    };
-
-    const documents = (await embeddingsCol
-      .find({ _id: { $in: ids } } as unknown as Record<string, unknown>)
-      .project({
-        _id: 1,
-        text: 1,
-        url: 1,
-        title: 1,
-        description: 1,
-        sourceFile: 1,
-        sourceBasename: 1,
-        groupId: 1,
-        tags: 1,
-        sectionPath: 1,
-        nearestHeading: 1,
-        chunkIndex: 1,
-        chunkTotal: 1,
-        startIndex: 1,
-        endIndex: 1,
-      })
-      .toArray()) as DocProjection[];
-
-    // Map results with scores
-    const results = documents.map((doc) => ({
-      text: doc.text || '',
-      url: doc.url,
-      title: doc.title || doc.description,
-      description: doc.description,
-      sourceFile: doc.sourceFile || doc.sourceBasename || 'unknown',
-      sourceBasename: doc.sourceBasename,
-      sectionPath: doc.sectionPath,
-      nearestHeading: doc.nearestHeading,
-      score: scoreMap.get(String(doc._id)) || 0,
-      chunkIndex: doc.chunkIndex,
-      chunkTotal: doc.chunkTotal,
-      startIndex: doc.startIndex,
-      endIndex: doc.endIndex,
-      groupId: doc.groupId,
-      tags: doc.tags,
-    }));
+    const results = await searchSimilarDocuments(queryEmbedding, topK, groupIds);
 
     // Reset circuit breaker on success
     vectorSearchFailures = 0;
 
-    if (featureFlags.debugRetrieval) {
-      console.info(
-        `[searchDocumentChunks] Retrieved ${
-          results.length
-        } chunks, best score: ${results[0]?.score.toFixed(4)}`
-      );
-    }
-
-    return results;
+    // Map SimilarDocument[] → DocumentChunk[]
+    return results.map((r) => ({
+      text: r.document.text || '',
+      url: r.document.url,
+      title: r.document.title || r.document.description,
+      description: r.document.description,
+      sourceFile: r.document.sourceFile || r.document.sourceBasename || 'unknown',
+      sourceBasename: r.document.sourceBasename,
+      sectionPath: r.document.sectionPath,
+      nearestHeading: r.document.nearestHeading,
+      score: r.score,
+      chunkIndex: r.document.chunkIndex,
+      chunkTotal: r.document.chunkTotal,
+      startIndex: r.document.startIndex,
+      endIndex: r.document.endIndex,
+      groupId: r.document.groupId,
+      tags: r.document.tags,
+    }));
   } catch (error) {
     console.error(
       '[searchDocumentChunks] Vector search failed:',
       error instanceof Error ? error.message : 'Unknown error'
     );
 
-    // Increment circuit breaker
     vectorSearchFailures++;
     if (vectorSearchFailures >= CIRCUIT_BREAKER_THRESHOLD) {
       circuitBreakerUntil = Date.now() + CIRCUIT_BREAKER_DURATION_MS;

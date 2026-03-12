@@ -19,9 +19,16 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
 *.pem
 
 # debug
@@ -29,6 +36,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -47,3 +55,15 @@ next-env.d.ts
 data-pipelines/data/*/input/*
 data-pipelines/data/*/output/*
 data-pipelines/data/*/logs/*
+
+# raw source material (exam question sources, scraped content)
+/data/sources/*
+
+# IDE / editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# backups (may contain sensitive env files)
+/backups/

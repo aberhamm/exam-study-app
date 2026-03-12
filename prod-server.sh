@@ -47,6 +47,13 @@ require_prereqs() {
   fi
 }
 
+deploy() {
+  require_prereqs
+  echo "Building and deploying prod server (detached)..."
+  "${DC[@]}" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up --build -d
+  echo "Done. Use 'docker ps' or '"${DC[*]}" ps' to verify."
+}
+
 start() {
   require_prereqs
   echo "Starting prod server (detached)..."
@@ -67,6 +74,7 @@ usage() {
 }
 
 case "${1:-}" in
+  deploy) deploy ;;
   start) start ;;
   stop) stop ;;
   *) usage ;;

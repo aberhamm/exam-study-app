@@ -14,11 +14,11 @@ import {
   config,
   getEnvConfig,
   getPipelinePaths,
-  getMongoConfig,
+  getSupabaseConfig,
   JSON_MARKDOWN_FIELD,
 } from './config.js';
 import { EMBEDDING_CONFIG } from './prompts.js';
-import { createMongoDBService, MongoDBService } from '../../shared/services/mongodb.js';
+import { createSupabaseService, SupabaseService } from '../../shared/services/supabase.js';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import type {
@@ -32,7 +32,6 @@ interface CliArgs {
   title?: string;
   description?: string;
   tags?: string[];
-  saveToMongo?: boolean; // accepted but ignored; Mongo is always used
   jsonField?: string;
   collection?: string;
   group?: string;
@@ -56,15 +55,14 @@ Options:
   --title <title>         Optional title metadata (single file only)
   --description <desc>    Optional description metadata (single file only)
   --tags <tag1,tag2>      Optional comma-separated tags (single file only)
-  --save-to-mongo         Accepted but ignored; saving to MongoDB is always enabled
   --help, -h              Show this help message
 
 Environment Variables:
-  OPENAI_API_KEY          Required: Your OpenAI API key
-  OPENAI_EMBEDDING_MODEL  Optional: Model to use (default: ${config.defaultModel})
-  EMBEDDING_DIMENSIONS    Optional: Embedding dimensions (default: ${config.defaultEmbeddingDimensions})
-  MONGODB_URI             Required: MongoDB connection URI
-  MONGODB_DATABASE        Required: MongoDB database name
+  OPENAI_API_KEY                Required: Your OpenAI API key
+  OPENAI_EMBEDDING_MODEL        Optional: Model to use (default: ${config.defaultModel})
+  EMBEDDING_DIMENSIONS          Optional: Embedding dimensions (default: ${config.defaultEmbeddingDimensions})
+  NEXT_PUBLIC_SUPABASE_URL      Required: Supabase project URL
+  SUPABASE_SERVICE_ROLE_KEY     Required: Supabase service role key
 
 Notes:
   - If --group is omitted, a run-scoped id like run_<token> is generated per invocation and printed at start.
@@ -111,7 +109,7 @@ Examples:
         parsedArgs.tags = value ? value.split(',').map((tag) => tag.trim()) : [];
         break;
       case '--save-to-mongo':
-        parsedArgs.saveToMongo = true;
+        console.warn('Warning: --save-to-mongo is deprecated and has no effect. The pipeline now saves to Supabase.');
         i--; // This flag doesn't have a value, so don't skip the next argument
         break;
       case '--json-field':
@@ -261,11 +259,11 @@ async function processFile(
   logger: Logger,
   args: CliArgs,
   envConfig: Awaited<ReturnType<typeof getEnvConfig>>,
-  mongoService: MongoDBService,
+  supabaseService: SupabaseService,
   outputDir: string,
   defaultGroup: string,
   baseInputDir: string
-): Promise<{ success: boolean; chunkCount?: number; error?: string; mongoId?: string }> {
+): Promise<{ success: boolean; chunkCount?: number; error?: string }> {
   try {
     const groupId = args.group || defaultGroup;
     logger.info('Processing file', { inputFile, groupId });
@@ -413,14 +411,14 @@ async function processFile(
     });
 
     try {
-      const bulkResult = await mongoService.bulkUpsertEmbeddingChunks(chunkDocs);
-      logger.info('Chunk documents upserted to MongoDB', { inputFile, ...bulkResult });
-    } catch (mongoError) {
+      const bulkResult = await supabaseService.bulkUpsertEmbeddingChunks(chunkDocs);
+      logger.info('Chunk documents upserted to Supabase', { inputFile, ...bulkResult });
+    } catch (upsertError) {
       logger.error('Failed to bulk upsert chunk documents', {
         inputFile,
-        error: mongoError instanceof Error ? mongoError.message : String(mongoError),
+        error: upsertError instanceof Error ? upsertError.message : String(upsertError),
       });
-      throw mongoError;
+      throw upsertError;
     }
 
     // Move processed file into output directory
@@ -444,7 +442,7 @@ async function processFile(
 
 async function main() {
   const startTime = Date.now();
-  let mongoService: MongoDBService | undefined;
+  let supabaseService: SupabaseService | undefined;
 
   try {
     // Parse CLI arguments
@@ -475,23 +473,19 @@ async function main() {
       console.log(`Using default group: ${defaultGroup}`);
     }
 
-    // Initialize MongoDB service (always required)
+    // Initialize Supabase service (always required)
     try {
-      const mongoEnv = await getMongoConfig();
-      mongoService = createMongoDBService(mongoEnv.uri, mongoEnv.database, mongoEnv.collection);
-      await mongoService.connect();
-      logger.info('MongoDB service connected', {
-        uri: mongoEnv.uri,
-        database: mongoEnv.database,
-        collection: mongoEnv.collection,
-      });
-    } catch (mongoError) {
-      logger.error('Failed to connect to MongoDB', {
-        error: mongoError instanceof Error ? mongoError.message : String(mongoError),
+      const supabaseEnv = await getSupabaseConfig();
+      supabaseService = createSupabaseService(supabaseEnv.url, supabaseEnv.serviceRoleKey);
+      await supabaseService.connect();
+      logger.info('Supabase service initialized', { url: supabaseEnv.url });
+    } catch (supabaseError) {
+      logger.error('Failed to initialize Supabase service', {
+        error: supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
       });
       throw new Error(
-        `MongoDB connection failed: ${
-          mongoError instanceof Error ? mongoError.message : String(mongoError)
+        `Supabase initialization failed: ${
+          supabaseError instanceof Error ? supabaseError.message : String(supabaseError)
         }`
       );
     }
@@ -531,7 +525,7 @@ async function main() {
         logger,
         args,
         envConfig,
-        mongoService,
+        supabaseService,
         paths.defaultOutputDir,
         defaultGroup,
         paths.defaultInputDir
@@ -541,11 +535,7 @@ async function main() {
       if (result.success) {
         successCount++;
         totalChunks += result.chunkCount || 0;
-        let successMessage = `   ✅ Success: ${result.chunkCount} chunks`;
-        if (result.mongoId) {
-          successMessage += ` (MongoDB ID: ${result.mongoId})`;
-        }
-        console.log(successMessage);
+        console.log(`   ✅ Success: ${result.chunkCount} chunks`);
       } else {
         failureCount++;
         console.log(`   ❌ Failed: ${result.error}`);
@@ -572,13 +562,13 @@ async function main() {
     console.log(`   📦 Total chunks: ${totalChunks}`);
     console.log(`   ⏱️  Processing time: ${processingTime}ms`);
 
-    // Close MongoDB connection
+    // Disconnect Supabase service (no-op but mirrors the original cleanup pattern)
     try {
-      await mongoService.disconnect();
-      logger.info('MongoDB service disconnected');
-    } catch (mongoError) {
-      logger.error('Failed to disconnect from MongoDB', {
-        error: mongoError instanceof Error ? mongoError.message : String(mongoError),
+      await supabaseService.disconnect();
+      logger.info('Supabase service disconnected');
+    } catch (supabaseError) {
+      logger.error('Failed to disconnect Supabase service', {
+        error: supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
       });
     }
 
@@ -592,11 +582,11 @@ async function main() {
     const processingTime = Date.now() - startTime;
     console.error(`❌ Pipeline failed: ${error}`);
 
-    // Close MongoDB connection during cleanup
+    // Disconnect Supabase service during cleanup (no-op but mirrors cleanup pattern)
     try {
-      if (mongoService) await mongoService.disconnect();
-    } catch (mongoError) {
-      console.warn('Failed to disconnect MongoDB service during cleanup', mongoError);
+      if (supabaseService) await supabaseService.disconnect();
+    } catch (supabaseError) {
+      console.warn('Failed to disconnect Supabase service during cleanup', supabaseError);
     }
 
     // Try to log error if logger is available

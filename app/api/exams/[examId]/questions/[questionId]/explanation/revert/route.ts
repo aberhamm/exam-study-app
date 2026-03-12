@@ -97,7 +97,7 @@ export async function POST(request: Request, context: RouteParams) {
       return NextResponse.json({ error: 'Question not found after update' }, { status: 404 });
     }
     const response: ExternalQuestion & { id: string } = {
-      id: updated._id.toString(),
+      id: updated.id,
       question: updated.question,
       options: updated.options,
       answer: updated.answer,

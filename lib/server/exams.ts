@@ -1,43 +1,60 @@
-import type { Collection } from 'mongodb';
 import type { ExamDetail } from '@/types/external-question';
 import type { ExamSummary } from '@/types/api';
-import { getDb, getExamsCollectionName } from './mongodb';
+import { getDb } from './db';
 
-type ExamDocument = ExamDetail & {
-  _id?: unknown;
-  examId: string;
+// Row shape returned from quiz.exams (snake_case DB columns)
+type ExamRow = {
+  id: string;
+  exam_id: string;
+  exam_title: string;
+  welcome_config: ExamDetail['welcomeConfig'] | null;
+  document_groups: string[] | null;
 };
 
-// Questions are managed in a separate collection; no embedded question types here.
-
-function mapExamDocument(doc: ExamDocument): ExamDetail {
-  const { _id: _ignored, ...rest } = doc;
-  void _ignored;
-  return rest;
-}
-
-async function getExamsCollection(): Promise<Collection<ExamDocument>> {
-  const db = await getDb();
-  return db.collection<ExamDocument>(getExamsCollectionName());
+function mapExamRow(row: ExamRow): ExamDetail {
+  return {
+    examId: row.exam_id,
+    examTitle: row.exam_title,
+    welcomeConfig: row.welcome_config ?? undefined,
+    documentGroups: row.document_groups ?? undefined,
+    // Questions are managed separately and are not stored on the exams table.
+    questions: [],
+  };
 }
 
 export async function fetchExamById(examId: string): Promise<ExamDetail | null> {
-  const collection = await getExamsCollection();
-  const doc = await collection.findOne({ examId });
-  if (!doc) {
+  const { data, error } = await getDb()
+    .from('exams')
+    .select('*')
+    .eq('exam_id', examId)
+    .maybeSingle<ExamRow>();
+
+  if (error) {
+    throw new Error(`Failed to fetch exam "${examId}": ${error.message}`);
+  }
+
+  if (!data) {
     return null;
   }
-  return mapExamDocument(doc);
+
+  return mapExamRow(data);
 }
 
 export async function listExamSummaries(): Promise<ExamSummary[]> {
-  const collection = await getExamsCollection();
-  const cursor = collection.find({}, { projection: { examId: 1, examTitle: 1 } }).sort({ examId: 1 });
-  const results: ExamSummary[] = [];
-  for await (const doc of cursor) {
-    results.push({ examId: doc.examId, examTitle: doc.examTitle || doc.examId });
+  const { data, error } = await getDb()
+    .from('exams')
+    .select('exam_id, exam_title')
+    .order('exam_id')
+    .returns<Pick<ExamRow, 'exam_id' | 'exam_title'>[]>();
+
+  if (error) {
+    throw new Error(`Failed to list exams: ${error.message}`);
   }
-  return results;
+
+  return (data ?? []).map((row) => ({
+    examId: row.exam_id,
+    examTitle: row.exam_title || row.exam_id,
+  }));
 }
 
 export class ExamNotFoundError extends Error {
@@ -53,5 +70,3 @@ export class DuplicateQuestionIdsError extends Error {
     this.name = 'DuplicateQuestionIdsError';
   }
 }
-
-// Legacy embedded-question writers have been removed; questions live in their own collection.

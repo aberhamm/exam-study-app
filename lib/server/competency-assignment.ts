@@ -1,105 +1,180 @@
-import type { Collection, Document } from 'mongodb';
-import { getDb } from '@/lib/server/mongodb';
+import { createClient } from '@supabase/supabase-js';
+import { getDb } from '@/lib/server/db';
 import { envConfig } from '@/lib/env-config';
 import type { CompetencyDocument } from '@/types/competency';
-import type { QuestionDocument } from '@/types/question';
 
 export type SimilarCompetency = {
   competency: CompetencyDocument;
   score: number;
 };
 
-async function getCompetenciesCollection(): Promise<Collection<CompetencyDocument>> {
-  const db = await getDb();
-  return db.collection<CompetencyDocument>(envConfig.mongo.examCompetenciesCollection);
+// ---------------------------------------------------------------------------
+// Admin client for RPC calls (schema-scoped getDb() cannot call rpc())
+// ---------------------------------------------------------------------------
+
+let _adminClient: ReturnType<typeof createClient> | undefined;
+
+function getAdminClient() {
+  if (!_adminClient) {
+    _adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+  }
+  return _adminClient;
 }
 
-async function getQuestionsCollection(): Promise<Collection<QuestionDocument>> {
-  const db = await getDb();
-  return db.collection<QuestionDocument>(envConfig.mongo.questionsCollection);
+// ---------------------------------------------------------------------------
+// Cosine similarity (used by the JS-side fallback when the RPC is unavailable)
+// ---------------------------------------------------------------------------
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
 }
 
+// ---------------------------------------------------------------------------
+// Column → CompetencyDocument mapper
+// ---------------------------------------------------------------------------
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToCompetency(row: Record<string, any>): CompetencyDocument {
+  return {
+    id: row.id as string,
+    examId: row.exam_id as string,
+    title: row.title as string,
+    description: row.description as string,
+    examPercentage: Number(row.exam_percentage),
+    embedding: Array.isArray(row.embedding) ? (row.embedding as number[]) : undefined,
+    embeddingModel: row.embedding_model as string | undefined,
+    embeddingUpdatedAt: row.embedding_updated_at ? new Date(row.embedding_updated_at) : undefined,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    // questionCount is not stored in Supabase; omit it
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Exported functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Search for competencies whose embeddings are closest to the supplied query
+ * vector.
+ *
+ * Primary path: calls the `search_quiz_competencies` Postgres RPC function.
+ * Fallback path: if the RPC returns an error or empty results it fetches all
+ * competencies that have embeddings and ranks them in JavaScript using cosine
+ * similarity. This is safe because a typical exam has fewer than 20
+ * competencies.
+ */
 export async function searchSimilarCompetencies(
   queryEmbedding: number[],
   examId: string,
   topK: number = 3
 ): Promise<SimilarCompetency[]> {
-  const indexName = envConfig.mongo.competenciesVectorIndex;
-  const competenciesCol = await getCompetenciesCollection();
+  if (envConfig.app.isDevelopment) {
+    console.info(
+      `[searchSimilarCompetencies] examId=${examId} topK=${topK} embeddingDim=${queryEmbedding.length}`
+    );
+  }
 
+  // Primary path: Postgres vector search via RPC
   try {
-    if (envConfig.app.isDevelopment) {
-      console.info(
-        `[searchSimilarCompetencies] index=${indexName} examId=${examId} topK=${topK} candidates=${Math.max(
-          50,
-          topK * 5
-        )}`
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (getAdminClient() as any).rpc('search_quiz_competencies', {
+      p_exam_id: examId,
+      p_embedding: queryEmbedding,
+      p_top_k: topK,
+    });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      return data.map(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (row: Record<string, any>) => ({
+          competency: rowToCompetency(row),
+          score: Number(row.score),
+        })
       );
     }
 
-    // MongoDB Atlas Vector Search pipeline
-    const pipeline: Document[] = [
-      {
-        $vectorSearch: {
-          index: indexName,
-          queryVector: queryEmbedding,
-          path: 'embedding',
-          numCandidates: Math.max(50, topK * 5),
-          limit: topK,
-          filter: { examId },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          id: 1,
-          examId: 1,
-          title: 1,
-          description: 1,
-          examPercentage: 1,
-          embedding: 1,
-          embeddingModel: 1,
-          embeddingUpdatedAt: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          score: { $meta: 'vectorSearchScore' },
-        },
-      },
-    ];
-
-    const cursor = competenciesCol.aggregate(pipeline);
-    const results: SimilarCompetency[] = [];
-    for await (const doc of cursor) {
-      const { score, ...rest } = doc as unknown as CompetencyDocument & { score: number };
-      results.push({ competency: rest, score });
-    }
-
-    if (results.length > 0) {
-      return results;
-    }
-
-    // Fallback: if vector search returns empty
-    if (envConfig.app.isDevelopment) {
-      try {
-        const count = await competenciesCol.countDocuments({ examId });
-        const sample = await competenciesCol.findOne(
-          { examId },
-          { projection: { _id: 0, embedding: 1 } }
+    if (error) {
+      if (envConfig.app.isDevelopment) {
+        console.warn(
+          `[searchSimilarCompetencies] RPC failed, falling back to JS cosine similarity. examId=${examId}`,
+          error
         );
-        const dim = Array.isArray(sample?.embedding)
-          ? (sample!.embedding as number[]).length
-          : null;
-        console.info(
-          `[searchSimilarCompetencies] 0 results. competenciesForExam=${count} sampleDim=${dim ?? 'n/a'}`
-        );
-      } catch (e) {
-        console.warn('[searchSimilarCompetencies] diagnostics failed', e);
       }
     }
-    return results;
+  } catch (rpcError) {
+    if (envConfig.app.isDevelopment) {
+      console.warn(
+        `[searchSimilarCompetencies] RPC threw, falling back to JS cosine similarity. examId=${examId}`,
+        rpcError
+      );
+    }
+  }
+
+  // Fallback path: fetch all competencies with embeddings and rank in JS
+  try {
+    const { data: rows, error: fetchError } = await getDb()
+      .from('competencies')
+      .select(
+        'id, exam_id, title, description, exam_percentage, embedding, embedding_model, embedding_updated_at, created_at, updated_at'
+      )
+      .eq('exam_id', examId)
+      .not('embedding', 'is', null);
+
+    if (fetchError) {
+      console.warn(
+        `[searchSimilarCompetencies] Fallback fetch failed; returning empty results. examId=${examId}`,
+        fetchError
+      );
+      return [];
+    }
+
+    if (!rows || rows.length === 0) {
+      if (envConfig.app.isDevelopment) {
+        console.info(
+          `[searchSimilarCompetencies] No competencies with embeddings found. examId=${examId}`
+        );
+      }
+      return [];
+    }
+
+    if (envConfig.app.isDevelopment) {
+      console.info(
+        `[searchSimilarCompetencies] Fallback: computing cosine similarity over ${rows.length} competencies. examId=${examId}`
+      );
+    }
+
+    const scored = rows
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((row: Record<string, any>) => {
+        const embedding = row.embedding as number[] | null;
+        const score =
+          Array.isArray(embedding) && embedding.length === queryEmbedding.length
+            ? cosineSimilarity(queryEmbedding, embedding)
+            : -1;
+        return { competency: rowToCompetency(row), score };
+      })
+      .filter(r => r.score >= 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
+
+    return scored;
   } catch (error) {
     console.warn(
-      `[searchSimilarCompetencies] Failed or unsupported; returning empty results. index=${indexName} examId=${examId} topK=${topK}`,
+      `[searchSimilarCompetencies] Fallback threw; returning empty results. examId=${examId}`,
       error
     );
     return [];
@@ -107,128 +182,66 @@ export async function searchSimilarCompetencies(
 }
 
 /**
- * Helper function to update competency question counts
+ * Set the competency assignments for a question, replacing any existing ones.
  *
- * This maintains the denormalized `questionCount` field on competencies.
- * Called automatically by assignCompetenciesToQuestion and unassignCompetenciesFromQuestion.
- *
- * @param examId - The exam ID
- * @param competenciesToIncrement - Array of competency IDs to increment count
- * @param competenciesToDecrement - Array of competency IDs to decrement count
- */
-async function updateCompetencyQuestionCounts(
-  examId: string,
-  competenciesToIncrement: string[],
-  competenciesToDecrement: string[]
-): Promise<void> {
-  const competenciesCol = await getCompetenciesCollection();
-
-  // Increment counts for newly assigned competencies
-  if (competenciesToIncrement.length > 0) {
-    await competenciesCol.updateMany(
-      { examId, id: { $in: competenciesToIncrement } },
-      { $inc: { questionCount: 1 }, $set: { updatedAt: new Date() } }
-    );
-  }
-
-  // Decrement counts for unassigned competencies
-  if (competenciesToDecrement.length > 0) {
-    await competenciesCol.updateMany(
-      { examId, id: { $in: competenciesToDecrement } },
-      { $inc: { questionCount: -1 }, $set: { updatedAt: new Date() } }
-    );
-  }
-}
-
-/**
- * Assign competencies to a question
- *
- * This function automatically maintains sync by:
- * 1. Updating the question's competencyIds
- * 2. Incrementing questionCount for newly assigned competencies
- * 3. Decrementing questionCount for removed competencies
- *
- * No manual sync needed - everything happens automatically!
+ * The question is identified by UUID string. The `competency_ids` column on
+ * `quiz.questions` is updated directly — no denormalized counters are
+ * maintained in Supabase.
  */
 export async function assignCompetenciesToQuestion(
   questionId: string,
   examId: string,
   competencyIds: string[]
 ): Promise<void> {
-  const questionsCol = await getQuestionsCollection();
-  const { ObjectId } = await import('mongodb');
-
-  if (!ObjectId.isValid(questionId)) {
-    throw new Error('Invalid question ID format');
+  if (!questionId) {
+    throw new Error('Invalid question ID: must be a non-empty string');
   }
 
-  // Get current competency assignments to calculate the diff
-  const currentQuestion = await questionsCol.findOne(
-    { _id: new ObjectId(questionId), examId },
-    { projection: { competencyIds: 1 } }
-  );
+  if (envConfig.app.isDevelopment) {
+    console.info(
+      `[assignCompetenciesToQuestion] questionId=${questionId} examId=${examId} competencyIds=${competencyIds.join(',')}`
+    );
+  }
 
-  const currentCompetencyIds = currentQuestion?.competencyIds || [];
-  const newCompetencyIds = competencyIds;
+  const { error } = await getDb()
+    .from('questions')
+    .update({ competency_ids: competencyIds })
+    .eq('id', questionId)
+    .eq('exam_id', examId);
 
-  // Calculate which competencies are being added and removed
-  const competenciesToAdd = newCompetencyIds.filter(id => !currentCompetencyIds.includes(id));
-  const competenciesToRemove = currentCompetencyIds.filter(id => !newCompetencyIds.includes(id));
-
-  // Update the question
-  await questionsCol.updateOne(
-    { _id: new ObjectId(questionId), examId },
-    {
-      $set: {
-        competencyIds,
-        updatedAt: new Date(),
-      },
-    }
-  );
-
-  // Update denormalized counts in competencies
-  await updateCompetencyQuestionCounts(examId, competenciesToAdd, competenciesToRemove);
+  if (error) {
+    throw new Error(
+      `[assignCompetenciesToQuestion] Failed to update question ${questionId}: ${error.message}`
+    );
+  }
 }
 
 /**
- * Unassign all competencies from a question
- *
- * This function automatically maintains sync by:
- * 1. Clearing the question's competencyIds
- * 2. Decrementing questionCount for all previously assigned competencies
- *
- * No manual sync needed - everything happens automatically!
+ * Remove all competency assignments from a question.
  */
 export async function unassignCompetenciesFromQuestion(
   questionId: string,
   examId: string
 ): Promise<void> {
-  const questionsCol = await getQuestionsCollection();
-  const { ObjectId } = await import('mongodb');
-
-  if (!ObjectId.isValid(questionId)) {
-    throw new Error('Invalid question ID format');
+  if (!questionId) {
+    throw new Error('Invalid question ID: must be a non-empty string');
   }
 
-  // Get current competency assignments to decrement their counts
-  const currentQuestion = await questionsCol.findOne(
-    { _id: new ObjectId(questionId), examId },
-    { projection: { competencyIds: 1 } }
-  );
+  if (envConfig.app.isDevelopment) {
+    console.info(
+      `[unassignCompetenciesFromQuestion] questionId=${questionId} examId=${examId}`
+    );
+  }
 
-  const currentCompetencyIds = currentQuestion?.competencyIds || [];
+  const { error } = await getDb()
+    .from('questions')
+    .update({ competency_ids: [] })
+    .eq('id', questionId)
+    .eq('exam_id', examId);
 
-  // Update the question
-  await questionsCol.updateOne(
-    { _id: new ObjectId(questionId), examId },
-    {
-      $set: {
-        competencyIds: [],
-        updatedAt: new Date(),
-      },
-    }
-  );
-
-  // Decrement counts for all previously assigned competencies
-  await updateCompetencyQuestionCounts(examId, [], currentCompetencyIds);
+  if (error) {
+    throw new Error(
+      `[unassignCompetenciesFromQuestion] Failed to clear competencies for question ${questionId}: ${error.message}`
+    );
+  }
 }

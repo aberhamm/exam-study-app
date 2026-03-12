@@ -1,5 +1,5 @@
-import type { Collection, Document } from 'mongodb';
-import { getDb, getDocumentEmbeddingsCollectionName } from '@/lib/server/mongodb';
+import { createClient } from '@supabase/supabase-js';
+import { getDb } from '@/lib/server/db';
 import { envConfig } from '@/lib/env-config';
 import type { EmbeddingChunkDocument } from '@/data-pipelines/src/shared/types/embedding';
 
@@ -8,9 +8,72 @@ export type SimilarDocument = {
   score: number;
 };
 
-async function getDocumentEmbeddingsCollection(): Promise<Collection<Document>> {
-  const db = await getDb();
-  return db.collection<Document>(getDocumentEmbeddingsCollectionName());
+// Module-level singleton for the unscoped admin client needed for RPC calls.
+// getDb() returns a schema-scoped client which does not support .rpc().
+let _adminClient: ReturnType<typeof createClient> | undefined;
+function getAdminClient() {
+  if (!_adminClient) {
+    _adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+  }
+  return _adminClient;
+}
+
+// Shape returned by the search_quiz_documents RPC (snake_case columns).
+interface DocumentChunkRow {
+  id: string;
+  chunk_id: string;
+  source_file: string;
+  source_basename: string | null;
+  group_id: string | null;
+  title: string | null;
+  description: string | null;
+  url: string | null;
+  tags: string[] | null;
+  text: string;
+  section_path: string | null;
+  nearest_heading: string | null;
+  chunk_index: number;
+  chunk_total: number;
+  start_index: number;
+  end_index: number;
+  model: string;
+  dimensions: number;
+  content_hash: string | null;
+  source_meta: Record<string, unknown> | null;
+  embedding: number[];
+  score: number;
+  // chunk_content_hash is not returned by the RPC; field is required on the type
+  // but the RPC omits the raw embedding column too — map what is present.
+  chunk_content_hash?: string;
+}
+
+function rowToDocument(row: DocumentChunkRow): EmbeddingChunkDocument {
+  return {
+    embedding: row.embedding,
+    text: row.text,
+    sourceFile: row.source_file,
+    sourceBasename: row.source_basename ?? undefined,
+    groupId: row.group_id ?? undefined,
+    title: row.title ?? undefined,
+    description: row.description ?? undefined,
+    url: row.url ?? undefined,
+    tags: row.tags ?? undefined,
+    sectionPath: row.section_path ?? undefined,
+    nearestHeading: row.nearest_heading ?? undefined,
+    chunkIndex: row.chunk_index,
+    chunkTotal: row.chunk_total,
+    startIndex: row.start_index,
+    endIndex: row.end_index,
+    model: row.model,
+    dimensions: row.dimensions,
+    contentHash: row.content_hash ?? undefined,
+    chunkContentHash: row.chunk_content_hash ?? '',
+    sourceMeta: row.source_meta ?? undefined,
+  };
 }
 
 export async function searchSimilarDocuments(
@@ -18,90 +81,81 @@ export async function searchSimilarDocuments(
   topK: number = 10,
   groupIds?: string | string[]
 ): Promise<SimilarDocument[]> {
-  const indexName = envConfig.mongo.documentEmbeddingsVectorIndex;
-  const embCol = await getDocumentEmbeddingsCollection();
+  // Normalise groupIds to an array or null for the RPC parameter.
+  let groupIdsArray: string[] | null = null;
+  if (groupIds) {
+    if (typeof groupIds === 'string') {
+      groupIdsArray = [groupIds];
+    } else if (Array.isArray(groupIds) && groupIds.length > 0) {
+      groupIdsArray = groupIds;
+    }
+  }
 
   try {
     if (envConfig.app.isDevelopment) {
-      console.info(`[documentVectorSearch] index=${indexName} groupIds=${Array.isArray(groupIds) ? groupIds.join(',') : groupIds || 'all'} topK=${topK} candidates=${Math.max(100, topK * 5)}`);
+      console.info(
+        `[documentVectorSearch] groupIds=${groupIdsArray ? groupIdsArray.join(',') : 'all'} topK=${topK}`
+      );
     }
 
-    // Build filter based on groupIds
-    let filter: Document | undefined;
-    if (groupIds) {
-      if (Array.isArray(groupIds) && groupIds.length > 0) {
-        filter = { groupId: { $in: groupIds } };
-      } else if (typeof groupIds === 'string') {
-        filter = { groupId: groupIds };
-      }
+    const supabaseAdmin = getAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabaseAdmin as any).rpc('search_quiz_documents', {
+      p_embedding: queryEmbedding,
+      p_top_k: topK,
+      p_group_ids: groupIdsArray,
+    });
+
+    if (error) {
+      throw error;
     }
 
-    // Vector search pipeline
-    const vectorPipeline: Document[] = [
-      {
-        $vectorSearch: {
-          index: indexName,
-          queryVector: queryEmbedding,
-          path: 'embedding',
-          numCandidates: Math.max(100, topK * 5),
-          limit: topK,
-          ...(filter ? { filter } : {}),
-        },
-      },
-      {
-        $project: {
-          text: 1,
-          sourceFile: 1,
-          sourceBasename: 1,
-          groupId: 1,
-          title: 1,
-          description: 1,
-          url: 1,
-          tags: 1,
-          sectionPath: 1,
-          nearestHeading: 1,
-          chunkIndex: 1,
-          chunkTotal: 1,
-          startIndex: 1,
-          endIndex: 1,
-          model: 1,
-          dimensions: 1,
-          score: { $meta: 'vectorSearchScore' },
-        },
-      },
-    ];
-
-    const results: SimilarDocument[] = [];
-    const cursor = embCol.aggregate(vectorPipeline);
-
-    for await (const doc of cursor) {
-      results.push({
-        document: doc as unknown as EmbeddingChunkDocument,
-        score: (doc as { score?: number }).score || 0,
-      });
-    }
+    const rows = (data ?? []) as DocumentChunkRow[];
+    const results: SimilarDocument[] = rows.map((row) => ({
+      document: rowToDocument(row),
+      score: row.score ?? 0,
+    }));
 
     if (envConfig.app.isDevelopment && results.length > 0) {
-      console.info(`[documentVectorSearch] Retrieved ${results.length} results, best score: ${results[0]?.score.toFixed(4)}`);
+      console.info(
+        `[documentVectorSearch] Retrieved ${results.length} results, best score: ${results[0]?.score.toFixed(4)}`
+      );
     }
 
     return results;
   } catch (error) {
-    // If vector search is unavailable, return empty result
-    console.warn(`[documentVectorSearch] Failed or unsupported; returning empty results. index=${indexName} groupIds=${Array.isArray(groupIds) ? groupIds.join(',') : groupIds || 'all'} topK=${topK}`, error);
+    console.warn(
+      `[documentVectorSearch] Failed or unsupported; returning empty results. groupIds=${Array.isArray(groupIds) ? groupIds.join(',') : groupIds || 'all'} topK=${topK}`,
+      error
+    );
     return [];
   }
 }
 
 export async function getAvailableDocumentGroups(): Promise<string[]> {
-  const embCol = await getDocumentEmbeddingsCollection();
-
   try {
-    const groups = await embCol.distinct('groupId');
-    // Filter out null, undefined, and empty strings
-    return groups.filter((g): g is string => typeof g === 'string' && g.trim().length > 0).sort();
+    const { data, error } = await getDb()
+      .from('document_chunks')
+      .select('group_id');
+
+    if (error) {
+      throw error;
+    }
+
+    const rows = (data ?? []) as { group_id: string | null }[];
+
+    // Deduplicate and sort, filtering out null/empty values.
+    const unique = Array.from(
+      new Set(
+        rows
+          .map((r) => r.group_id)
+          .filter((g): g is string => typeof g === 'string' && g.trim().length > 0)
+      )
+    ).sort();
+
+    return unique;
   } catch (error) {
-    console.error('[getAvailableDocumentGroups] Failed to fetch distinct groupIds', error);
+    console.error('[getAvailableDocumentGroups] Failed to fetch document groups', error);
     return [];
   }
 }

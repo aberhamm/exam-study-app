@@ -4,28 +4,28 @@
  * Reusable functions for post-import processing that can be called from:
  * - API endpoints (UI-driven)
  * - CLI scripts (bulk operations)
+ *
+ * Migrated from MongoDB to Supabase. Questions and their embeddings are stored
+ * in the quiz.questions table (embedding column). IDs are UUIDs.
  */
-import { MongoClient, ObjectId } from 'mongodb';
+import { getDb } from './db';
 import { envConfig } from '../env-config';
-import { searchSimilarCompetencies } from './competency-assignment';
+import { searchSimilarCompetencies, assignCompetenciesToQuestion } from './competency-assignment';
 import { createEmbeddings as createEmbeddingsLLM } from '@/lib/llm-client';
 
-type QuestionDoc = {
-  _id: ObjectId;
-  examId: string;
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type QuestionRow = {
+  id: string;
+  exam_id: string;
   question: string;
   options: { A: string; B: string; C: string; D: string; E?: string };
-  answer: 'A' | 'B' | 'C' | 'D' | 'E' | ('A' | 'B' | 'C' | 'D' | 'E')[];
-  explanation?: string;
-  competencyIds?: string[];
-};
-
-type QuestionEmbeddingDoc = {
-  examId: string;
-  question_id: ObjectId;
-  embedding: number[];
-  embeddingModel: string;
-  embeddingUpdatedAt: Date;
+  answer: string | string[];
+  explanation?: string | null;
+  competency_ids?: string[] | null;
+  embedding?: number[] | null;
 };
 
 export type EmbeddingResult = {
@@ -41,13 +41,18 @@ export type CompetencyAssignmentResult = {
   error?: string;
 };
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 /**
- * Build text for embedding from question data
+ * Build text for embedding from a question row
  */
-function buildTextForEmbedding(q: QuestionDoc): string {
+function buildTextForEmbedding(q: QuestionRow): string {
+  const opts = q.options;
   const choices =
-    `A) ${q.options.A}\nB) ${q.options.B}\nC) ${q.options.C}\nD) ${q.options.D}` +
-    (q.options.E ? `\nE) ${q.options.E}` : '');
+    `A) ${opts.A}\nB) ${opts.B}\nC) ${opts.C}\nD) ${opts.D}` +
+    (opts.E ? `\nE) ${opts.E}` : '');
   const answer = Array.isArray(q.answer) ? q.answer.join(', ') : q.answer;
   const explanation = q.explanation ? `\nExplanation: ${q.explanation}` : '';
   return `Question: ${q.question}\nOptions:\n${choices}\nAnswer: ${answer}${explanation}`;
@@ -61,13 +66,16 @@ async function createEmbeddings(
   model: string,
   dimensions?: number
 ): Promise<number[][]> {
-  // Use LLM client wrapper (routes to Portkey or OpenAI based on feature flag)
   return createEmbeddingsLLM(inputs, { model, dimensions });
 }
 
+// ---------------------------------------------------------------------------
+// Exports
+// ---------------------------------------------------------------------------
+
 /**
- * Generate embeddings for specific questions by their MongoDB _id
- * @param questionIds - Array of MongoDB ObjectId strings
+ * Generate embeddings for specific questions by their Supabase UUID
+ * @param questionIds - Array of UUID strings
  * @param options - Optional batch size and model settings
  * @returns Results array with success/error for each question
  */
@@ -83,92 +91,73 @@ export async function generateEmbeddingsForQuestions(
   const model = options?.model ?? envConfig.openai.embeddingModel;
   const dimensions = options?.dimensions ?? envConfig.openai.embeddingDimensions;
 
-  const uri = envConfig.mongo.uri;
-  const dbName = envConfig.mongo.database;
-  const questionsColName = envConfig.mongo.questionsCollection;
-  const embeddingsColName = envConfig.mongo.questionEmbeddingsCollection;
+  if (questionIds.length === 0) {
+    return [];
+  }
 
-  const client = new MongoClient(uri);
-  await client.connect();
+  // Fetch questions from Supabase
+  const { data: questions, error: fetchError } = await getDb()
+    .from('questions')
+    .select('id, exam_id, question, options, answer, explanation')
+    .in('id', questionIds)
+    .returns<QuestionRow[]>();
 
-  try {
-    const db = client.db(dbName);
-    const questionsCol = db.collection<QuestionDoc>(questionsColName);
-    const embeddingsCol = db.collection<QuestionEmbeddingDoc>(embeddingsColName);
+  if (fetchError) {
+    throw new Error(`Failed to fetch questions for embedding: ${fetchError.message}`);
+  }
 
-    // Convert string IDs to ObjectIds
-    const objectIds = questionIds
-      .filter((id) => ObjectId.isValid(id))
-      .map((id) => new ObjectId(id));
+  if (!questions || questions.length === 0) {
+    return [];
+  }
 
-    if (objectIds.length === 0) {
-      return [];
-    }
+  const results: EmbeddingResult[] = [];
 
-    // Fetch questions
-    const questions = await questionsCol
-      .find({ _id: { $in: objectIds } })
-      .toArray();
+  // Process in batches
+  for (let i = 0; i < questions.length; i += batchSize) {
+    const batchDocs = questions.slice(i, i + batchSize);
+    const inputs = batchDocs.map(buildTextForEmbedding);
 
-    const results: EmbeddingResult[] = [];
+    try {
+      const embeddings = await createEmbeddings(inputs, model, dimensions);
+      const now = new Date().toISOString();
 
-    // Process in batches
-    for (let i = 0; i < questions.length; i += batchSize) {
-      const batchDocs = questions.slice(i, i + batchSize);
-      const inputs = batchDocs.map(buildTextForEmbedding);
+      // Write embeddings back to quiz.questions
+      const updateOps = batchDocs.map((doc, idx) =>
+        getDb()
+          .from('questions')
+          .update({
+            embedding: embeddings[idx],
+            embedding_model: model,
+            embedding_updated_at: now,
+          })
+          .eq('id', doc.id)
+      );
 
-      try {
-        const embeddings = await createEmbeddings(inputs, model, dimensions);
-        const now = new Date();
+      await Promise.all(updateOps);
 
-        // Store embeddings
-        const ops = batchDocs.map((doc, idx) => {
-          return embeddingsCol.updateOne(
-            { examId: doc.examId, question_id: doc._id },
-            {
-              $set: {
-                examId: doc.examId,
-                question_id: doc._id,
-                embedding: embeddings[idx],
-                embeddingModel: model,
-                embeddingUpdatedAt: now,
-              },
-            },
-            { upsert: true }
-          );
+      for (const doc of batchDocs) {
+        results.push({ questionId: doc.id, success: true });
+      }
+    } catch (error) {
+      for (const doc of batchDocs) {
+        results.push({
+          questionId: doc.id,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
-
-        await Promise.all(ops);
-
-        // Mark as successful
-        for (const doc of batchDocs) {
-          results.push({
-            questionId: doc._id.toString(),
-            success: true,
-          });
-        }
-      } catch (error) {
-        // Mark batch as failed
-        for (const doc of batchDocs) {
-          results.push({
-            questionId: doc._id.toString(),
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
-        }
       }
     }
-
-    return results;
-  } finally {
-    await client.close();
   }
+
+  return results;
 }
 
 /**
- * Auto-assign competencies to questions using vector similarity
+ * Auto-assign competencies to questions using vector similarity.
+ * Requires that questions already have embeddings stored in quiz.questions.embedding.
+ *
  * @param examId - Exam ID to scope the competencies
- * @param questionIds - Array of MongoDB ObjectId strings
+ * @param questionIds - Array of UUID strings
  * @param options - Similarity threshold and top N matches
  * @returns Results array with assigned competency IDs for each question
  */
@@ -185,106 +174,94 @@ export async function assignCompetenciesToQuestions(
   const threshold = options?.threshold ?? 0.5;
   const overwrite = options?.overwrite ?? false;
 
-  const uri = envConfig.mongo.uri;
-  const dbName = envConfig.mongo.database;
-  const questionsColName = envConfig.mongo.questionsCollection;
-  const embeddingsColName = envConfig.mongo.questionEmbeddingsCollection;
+  if (questionIds.length === 0) {
+    return [];
+  }
 
-  const client = new MongoClient(uri);
-  await client.connect();
+  // Fetch questions (including their stored embeddings and existing competency_ids)
+  const { data: questions, error: fetchError } = await getDb()
+    .from('questions')
+    .select('id, exam_id, competency_ids, embedding')
+    .in('id', questionIds)
+    .eq('exam_id', examId)
+    .returns<QuestionRow[]>();
 
-  try {
-    const db = client.db(dbName);
-    const questionsCol = db.collection<QuestionDoc>(questionsColName);
-    const embeddingsCol = db.collection<QuestionEmbeddingDoc>(embeddingsColName);
+  if (fetchError) {
+    throw new Error(`Failed to fetch questions for competency assignment: ${fetchError.message}`);
+  }
 
-    // Convert string IDs to ObjectIds
-    const objectIds = questionIds
-      .filter((id) => ObjectId.isValid(id))
-      .map((id) => new ObjectId(id));
+  if (!questions || questions.length === 0) {
+    return [];
+  }
 
-    if (objectIds.length === 0) {
-      return [];
-    }
+  const results: CompetencyAssignmentResult[] = [];
 
-    // Fetch questions
-    const questions = await questionsCol
-      .find({ _id: { $in: objectIds }, examId })
-      .toArray();
-
-    const results: CompetencyAssignmentResult[] = [];
-
-    for (const question of questions) {
-      try {
-        // Skip if already has competencies and not overwriting
-        if (!overwrite && question.competencyIds && question.competencyIds.length > 0) {
-          results.push({
-            questionId: question._id.toString(),
-            success: true,
-            competencyIds: question.competencyIds,
-          });
-          continue;
-        }
-
-        // Get question embedding
-        const embeddingDoc = await embeddingsCol.findOne(
-          { question_id: question._id, examId },
-          { projection: { embedding: 1 } }
-        );
-
-        if (!embeddingDoc?.embedding || embeddingDoc.embedding.length === 0) {
-          results.push({
-            questionId: question._id.toString(),
-            success: false,
-            competencyIds: [],
-            error: 'No embedding found for question',
-          });
-          continue;
-        }
-
-        // Search for similar competencies using existing function
-        const similarCompetencies = await searchSimilarCompetencies(
-          embeddingDoc.embedding,
-          examId,
-          topN
-        );
-
-        // Filter by threshold
-        const competencyIds = similarCompetencies
-          .filter((c) => c.score >= threshold)
-          .map((c) => c.competency.id);
-
-        if (competencyIds.length === 0) {
-          results.push({
-            questionId: question._id.toString(),
-            success: false,
-            competencyIds: [],
-            error: `No competencies above threshold ${threshold}`,
-          });
-          continue;
-        }
-
-        // Use existing assignCompetenciesToQuestion which maintains questionCount sync
-        const { assignCompetenciesToQuestion } = await import('./competency-assignment');
-        await assignCompetenciesToQuestion(question._id.toString(), examId, competencyIds);
-
+  for (const question of questions) {
+    try {
+      // Skip if already has competencies and not overwriting
+      if (
+        !overwrite &&
+        Array.isArray(question.competency_ids) &&
+        question.competency_ids.length > 0
+      ) {
         results.push({
-          questionId: question._id.toString(),
+          questionId: question.id,
           success: true,
-          competencyIds,
+          competencyIds: question.competency_ids,
         });
-      } catch (error) {
+        continue;
+      }
+
+      // Require a stored embedding
+      if (!Array.isArray(question.embedding) || question.embedding.length === 0) {
         results.push({
-          questionId: question._id.toString(),
+          questionId: question.id,
           success: false,
           competencyIds: [],
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: 'No embedding found for question — run generateEmbeddingsForQuestions first',
         });
+        continue;
       }
-    }
 
-    return results;
-  } finally {
-    await client.close();
+      // Search for similar competencies using the stored embedding
+      const similarCompetencies = await searchSimilarCompetencies(
+        question.embedding,
+        examId,
+        topN
+      );
+
+      // Filter by threshold
+      const competencyIds = similarCompetencies
+        .filter((c) => c.score >= threshold)
+        .map((c) => c.competency.id);
+
+      if (competencyIds.length === 0) {
+        results.push({
+          questionId: question.id,
+          success: false,
+          competencyIds: [],
+          error: `No competencies above threshold ${threshold}`,
+        });
+        continue;
+      }
+
+      // Persist assignment to quiz.questions.competency_ids
+      await assignCompetenciesToQuestion(question.id, examId, competencyIds);
+
+      results.push({
+        questionId: question.id,
+        success: true,
+        competencyIds,
+      });
+    } catch (error) {
+      results.push({
+        questionId: question.id,
+        success: false,
+        competencyIds: [],
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
   }
+
+  return results;
 }

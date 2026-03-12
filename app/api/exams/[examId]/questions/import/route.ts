@@ -42,7 +42,7 @@ export async function POST(request: Request, context: RouteContext) {
     const inserted = await addExamQuestions(examId, payload.questions);
 
     // Return question IDs for post-processing
-    const questionIds = inserted.map((q) => q._id.toString());
+    const questionIds = inserted.map((q) => q.id);
 
     return NextResponse.json(
       {
