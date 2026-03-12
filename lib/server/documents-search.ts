@@ -134,26 +134,15 @@ export async function searchSimilarDocuments(
 
 export async function getAvailableDocumentGroups(): Promise<string[]> {
   try {
-    const { data, error } = await getDb()
-      .from('document_chunks')
-      .select('group_id');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (getAdminClient() as any).rpc('get_document_group_ids');
 
     if (error) {
       throw error;
     }
 
-    const rows = (data ?? []) as { group_id: string | null }[];
-
-    // Deduplicate and sort, filtering out null/empty values.
-    const unique = Array.from(
-      new Set(
-        rows
-          .map((r) => r.group_id)
-          .filter((g): g is string => typeof g === 'string' && g.trim().length > 0)
-      )
-    ).sort();
-
-    return unique;
+    const rows = (data ?? []) as { group_id: string }[];
+    return rows.map((r) => r.group_id);
   } catch (error) {
     console.error('[getAvailableDocumentGroups] Failed to fetch document groups', error);
     return [];

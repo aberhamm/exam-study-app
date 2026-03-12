@@ -111,3 +111,39 @@ Recommended workflows
 3) Updating questions text/options
 - Update source JSON; run `pnpm seed:exams` (explanations preserved)
 - Re-embed with `pnpm embed:questions --exam <id> --recompute` if needed
+
+---
+
+Generate Question Explanations
+
+- File: `scripts/generate-explanations.ts`
+- Command: `pnpm generate:explanations`
+- Purpose: Generate AI explanations for questions that don't have one, or regenerate all with `--recompute`.
+- Requirements: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY` (or Portkey equivalents)
+- Flags:
+  - `--exam <id>`: Limit to a specific exam
+  - `--limit <n>`: Cap number of questions processed
+  - `--batch <n>`: Batch size (default 10)
+  - `--concurrency <n>`: Concurrent generations per batch (default 3)
+  - `--delay <ms>`: Delay between batches (default 2000)
+  - `--recompute`: Regenerate explanations even if already present (saves old to `explanation_history`)
+  - `--verbose`: Print generated explanation text in output
+- Typical use:
+  - After onboarding a new exam: `pnpm generate:explanations --exam <id>`
+  - After updating the system prompt: `pnpm generate:explanations --recompute --exam <id>`
+  - See `docs/explanation-pipeline.md` for guidance on when to recompute.
+
+Compare Models
+
+- File: `scripts/compare-models.ts`
+- Command: `pnpm compare:models`
+- Purpose: Run the explanation prompt against multiple models via OpenRouter and compare output quality, latency, and cost.
+- Requirements: `OPENROUTER_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- Flags:
+  - `--exam <id>`: Limit questions to a specific exam
+  - `--limit <n>`: Number of questions to sample (default 3)
+  - `--models <list>`: Comma-separated OpenRouter model IDs
+  - `--output <file>`: Save full results as JSON
+- Typical use:
+  - Before changing `OPENROUTER_MODEL` or `PORTKEY_MODEL_EXPLANATION`, run this to validate the candidate model produces acceptable explanations.
+  - See `docs/explanation-pipeline.md` for the full model selection workflow.

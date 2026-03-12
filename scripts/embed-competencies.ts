@@ -1,40 +1,40 @@
 /**
  * Generate Competency Embeddings
  *
- * Purpose
- * - Create vector embeddings for competencies (title + description) to support semantic matching with questions.
+ * Purpose:
+ * - Create vector embeddings for competencies (title + description) to support
+ *   semantic matching with questions.
  *
- * Flags
- * - --exam <id>   Limit to a specific exam
- * - --limit <n>   Cap number of competencies processed
- * - --batch <n>   Batch size for embedding API calls (default 16)
- * - --recompute   Recompute embeddings even if present (otherwise, embed missing only)
+ * Flags:
+ * - --exam <id>     Limit to a specific exam
+ * - --limit <n>     Cap number of competencies processed
+ * - --batch <n>     Batch size for embedding API calls (default 16)
+ * - --recompute     Recompute embeddings even if present (default: skip existing)
  *
- * Env
- * - OPENAI_API_KEY, MONGODB_URI, MONGODB_DB
- * - MONGODB_EXAM_COMPETENCIES_COLLECTION
- * - Optional: QUESTIONS_EMBEDDING_MODEL (default text-embedding-3-small), QUESTIONS_EMBEDDING_DIMENSIONS
+ * Env:
+ * - OPENAI_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  *
- * Usage
+ * Usage:
  * - pnpm embed:competencies
- * - pnpm embed:competencies --exam sitecore-xmc --recompute --batch 32
+ * - pnpm embed:competencies --exam sitecore-xmc --recompute
  */
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
-import { MongoClient } from 'mongodb';
-import { envConfig } from '../lib/env-config.js';
-import { createEmbeddings as createEmbeddingsLLM } from '@/lib/llm-client';
+import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
 
-type CompetencyDoc = {
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing environment variable: ${name}`);
+  return value;
+}
+
+type CompetencyRow = {
   id: string;
-  examId: string;
+  exam_id: string;
   title: string;
   description: string;
-  examPercentage: number;
-  embedding?: number[];
-  embeddingModel?: string;
-  embeddingUpdatedAt?: Date;
 };
 
 function parseArgs() {
@@ -48,7 +48,7 @@ function parseArgs() {
     else if (a === '--batch') params.batch = Number(args[++i]);
     else if (a === '--help' || a === '-h') {
       console.log(
-        `Usage: pnpm embed:competencies [--exam <examId>] [--limit <n>] [--recompute] [--batch <n>]`
+        'Usage: pnpm embed:competencies [--exam <examId>] [--limit <n>] [--recompute] [--batch <n>]'
       );
       process.exit(0);
     }
@@ -56,100 +56,85 @@ function parseArgs() {
   return params;
 }
 
-function buildTextForEmbedding(c: CompetencyDoc): string {
-  return `${c.title}\n\n${c.description}`;
-}
-
-async function createEmbeddings(
-  inputs: string[],
-  model: string,
-  dimensions?: number
-): Promise<number[][]> {
-  // Use LLM client wrapper (routes to Portkey or OpenAI based on feature flag)
-  return createEmbeddingsLLM(inputs, { model, dimensions });
-}
-
 async function main() {
   const { exam, limit, recompute, batch } = parseArgs();
-  const model = envConfig.openai.embeddingModel;
-  const dimensions = envConfig.openai.embeddingDimensions;
+  const batchSize = batch && batch > 0 ? batch : 16;
 
-  const uri = envConfig.mongo.uri;
-  const dbName = envConfig.mongo.database;
-  const competenciesColName = envConfig.mongo.examCompetenciesCollection;
+  const model = process.env.QUESTIONS_EMBEDDING_MODEL ?? 'text-embedding-3-small';
+  const dimensions = process.env.QUESTIONS_EMBEDDING_DIMENSIONS
+    ? parseInt(process.env.QUESTIONS_EMBEDDING_DIMENSIONS, 10)
+    : 1536;
 
-  const client = new MongoClient(uri);
-  await client.connect();
-  const db = client.db(dbName);
-  const col = db.collection<CompetencyDoc>(competenciesColName);
+  const supabase = createClient(
+    requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
+    requireEnv('SUPABASE_SERVICE_ROLE_KEY'),
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
 
-  try {
-    const batchSize = batch && batch > 0 ? batch : 16;
-    const toProcess: CompetencyDoc[] = [];
+  const openai = new OpenAI({ apiKey: requireEnv('OPENAI_API_KEY') });
 
-    if (recompute) {
-      // Simple path: all competencies (optionally filtered by exam)
-      const filter: Record<string, unknown> = {};
-      if (exam) filter.examId = exam;
-      const cursor = col
-        .find(filter, {
-          projection: { embedding: 0, embeddingModel: 0, embeddingUpdatedAt: 0 },
-        })
-        .sort({ examId: 1, id: 1 });
-      for await (const doc of cursor) {
-        toProcess.push(doc);
-        if (typeof limit === 'number' && toProcess.length >= limit) break;
-      }
-    } else {
-      // Missing-only path: find competencies without embeddings
-      const filter: Record<string, unknown> = {
-        $or: [{ embedding: { $exists: false } }, { embedding: null }, { embedding: [] }],
-      };
-      if (exam) filter.examId = exam;
+  // Fetch competencies to process
+  let query = supabase
+    .schema('quiz')
+    .from('competencies')
+    .select('id, exam_id, title, description');
 
-      const cursor = col
-        .find(filter, {
-          projection: { _id: 0, id: 1, examId: 1, title: 1, description: 1, examPercentage: 1 },
-        })
-        .sort({ examId: 1, id: 1 });
+  if (exam) query = query.eq('exam_id', exam) as typeof query;
+  if (!recompute) query = query.is('embedding', null) as typeof query;
 
-      for await (const doc of cursor) {
-        toProcess.push(doc);
-        if (typeof limit === 'number' && toProcess.length >= limit) break;
-      }
+  const { data: allRows, error } = await query.order('title');
+
+  if (error) {
+    console.error('Failed to fetch competencies:', error.message);
+    process.exit(1);
+  }
+
+  const rows = (allRows ?? []) as CompetencyRow[];
+  const toProcess = typeof limit === 'number' ? rows.slice(0, limit) : rows;
+
+  console.log(
+    `Embedding ${toProcess.length} competenc${toProcess.length === 1 ? 'y' : 'ies'} using model ${model} (${dimensions} dims)`
+  );
+
+  let processed = 0;
+  let failed = 0;
+
+  for (let i = 0; i < toProcess.length; i += batchSize) {
+    const batchDocs = toProcess.slice(i, i + batchSize);
+    const inputs = batchDocs.map((c) => `${c.title}\n\n${c.description}`);
+
+    let embeddings: number[][];
+    try {
+      const response = await openai.embeddings.create({ model, input: inputs, dimensions });
+      embeddings = response.data.map((d) => d.embedding);
+    } catch (err) {
+      console.error(`Batch ${Math.floor(i / batchSize) + 1} embedding failed:`, err);
+      failed += batchDocs.length;
+      continue;
     }
 
-    console.log(
-      `Embedding ${toProcess.length} competenc${toProcess.length === 1 ? 'y' : 'ies'} using model ${model}${dimensions ? ` (${dimensions} dims)` : ''}`
+    const now = new Date().toISOString();
+    await Promise.all(
+      batchDocs.map((doc, idx) =>
+        supabase
+          .schema('quiz')
+          .from('competencies')
+          .update({
+            embedding: embeddings[idx],
+            embedding_model: model,
+            embedding_updated_at: now,
+            updated_at: now,
+          })
+          .eq('id', doc.id)
+      )
     );
 
-    for (let i = 0; i < toProcess.length; i += batchSize) {
-      const batchDocs = toProcess.slice(i, i + batchSize);
-      const inputs = batchDocs.map(buildTextForEmbedding);
-      const embeddings = await createEmbeddings(inputs, model, dimensions);
-      const now = new Date();
-
-      const ops = batchDocs.map((doc, idx) =>
-        col.updateOne(
-          { examId: doc.examId, id: doc.id },
-          {
-            $set: {
-              embedding: embeddings[idx],
-              embeddingModel: model,
-              embeddingUpdatedAt: now,
-              updatedAt: now,
-            },
-          }
-        )
-      );
-      await Promise.all(ops);
-      console.log(`Processed ${Math.min(i + batchDocs.length, toProcess.length)} / ${toProcess.length}`);
-    }
-
-    console.log('Done.');
-  } finally {
-    await client.close();
+    processed += batchDocs.length;
+    console.log(`Processed ${Math.min(i + batchDocs.length, toProcess.length)} / ${toProcess.length}`);
   }
+
+  console.log(`\nDone. Embedded: ${processed}, Failed: ${failed}`);
+  if (failed > 0) process.exit(1);
 }
 
 main().catch((err) => {

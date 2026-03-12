@@ -98,6 +98,10 @@ export async function hasTier(requiredTier: string): Promise<boolean> {
  * Require admin role (throw error if not admin)
  */
 export async function requireAdmin(): Promise<AppUser> {
+  if (process.env.NODE_ENV === 'development') {
+    return { id: 'dev', email: 'dev@localhost', role: 'admin', tier: 'premium', hasAccess: true, isAdmin: true, permissions: [] };
+  }
+
   const appUser = await getCurrentAppUser();
 
   if (!appUser) {

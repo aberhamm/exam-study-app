@@ -30,7 +30,9 @@
     "merge:sources": "tsx scripts/merge-question-sources.ts",
     "generate:from-notes": "tsx scripts/generate-from-study-notes.ts",
     "seed:exams:supabase": "tsx scripts/seed-exams-supabase.ts",
-    "apply:enriched-questions": "tsx scripts/apply-enriched-questions.ts"
+    "seed:competencies": "tsx scripts/seed-competencies.ts",
+    "apply:enriched-questions": "tsx scripts/apply-enriched-questions.ts",
+    "compare:models": "tsx scripts/compare-models.ts"
   },
   "dependencies": {
     "@next/env": "15.5.2",

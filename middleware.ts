@@ -102,9 +102,15 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/exams/') &&
     pathname.includes('/questions/prepare');
 
+  // Top-level exam route is admin-only for mutating methods (PATCH/DELETE)
+  const isExamRootAPI =
+    /^\/api\/exams\/[^/]+$/.test(pathname) &&
+    (request.method === 'PATCH' || request.method === 'DELETE');
+
   const isAdminExamsAPI =
     pathname.startsWith('/api/exams/') &&
     (
+      isExamRootAPI ||
       (!isCompetencyCollectionAPI && isCompetencyItemAPI) ||
       (!isQuestionsPrepareAPI && pathname.includes('/questions')) ||
       pathname.includes('/questions/import') ||
@@ -121,6 +127,11 @@ export async function middleware(request: NextRequest) {
     isAdminExamsAPI;
 
   if (isAdminRoute) {
+    // Bypass auth in local development
+    if (process.env.NODE_ENV === 'development') {
+      return response;
+    }
+
     // Require authentication
     if (!user) {
       // Redirect to login for UI routes

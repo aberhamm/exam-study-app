@@ -5,6 +5,7 @@ import type { ExamDetailResponse } from '@/types/api';
 import type { WelcomeConfig } from '@/types/normalized';
 import { getCurrentAppUser, requireAdmin } from '@/lib/auth-supabase';
 import type { ExamDetail } from '@/types/external-question';
+import { updateExam } from '@/lib/server/exams';
 
 type RouteParams = {
   params: Promise<{
@@ -97,42 +98,25 @@ export async function PATCH(request: Request, context: RouteParams) {
       return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
-    // Update exam in database
-    const { getDb, getExamsCollectionName } = await import('@/lib/server/mongodb');
-    const db = await getDb();
-    const collection = db.collection(getExamsCollectionName());
-
-    const updateFields: Record<string, unknown> = {};
-    if (body?.documentGroups !== undefined) {
-      updateFields.documentGroups = body.documentGroups;
-    }
-    if (body?.examTitle !== undefined) {
-      updateFields.examTitle = body.examTitle;
-    }
-    if (body?.welcomeConfig !== undefined) {
-      // Merge welcomeConfig with existing config
-      const currentExam = await collection.findOne({ examId }, { projection: { welcomeConfig: 1 } });
-      const existingConfig = (currentExam?.welcomeConfig as WelcomeConfig | undefined) || {};
-      updateFields.welcomeConfig = { ...existingConfig, ...body.welcomeConfig };
-    }
-
-    if (Object.keys(updateFields).length === 0) {
+    if (
+      body?.documentGroups === undefined &&
+      body?.examTitle === undefined &&
+      body?.welcomeConfig === undefined
+    ) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
-    // Always set updatedAt timestamp
-    updateFields.updatedAt = new Date();
+    const updated = await updateExam(examId, {
+      documentGroups: body?.documentGroups,
+      examTitle: body?.examTitle,
+      welcomeConfig: body?.welcomeConfig as Partial<WelcomeConfig> | undefined,
+    });
 
-    const result = await collection.updateOne(
-      { examId },
-      { $set: updateFields }
-    );
-
-    if (result.matchedCount === 0) {
+    if (!updated) {
       return NextResponse.json({ error: `Exam "${examId}" not found` }, { status: 404 });
     }
 
-    // Fetch updated exam
+    // Fetch updated exam (with questions)
     const updatedExam = await fetchExamDetail(examId);
     if (!updatedExam) {
       return NextResponse.json({ error: 'Failed to fetch updated exam' }, { status: 500 });

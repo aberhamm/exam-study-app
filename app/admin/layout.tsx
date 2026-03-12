@@ -10,13 +10,15 @@ type Props = {
  * Provides defense-in-depth security for all /admin/* routes.
  */
 export default async function AdminLayout({ children }: Props) {
-  try {
-    await requireAdmin();
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Unauthorized')) {
-      redirect('/login');
-    } else {
-      redirect('/forbidden');
+  if (process.env.NODE_ENV !== 'development') {
+    try {
+      await requireAdmin();
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Unauthorized')) {
+        redirect('/login');
+      } else {
+        redirect('/forbidden');
+      }
     }
   }
 

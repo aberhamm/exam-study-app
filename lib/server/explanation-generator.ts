@@ -406,6 +406,107 @@ function rebuildDocumentsFromChunks(chunks: DocumentChunk[]): DocumentChunk[] {
   return rebuilt.slice(0, maxDocs);
 }
 
+/**
+ * Builds the system and user prompts for explanation generation.
+ * Exported so the model comparison script can use the exact same prompts.
+ */
+export function buildExplanationPrompts(
+  question: NormalizedQuestion,
+  documentChunks: DocumentChunk[]
+): { systemPrompt: string; userPrompt: string } {
+  const correctAnswerText = Array.isArray(question.answerIndex)
+    ? question.answerIndex
+        .map((idx) => `${String.fromCharCode(65 + idx)}. ${question.choices[idx]}`)
+        .join(', ')
+    : `${String.fromCharCode(65 + question.answerIndex)}. ${
+        question.choices[question.answerIndex]
+      }`;
+
+  const contextSections = documentChunks
+    .map((chunk, index) => {
+      const header = chunk.nearestHeading || chunk.sectionPath || 'Documentation';
+      const source = chunk.title || chunk.sourceFile;
+      return `### Context ${index + 1}: ${header} (from ${source})\n${chunk.text}`;
+    })
+    .join('\n\n');
+
+  const systemPrompt = `You are an Exam Explanation Engine for software/technology certification topics.
+
+TASK
+Given: (a) one multiple-choice or true/false question, (b) the correct answer, and (c) 1-N short documentation excerpts.
+Output a concise, instructional explanation in Markdown that:
+1) teaches why the provided answer is correct,
+2) uses ONLY the provided documentation as evidence,
+3) briefly explains why the most tempting wrong answer is wrong,
+4) stays within 120-200 words,
+5) contains no chit-chat, no follow-ups, no greetings, no meta-commentary,
+6) bolds key terminology for emphasis.
+
+HARD RULES
+- If the excerpts are insufficient to justify the answer, output exactly:
+  The available documentation does not contain enough information to explain the answer.
+- Do NOT invent facts, rely on outside knowledge, or guess at implementation details.
+- Do NOT invent examples, API names, UI element names, commands, or product behaviors not directly stated in the question or documentation.
+- Do not teach the whole topic — explain only what is needed to justify the correct answer.
+- Every sentence must help the student understand why this answer is correct for this question.
+- Do NOT embed hyperlinks or URLs in the explanation text. Sources are stored separately.
+- Do NOT reveal or restate the answer choices or the letter keys.
+- Do NOT mention "snippets," "context," or "I".
+- Do NOT refer to the reference chunks by number or say "the excerpt says."
+- Present direct explanations supported implicitly by the facts — do not reference where they came from.
+- Use active voice: "sitecore.json defines…" rather than "is defined by…"
+
+FORMAT
+- Markdown only. One paragraph for simpler questions; three short paragraphs max.
+- Make use of white space and formatting for readability.
+`;
+
+  const userPrompt = `Question:
+${question.prompt}
+
+Correct answer:
+${correctAnswerText}
+
+Relevant documentation excerpts:
+${contextSections}
+`;
+
+  return { systemPrompt, userPrompt };
+}
+
+/**
+ * Runs the RAG retrieval pipeline for a question and returns processed document chunks.
+ * Exported so the model comparison script can retrieve context independently of the LLM call.
+ */
+export async function retrieveExplanationChunks(
+  question: NormalizedQuestion,
+  documentGroups?: string[],
+  questionEmbedding?: number[]
+): Promise<DocumentChunk[]> {
+  let queryEmbedding: number[];
+  if (questionEmbedding && questionEmbedding.length > 0) {
+    queryEmbedding = questionEmbedding;
+  } else {
+    const questionText = `${question.prompt} ${question.choices.join(' ')}`;
+    queryEmbedding = await createEmbedding(questionText);
+  }
+
+  const chunksPerSearch = Math.ceil(envConfig.pipeline.maxContextChunks * 1.5);
+  const questionChunks = await searchDocumentChunks(queryEmbedding, chunksPerSearch, documentGroups);
+
+  const correctAnswerText = Array.isArray(question.answerIndex)
+    ? question.answerIndex.map((idx) => question.choices[idx]).filter(Boolean).join(' ')
+    : question.choices[question.answerIndex];
+
+  if (!correctAnswerText) throw new Error('Unable to extract correct answer text');
+
+  const answerEmbedding = await createEmbedding(correctAnswerText);
+  const answerChunks = await searchDocumentChunks(answerEmbedding, chunksPerSearch, documentGroups);
+
+  const allChunks = [...questionChunks, ...answerChunks].sort((a, b) => b.score - a.score);
+  return rebuildDocumentsFromChunks(allChunks);
+}
+
 async function generateExplanationWithLLM(
   question: NormalizedQuestion,
   documentChunks: DocumentChunk[]
@@ -423,89 +524,8 @@ async function generateExplanationWithLLM(
       );
     }
 
-    // Create the correct answer text
-    const correctAnswerText = Array.isArray(question.answerIndex)
-      ? question.answerIndex
-          .map((idx) => `${String.fromCharCode(65 + idx)}. ${question.choices[idx]}`)
-          .join(', ')
-      : `${String.fromCharCode(65 + question.answerIndex)}. ${
-          question.choices[question.answerIndex]
-        }`;
+    const { systemPrompt, userPrompt } = buildExplanationPrompts(question, documentChunks);
 
-    // Prepare context from rebuilt document sections with citation IDs
-    const contextSections = documentChunks
-      .map((chunk, index) => {
-        const header = chunk.nearestHeading || chunk.sectionPath || 'Documentation';
-        const source = chunk.title || chunk.sourceFile;
-        const citationId = `[${index + 1}]`;
-        return `### Context ${citationId}: ${header} (from ${source})\n${chunk.text}`;
-      })
-      .join('\n\n');
-
-    // Prepare available citations for the LLM
-    const availableCitations = documentChunks
-      .map((chunk, index) => {
-        const citationId = `[${index + 1}]`;
-        const title = chunk.title || chunk.sourceFile;
-        const url = chunk.url;
-        return `${citationId}: ${title}${url ? ` - ${url}` : ''}`;
-      })
-      .join('\n');
-
-    const systemPrompt = `You are an Exam Explanation Engine for software/technology topics.
-
-TASK
-Given: (a) one multiple-choice or true/false question, (b) the correct answer, and (c) 1-N short documentation excerpts.
-Output a concise, instructional explanation in Markdown that:
-1) teaches why the provided answer is correct,
-2) uses ONLY the provided documentation as evidence,
-3) includes at most TWO inline citations (links) to the most relevant excerpts
-4) stays within 120-200 words,
-5) contains no chit-chat, no follow-ups, no greetings, no meta-commentary.
-6) key terminology should be bolded for emphasis
-7) include a practical use-case example, a brief code snippet, or some other illustration to clarify the concept
-
-HARD RULES
-- If the excerpts are insufficient to justify the answer, output exactly:
-  The available documentation does not contain enough information to explain the answer.
-- Do NOT invent facts or rely on outside knowledge.
-- Do NOT reveal or restate the answer choices or the letter keys.
-- Do NOT mention "snippets," "context," or "I".
-- Do NOT refer to the reference chunks by number or say "the excerpt says."
-- Use clear headings only if helpful (e.g., **Why this is correct**).
-- Prefer quotes or paraphrases anchored to the excerpts.
-- Phrases like "according to the documentation," "the docs state," "as per …," "the excerpt shows," etc. You present **direct explanations** supported implicitly by the facts, not by referencing *where* they came from.
-- Instead of saying "as described in the documentation," just use the documentation's content as part of your explanation.
-- Do not add a Sources section or list of citations at the end.
-- Use assertive yet grounded language
-   * Use active voice: "sitecore.json defines…" rather than "is defined by…"
-   * Avoid signal phrases like "the document says" or "the docs show."
-- Make your explanation self-contained
-   * Phrase your explanation so it doesn't rely on reminding the reader of the source. The support is in the logic and evidence, not in mentioning where it came from.
-
-FORMAT
-- Markdown only. One paragraph so simpler questions; three short paragraphs max. Breaking up long paragraphs is preferred.
-- At least 1-2 inline links to the excerpts you judge most relevant.
-- If the excerpt did not help, do not cite it.
-- If the answer is justified by common knowledge, do not cite any excerpts.
-- If the answer is ambiguous, explain why the other possibly likely answers are wrong without citing excerpts.
-- Make use of white space and formatting for readability.
-`;
-
-    const userPrompt = `Question:
-${question.prompt}
-
-Correct answer:
-${correctAnswerText}
-
-Relevant documentation excerpts (each excerpt may include a URL):
-${contextSections}
-
-Available citations (include as markdown links when relevant):
-${availableCitations}
-`;
-
-    // Use LLM client wrapper (routes to Portkey or OpenRouter based on feature flag)
     const explanation = await createChatCompletion({
         model,
         messages: [
@@ -536,90 +556,15 @@ export async function generateQuestionExplanation(
   }
 
   try {
-    // Use provided embedding or create one for the question text
-    let queryEmbedding: number[];
-    if (questionEmbedding && questionEmbedding.length > 0) {
-      queryEmbedding = questionEmbedding;
-      if (featureFlags.debugRetrieval) {
-        console.info(
-          `[generateQuestionExplanation] Using provided embedding (${queryEmbedding.length}d) for question ${questionHash}`
-        );
-      }
-    } else {
-      const questionText = `${question.prompt} ${question.choices.join(' ')}`;
-      queryEmbedding = await createEmbedding(questionText);
-      if (featureFlags.debugRetrieval) {
-        console.info(
-          `[generateQuestionExplanation] Created embedding (${queryEmbedding.length}d) for question ${questionHash}`
-        );
-      }
+    if (featureFlags.debugRetrieval) {
+      console.info(`[generateQuestionExplanation] Starting retrieval for question ${questionHash}`);
     }
 
-    // Retrieve more chunks per search than final limit to ensure best results survive deduplication
-    const chunksPerSearch = Math.ceil(envConfig.pipeline.maxContextChunks * 1.5);
-
-    // Search for relevant document chunks using question embedding
-    const questionChunks = await searchDocumentChunks(
-      queryEmbedding,
-      chunksPerSearch,
-      documentGroups
-    );
-
-    // Extract correct answer text and create embedding for it
-    const correctAnswerText = Array.isArray(question.answerIndex)
-      ? question.answerIndex
-          .map((idx) => question.choices[idx])
-          .filter(Boolean)
-          .join(' ')
-      : question.choices[question.answerIndex];
-
-    if (!correctAnswerText) {
-      throw new Error('Unable to extract correct answer text');
-    }
+    const processedChunks = await retrieveExplanationChunks(question, documentGroups, questionEmbedding);
 
     if (featureFlags.debugRetrieval) {
       console.info(
-        `[generateQuestionExplanation] Correct answer text: ${correctAnswerText.substring(0, 100)}`
-      );
-    }
-
-    const answerEmbedding = await createEmbedding(correctAnswerText);
-
-    if (featureFlags.debugRetrieval) {
-      console.info(
-        `[generateQuestionExplanation] Created answer embedding (${answerEmbedding.length}d) for question ${questionHash}`
-      );
-    }
-
-    // Search for relevant document chunks using answer embedding
-    const answerChunks = await searchDocumentChunks(
-      answerEmbedding,
-      chunksPerSearch,
-      documentGroups
-    );
-
-    // Merge chunks from both searches and sort by score (highest first)
-    const allChunks = [...questionChunks, ...answerChunks].sort((a, b) => b.score - a.score);
-
-    if (featureFlags.debugRetrieval) {
-      console.info(
-        `[generateQuestionExplanation] Combined ${questionChunks.length} question chunks + ${answerChunks.length} answer chunks = ${allChunks.length} total`
-      );
-      if (allChunks.length > 0) {
-        console.info(
-          `[generateQuestionExplanation] Score range: ${allChunks[0].score.toFixed(
-            4
-          )} to ${allChunks[allChunks.length - 1].score.toFixed(4)}`
-        );
-      }
-    }
-
-    // Rebuild full documents from retrieved chunks grouped by source file
-    const processedChunks = rebuildDocumentsFromChunks(allChunks);
-
-    if (featureFlags.debugRetrieval) {
-      console.info(
-        `[generateQuestionExplanation] Processed ${processedChunks.length} chunks (from ${allChunks.length})`
+        `[generateQuestionExplanation] Retrieved ${processedChunks.length} chunks for question ${questionHash}`
       );
     }
 

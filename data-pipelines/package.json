@@ -10,7 +10,9 @@
     "markdown-to-embeddings": "tsx src/pipelines/markdown-to-embeddings/index.ts",
     "create-embeddings-index": "tsx scripts/create-embeddings-index.ts",
     "test-embeddings-search": "tsx scripts/test-embeddings-search.ts",
-    "enrich-questions": "tsx src/pipelines/enrich-questions/index.ts"
+    "enrich-questions": "tsx src/pipelines/enrich-questions/index.ts",
+    "find-question-sources": "tsx src/pipelines/find-question-sources/index.ts",
+    "generate-explanations": "tsx src/pipelines/generate-explanations/index.ts"
   },
   "dependencies": {
     "@langchain/openai": "^0.3.15",

@@ -57,6 +57,42 @@ export async function listExamSummaries(): Promise<ExamSummary[]> {
   }));
 }
 
+export type UpdateExamInput = {
+  documentGroups?: string[];
+  examTitle?: string;
+  welcomeConfig?: Partial<NonNullable<ExamDetail['welcomeConfig']>>;
+};
+
+export async function updateExam(
+  examId: string,
+  updates: UpdateExamInput
+): Promise<ExamDetail | null> {
+  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+  if (updates.documentGroups !== undefined) {
+    payload.document_groups = updates.documentGroups.length > 0 ? updates.documentGroups : null;
+  }
+  if (updates.examTitle !== undefined) {
+    payload.exam_title = updates.examTitle;
+  }
+  if (updates.welcomeConfig !== undefined) {
+    // Fetch current config to merge
+    const current = await fetchExamById(examId);
+    payload.welcome_config = { ...(current?.welcomeConfig ?? {}), ...updates.welcomeConfig };
+  }
+
+  const { data, error } = await getDb()
+    .from('exams')
+    .update(payload)
+    .eq('exam_id', examId)
+    .select('*')
+    .maybeSingle<ExamRow>();
+
+  if (error) throw new Error(`Failed to update exam "${examId}": ${error.message}`);
+  if (!data) return null;
+  return mapExamRow(data);
+}
+
 export class ExamNotFoundError extends Error {
   constructor(examId: string) {
     super(`Exam "${examId}" not found`);

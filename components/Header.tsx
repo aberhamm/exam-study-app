@@ -5,9 +5,12 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { AuthButton } from "@/components/AuthButton";
 import { APP_CONFIG, buildExamAppTitle } from "@/lib/app-config";
 import { useHeader } from "@/contexts/HeaderContext";
+import { useAdminAccess } from "@/app/hooks/useAdminAccess";
 
 export function Header() {
   const { config } = useHeader();
+  const { isAdmin } = useAdminAccess();
+  const showAdminLink = isAdmin || process.env.NODE_ENV === 'development';
 
   if (!config.visible) {
     return null;
@@ -44,6 +47,14 @@ export function Header() {
       </div>
       <div className="flex items-center gap-3">
         {config.rightContent}
+        {showAdminLink && (
+          <Link
+            href="/admin"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Admin
+          </Link>
+        )}
         <AuthButton />
         <ThemeToggle />
       </div>

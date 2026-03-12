@@ -66,13 +66,15 @@ const adminTools = [
 ];
 
 export default async function AdminPage() {
-  try {
-    await requireAdmin();
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Unauthorized')) {
-      redirect('/login');
-    } else {
-      redirect('/forbidden');
+  if (process.env.NODE_ENV !== 'development') {
+    try {
+      await requireAdmin();
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Unauthorized')) {
+        redirect('/login');
+      } else {
+        redirect('/forbidden');
+      }
     }
   }
 
