@@ -7,11 +7,8 @@ export class OpenRouterClient {
   private client: OpenAI;
   private model: string;
 
-  constructor(apiKey: string, model: string = 'anthropic/claude-3.5-sonnet') {
-    this.client = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-    });
+  constructor(client: OpenAI, model: string = 'anthropic/claude-3.5-sonnet') {
+    this.client = client;
     this.model = model;
   }
 

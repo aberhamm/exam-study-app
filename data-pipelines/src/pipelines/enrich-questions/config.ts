@@ -48,11 +48,10 @@ export function getPipelinePaths() {
 }
 
 export function getEnvConfig() {
+  const usePortkey = process.env.PIPELINES_USE_PORTKEY === 'true' || process.env.PIPELINES_USE_PORTKEY === '1';
+
   const openaiApiKey = process.env.OPENAI_API_KEY;
   if (!openaiApiKey) throw new Error('Missing OPENAI_API_KEY');
-
-  const openrouterApiKey = process.env.OPENROUTER_API_KEY;
-  if (!openrouterApiKey) throw new Error('Missing OPENROUTER_API_KEY');
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
@@ -60,7 +59,30 @@ export function getEnvConfig() {
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseServiceRoleKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
 
+  if (usePortkey) {
+    const portkeyApiKey = process.env.PORTKEY_API_KEY;
+    if (!portkeyApiKey) throw new Error('Missing PORTKEY_API_KEY (required when PIPELINES_USE_PORTKEY=true)');
+
+    return {
+      usePortkey: true as const,
+      openaiApiKey,
+      supabaseUrl,
+      supabaseServiceRoleKey,
+      portkeyApiKey,
+      portkeyBaseUrl: process.env.PORTKEY_BASE_URL || 'https://api.portkey.ai/v1',
+      portkeyProvider: process.env.PORTKEY_PROVIDER,
+      portkeyCustomHeaders: process.env.PORTKEY_CUSTOM_HEADERS,
+      model: process.env.PORTKEY_MODEL_QUESTION_GENERATION || process.env.PORTKEY_MODEL || config.defaultModel,
+      embeddingModel: config.embeddingModel,
+      embeddingDimensions: config.embeddingDimensions,
+    };
+  }
+
+  const openrouterApiKey = process.env.OPENROUTER_API_KEY;
+  if (!openrouterApiKey) throw new Error('Missing OPENROUTER_API_KEY');
+
   return {
+    usePortkey: false as const,
     openaiApiKey,
     openrouterApiKey,
     supabaseUrl,

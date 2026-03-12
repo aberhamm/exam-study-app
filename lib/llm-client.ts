@@ -45,24 +45,6 @@ export function buildPortkeyEmbeddingPayload(
   return payload;
 }
 
-function extractEmbeddingsFromResponse(response: unknown): number[][] {
-  const data = (response as { data?: Array<{ embedding?: number[] }> }).data;
-  if (Array.isArray(data) && data.length > 0) {
-    return data
-      .map(item => item.embedding)
-      .filter((embedding): embedding is number[] => Array.isArray(embedding));
-  }
-
-  const output = (response as { output?: Array<{ embedding?: number[] }> }).output;
-  if (Array.isArray(output) && output.length > 0) {
-    return output
-      .map(item => item.embedding)
-      .filter((embedding): embedding is number[] => Array.isArray(embedding));
-  }
-
-  return [];
-}
-
 /**
  * Options for creating embeddings
  */
@@ -82,50 +64,15 @@ export interface ChatCompletionOptions {
 }
 
 /**
- * Creates an embedding for the provided text using Portkey or OpenAI
+ * Creates an embedding for the provided text using OpenAI
  */
 export async function createEmbedding(
   text: string,
   options?: CreateEmbeddingOptions
 ): Promise<number[]> {
-  const usePortkey = envConfig.features.usePortkey;
-  const model = options?.model || envConfig.portkey.modelEmbeddings || envConfig.openai.embeddingModel;
-  const requestedDimensions = options?.dimensions || envConfig.openai.embeddingDimensions;
-  const dimensions = isBedrockTitanV2(model)
-    ? Math.min(requestedDimensions || 1024, 1024)
-    : requestedDimensions;
+  const model = options?.model || envConfig.openai.embeddingModel;
+  const dimensions = options?.dimensions || envConfig.openai.embeddingDimensions;
 
-  if (usePortkey) {
-    const client = portkeyClient();
-    let payload: Record<string, unknown> | undefined;
-    try {
-      payload = buildPortkeyEmbeddingPayload(model, text, dimensions);
-      const response = await client.embeddings.create(payload as never);
-
-      const embeddings = extractEmbeddingsFromResponse(response);
-      const embedding = embeddings[0];
-      if (!embedding) {
-        throw new Error('Invalid embedding response from Portkey');
-      }
-
-      return embedding;
-    } catch (error) {
-      // Enhanced error logging for Portkey issues
-      console.error('[Portkey Embeddings Error]', {
-        model,
-        dimensions,
-        baseUrl: envConfig.portkey.baseUrl,
-        error: error instanceof Error ? error.message : String(error),
-        requestPayload: payload,
-        status: (error as { status?: number }).status,
-        response: (error as { response?: unknown }).response,
-      });
-      throw error;
-    }
-  }
-
-  // Fallback to OpenAI
-  const apiKey = envConfig.openai.apiKey;
   const body: Record<string, unknown> = { model, input: text };
   if (dimensions) {
     body.dimensions = dimensions;
@@ -135,7 +82,7 @@ export async function createEmbedding(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${envConfig.openai.apiKey}`,
     },
     body: JSON.stringify(body),
   });
@@ -153,48 +100,15 @@ export async function createEmbedding(
 }
 
 /**
- * Creates embeddings for multiple texts using Portkey or OpenAI
+ * Creates embeddings for multiple texts using OpenAI
  */
 export async function createEmbeddings(
   inputs: string[],
   options?: CreateEmbeddingOptions
 ): Promise<number[][]> {
-  const usePortkey = envConfig.features.usePortkey;
-  const model = options?.model || envConfig.portkey.modelEmbeddings || envConfig.openai.embeddingModel;
-  const requestedDimensions = options?.dimensions || envConfig.openai.embeddingDimensions;
-  const dimensions = isBedrockTitanV2(model)
-    ? Math.min(requestedDimensions || 1024, 1024)
-    : requestedDimensions;
+  const model = options?.model || envConfig.openai.embeddingModel;
+  const dimensions = options?.dimensions || envConfig.openai.embeddingDimensions;
 
-  if (usePortkey) {
-    const client = portkeyClient();
-    let payload: Record<string, unknown> | undefined;
-    try {
-      payload = buildPortkeyEmbeddingPayload(model, inputs, dimensions);
-      const response = await client.embeddings.create(payload as never);
-
-      const embeddings = extractEmbeddingsFromResponse(response);
-      if (embeddings.length === 0) {
-        throw new Error('Invalid embedding response from Portkey');
-      }
-
-      return embeddings;
-    } catch (error) {
-      console.error('[Portkey Embeddings Error - batch]', {
-        model,
-        dimensions,
-        baseUrl: envConfig.portkey.baseUrl,
-        error: error instanceof Error ? error.message : String(error),
-        requestPayload: payload,
-        status: (error as { status?: number }).status,
-        response: (error as { response?: unknown }).response,
-      });
-      throw error;
-    }
-  }
-
-  // Fallback to OpenAI
-  const apiKey = envConfig.openai.apiKey;
   const body: Record<string, unknown> = { model, input: inputs };
   if (dimensions) {
     body.dimensions = dimensions;
@@ -204,7 +118,7 @@ export async function createEmbeddings(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${envConfig.openai.apiKey}`,
     },
     body: JSON.stringify(body),
   });

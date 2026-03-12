@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { join } from 'path';
+import OpenAI from 'openai';
 import { OpenRouterClient } from '../../shared/clients/openrouter.js';
 import { Logger } from '../../shared/utils/logger.js';
 import { readMarkdownFile, writeJsonFile, generateOutputPath, findMarkdownFiles } from '../../shared/utils/file-utils.js';
@@ -161,9 +162,23 @@ async function main() {
     const outputDir = args.outputDir || paths.defaultOutputDir;
     logger.info('Output directory determined', { outputDir });
 
-    // Initialize OpenRouter client
-    const client = new OpenRouterClient(envConfig.apiKey, envConfig.model);
-    logger.info('OpenRouter client initialized');
+    // Initialize LLM client (Portkey or OpenRouter)
+    const headers: Record<string, string> = {};
+    if (envConfig.usePortkey) {
+      headers['x-portkey-api-key'] = envConfig.apiKey;
+      if (envConfig.provider) headers['x-portkey-provider'] = envConfig.provider;
+      if (envConfig.customHeaders) {
+        for (const line of envConfig.customHeaders.split('\n')) {
+          const idx = line.indexOf(':');
+          if (idx > 0) headers[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+        }
+      }
+    }
+    const openaiClient = envConfig.usePortkey
+      ? new OpenAI({ baseURL: envConfig.baseUrl, apiKey: 'portkey', defaultHeaders: headers })
+      : new OpenAI({ baseURL: 'https://openrouter.ai/api/v1', apiKey: envConfig.apiKey });
+    const client = new OpenRouterClient(openaiClient, envConfig.model);
+    logger.info(`${envConfig.usePortkey ? 'Portkey' : 'OpenRouter'} client initialized`);
 
     // Process files sequentially
     const results = [];

@@ -466,12 +466,22 @@ async function main() {
   console.log(`  Skip existing: ${cliArgs.skipExisting}\n`);
 
   // Initialise clients
-  const openai = new OpenAI({
-    baseURL: 'https://openrouter.ai/api/v1',
-    apiKey: envCfg.openrouterApiKey,
-  });
+  let openai: OpenAI;
+  if (envCfg.usePortkey) {
+    const headers: Record<string, string> = { 'x-portkey-api-key': envCfg.portkeyApiKey };
+    if (envCfg.portkeyProvider) headers['x-portkey-provider'] = envCfg.portkeyProvider;
+    if (envCfg.portkeyCustomHeaders) {
+      for (const line of envCfg.portkeyCustomHeaders.split('\n')) {
+        const idx = line.indexOf(':');
+        if (idx > 0) headers[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+      }
+    }
+    openai = new OpenAI({ baseURL: envCfg.portkeyBaseUrl, apiKey: 'portkey', defaultHeaders: headers });
+  } else {
+    openai = new OpenAI({ baseURL: 'https://openrouter.ai/api/v1', apiKey: envCfg.openrouterApiKey });
+  }
 
-  // Separate OpenAI client for embeddings (native OpenAI endpoint)
+  // Separate OpenAI client for embeddings (always OpenAI)
   const openaiEmbeddings = new OpenAI({ apiKey: envCfg.openaiApiKey });
 
   const supabase = createSupabaseAdminClient(envCfg.supabaseUrl, envCfg.supabaseServiceRoleKey);

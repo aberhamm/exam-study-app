@@ -254,6 +254,10 @@ export const featureFlags = {
   get usePortkey(): boolean {
     return isTruthyEnv(process.env.USE_PORTKEY);
   },
+
+  get pipelinesUsePortkey(): boolean {
+    return isTruthyEnv(process.env.PIPELINES_USE_PORTKEY);
+  },
 } as const;
 
 /**
